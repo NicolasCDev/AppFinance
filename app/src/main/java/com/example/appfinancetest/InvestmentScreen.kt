@@ -21,10 +21,6 @@ fun InvestissementScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewM
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Greeting(name = "Investissement")
-            //Affichage transacions
-            transactions.forEach {
-                Text(it.toString())
-            }
         }
     }
 }

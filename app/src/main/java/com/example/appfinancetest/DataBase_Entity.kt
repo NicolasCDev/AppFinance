@@ -14,7 +14,7 @@ import androidx.room.RoomDatabase
 data class Transaction_DB(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    @ColumnInfo(name = "date") val date: String?,
+    @ColumnInfo(name = "date") val date: Double?,
     @ColumnInfo(name = "categorie") val categorie: String?,
     @ColumnInfo(name = "poste") val poste: String?,
     @ColumnInfo(name = "label") val label: String?,
@@ -31,6 +31,9 @@ interface TransactionDao {
 
     @Query("DELETE FROM Transaction_DB")
     fun deleteAll()
+
+    @Query("SELECT * FROM Transaction_DB ORDER BY date DESC")
+    fun getTransactionsSortedByDate(): LiveData<List<Transaction_DB>>
 }
 
 @Database(entities = [Transaction_DB::class], version = 1, exportSchema = false)

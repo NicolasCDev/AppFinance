@@ -34,6 +34,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.text.SimpleDateFormat
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.*
 
 
 class MainActivity : ComponentActivity() {
@@ -124,9 +125,7 @@ fun readExcelFile(inputStream: InputStream): List<Transaction> {
         for (row in sheet) {
             if (row.rowNum == 0) continue // Ignore the first row (titles)
 
-            val dateCell = row.getCell(0).dateCellValue
-            val dateFormat = SimpleDateFormat("dd/MM/yy")
-            val date = dateFormat.format(dateCell)
+            val date = row.getCell(0).numericCellValue.toDouble()
             val category = row.getCell(1).stringCellValue.toString()
             val poste = row.getCell(2).stringCellValue.toString()
             val label = row.getCell(3).stringCellValue.toString()
@@ -184,4 +183,12 @@ fun addTransaction(listTransactions: List<Transaction>, viewModel: DataBase_View
         )
         viewModel.insertTransaction(transactionDB)
     }
+}
+
+fun DateFormattedText(date: Double?): String {
+    if (date == null) return "N/A"
+    val excelDateMilliSec = (date - 25569) * 86400 * 1000
+    val excelDate = Date(excelDateMilliSec.toLong())
+    val dateFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+    return dateFormat.format(excelDate)
 }

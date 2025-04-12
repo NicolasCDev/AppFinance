@@ -27,5 +27,6 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
             dbDAO.deleteAll()
         }
     }
+    val transactionsSortedByDate: LiveData<List<Transaction_DB>> = dbDAO.getTransactionsSortedByDate()
     val transactions: LiveData<List<Transaction_DB>> = dbDAO.getAll()
 }

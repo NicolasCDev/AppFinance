@@ -3,6 +3,7 @@ package com.example.appfinancetest
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -46,10 +47,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel = viewModel()) {
-    val transactionsViewModel by viewModel.transactions.observeAsState(emptyList())
-
+    val transactionsViewModel by viewModel.transactionsSortedByDate.observeAsState(emptyList())
     val context = LocalContext.current
-    val transactions = remember { mutableStateListOf<Transaction>() }
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     var showDialog by remember { mutableStateOf(false) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -64,18 +63,20 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            // Demander l'accès permanent au fichier sélectionné
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            try {
+                // Demander l'accès permanent au fichier sélectionné
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-            // Sauvegarder l'URI dans SharedPreferences
-            sharedPreferences.edit().putString("selected_file_uri", uri.toString()).apply()
-            selectedFileUri = uri.toString()
+                // Sauvegarder l'URI dans SharedPreferences
+                sharedPreferences.edit().putString("selected_file_uri", uri.toString()).apply()
+                selectedFileUri = uri.toString()
 
-            // Lire le fichier
-            context.contentResolver.openInputStream(it)?.let { inputStream ->
-                val transactionsTemp = readExcelFile(inputStream)
-                addTransaction(transactionsTemp,viewModel)
-                transactions.addAll(transactionsTemp)
+                // Lire le fichier
+                context.contentResolver.openInputStream(it)?.let { inputStream ->
+                    addTransaction(readExcelFile(inputStream),viewModel)
+                }
+            } catch (e: SecurityException) {
+                Log.e("FilePicker", "Erreur lors de l'accès au fichier : ${e.message}")
             }
         }
     }
@@ -84,24 +85,6 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
     ) { uri: Uri? ->
         uri?.let {
             context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                writeExcelFile(outputStream, transactions)
-            }
-        }
-    }
-
-    // Lors du lancement de l'effet, on vérifie si un fichier a été sélectionné
-    LaunchedEffect(selectedFileUri) {
-        if (selectedFileUri.isNotEmpty()) {
-            val uri = Uri.parse(selectedFileUri)
-
-            // Demander l'accès permanent au fichier
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-            // Ouvrir et lire le fichier après avoir pris la permission persistante
-            context.contentResolver.openInputStream(uri)?.let { inputStream ->
-                val transactionsTemp = readExcelFile(inputStream)
-                addTransaction(transactionsTemp,viewModel)
-                transactions.addAll(transactionsTemp)
             }
         }
     }
@@ -121,10 +104,11 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                     }
                     Spacer(modifier = Modifier.padding(10.dp))
                     Button(onClick = {
-                        transactions.clear() // Remplacer toutes les transactions existantes
-                        viewModel.deleteAllTransactions()
-                        filePickerLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) // On va chercher le fichier
-                        showDialog = false
+                        if (selectedFileUri.isNotEmpty()) {
+                            viewModel.deleteAllTransactions()
+                            filePickerLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) // On va chercher le fichier
+                            showDialog = false
+                        }
                     }) {
                         Text("Remplacer")
                     }
@@ -162,21 +146,50 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
 
                 // Liste des transactions
                 LazyColumn {
-                    items(transactionsViewModel) { transactionDB ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Text(transactionDB.date ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
-                            Text(transactionDB.categorie ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
-                            Text(transactionDB.poste ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
-                            Text(transactionDB.label ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
+                    if (transactionsViewModel.isEmpty()) {
+                        item {
                             Text(
-                                text = String.format("%.2f €", transactionDB.montant ?: 0.0),
-                                modifier = Modifier.weight(1f), fontSize = 11.sp,
+                                "Aucune transaction à afficher.",
+                                modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center
                             )
+                        }
+                    }else {
+                        items(transactionsViewModel) { transactionDB ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = DateFormattedText(transactionDB.date),
+                                    modifier = Modifier.weight(1f), fontSize = 11.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    transactionDB.categorie ?: "N/A",
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    transactionDB.poste ?: "N/A",
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    transactionDB.label ?: "N/A",
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = String.format("%.2f €", transactionDB.montant ?: 0.0),
+                                    modifier = Modifier.weight(1f), fontSize = 11.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
                 }
