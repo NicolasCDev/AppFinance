@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -34,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -125,6 +127,55 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
         )
     }
 
+    // Variables pour le filtrage
+    var dateFilter by remember { mutableStateOf("") }
+    var categoryFilter by remember { mutableStateOf("") }
+    var posteFilter by remember { mutableStateOf("") }
+    var labelFilter by remember { mutableStateOf("") }
+    var amountFilter by remember { mutableStateOf("") }
+
+    // Pagination
+    val pageSize = 50 // Nombre de transactions à afficher par "page"
+    var currentPage by remember { mutableStateOf(1) } // Numéro de la page actuelle
+    val transactionsToShow = remember { mutableStateListOf<Transaction_DB>() } // Liste des transactions à afficher
+
+    // LazyListState pour suivre le défilement
+    val listState = rememberLazyListState()
+
+    // Logique de pagination : charger les transactions lorsque l'on atteint la fin
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                if (visibleItems.isNotEmpty()) {
+                    val lastVisibleItemIndex = visibleItems.last().index
+                    if (lastVisibleItemIndex >= transactionsToShow.size - 2) {
+                        currentPage += 1
+                    }
+                }
+            }
+    }
+
+    // Charger les transactions (initialement et lors de la pagination)
+    LaunchedEffect(currentPage) {
+        val filteredTransactions = filterTransactions(
+            transactionsViewModel,
+            dateFilter,
+            categoryFilter,
+            posteFilter,
+            labelFilter,
+            amountFilter
+        )
+
+        // Pagination sécurisée
+        val startIndex = (currentPage - 1) * pageSize
+        val endIndex = minOf(startIndex + pageSize, filteredTransactions.size)
+
+        if (startIndex < endIndex) {
+            transactionsToShow.addAll(filteredTransactions.subList(startIndex, endIndex))
+        }
+    }
+
+
     Box(modifier = modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -145,7 +196,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                 }
 
                 // Liste des transactions
-                LazyColumn {
+                LazyColumn(state = listState) {
                     if (transactionsViewModel.isEmpty()) {
                         item {
                             Text(
@@ -155,7 +206,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                             )
                         }
                     }else {
-                        items(transactionsViewModel) { transactionDB ->
+                        items(transactionsToShow) { transactionDB ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -230,3 +281,4 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
         }
     }
 }
+
