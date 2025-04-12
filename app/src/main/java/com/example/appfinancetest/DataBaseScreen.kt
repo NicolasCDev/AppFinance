@@ -1,10 +1,8 @@
 package com.example.appfinancetest
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -29,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,21 +38,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun DataBaseScreen(modifier: Modifier = Modifier) {
+fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel = viewModel()) {
+    val transactionsViewModel by viewModel.transactions.observeAsState(emptyList())
+
     val context = LocalContext.current
     val transactions = remember { mutableStateListOf<Transaction>() }
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-
     var showDialog by remember { mutableStateOf(false) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
-
     val scope = rememberCoroutineScope()
 
     var selectedFileUri by remember {
@@ -74,7 +73,9 @@ fun DataBaseScreen(modifier: Modifier = Modifier) {
 
             // Lire le fichier
             context.contentResolver.openInputStream(it)?.let { inputStream ->
-                transactions.addAll(readExcelFile(inputStream))
+                val transactionsTemp = readExcelFile(inputStream)
+                addTransaction(transactionsTemp,viewModel)
+                transactions.addAll(transactionsTemp)
             }
         }
     }
@@ -98,7 +99,9 @@ fun DataBaseScreen(modifier: Modifier = Modifier) {
 
             // Ouvrir et lire le fichier après avoir pris la permission persistante
             context.contentResolver.openInputStream(uri)?.let { inputStream ->
-                transactions.addAll(readExcelFile(inputStream))
+                val transactionsTemp = readExcelFile(inputStream)
+                addTransaction(transactionsTemp,viewModel)
+                transactions.addAll(transactionsTemp)
             }
         }
     }
@@ -119,6 +122,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier) {
                     Spacer(modifier = Modifier.padding(10.dp))
                     Button(onClick = {
                         transactions.clear() // Remplacer toutes les transactions existantes
+                        viewModel.deleteAllTransactions()
                         filePickerLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) // On va chercher le fichier
                         showDialog = false
                     }) {
@@ -150,26 +154,26 @@ fun DataBaseScreen(modifier: Modifier = Modifier) {
                 // Entête du tableau
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     Text("Date", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    Text("Catégorie", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text("Category", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Text("Poste", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    Text("Libellé", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    Text("Montant", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text("Label", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text("Amount", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 }
 
                 // Liste des transactions
                 LazyColumn {
-                    items(transactions) { transaction ->
+                    items(transactionsViewModel) { transactionDB ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Text(transaction.date, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
-                            Text(transaction.categorie, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
-                            Text(transaction.poste, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
-                            Text(transaction.label, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
+                            Text(transactionDB.date ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
+                            Text(transactionDB.categorie ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
+                            Text(transactionDB.poste ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
+                            Text(transactionDB.label ?: "N/A", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontSize = 11.sp)
                             Text(
-                                text = String.format("%.2f €", transaction.montant),
+                                text = String.format("%.2f €", transactionDB.montant ?: 0.0),
                                 modifier = Modifier.weight(1f), fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
