@@ -27,6 +27,9 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
             dbDAO.deleteAll()
         }
     }
+    suspend fun getPagedTransactions(limit: Int, offset: Int): List<Transaction_DB> {
+        return dbDAO.getTransactionsPaged(limit, offset)
+    }
     val transactionsSortedByDate: LiveData<List<Transaction_DB>> = dbDAO.getTransactionsSortedByDate()
     val transactions: LiveData<List<Transaction_DB>> = dbDAO.getAll()
 }

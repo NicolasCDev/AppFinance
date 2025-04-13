@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Settings
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.text.SimpleDateFormat
@@ -52,6 +53,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
+    val viewModel: DataBase_ViewModel = viewModel() // <- une seule instance ici
     var selectedItem by remember { mutableIntStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
     val items = listOf("Tableau de bord", "Investment", "Patrimonial", "DataBase")
@@ -94,10 +96,10 @@ fun MainScreen() {
         }
     ) { innerPadding ->
         when (selectedItem) {
-            0 -> DashboardScreen(modifier = Modifier.padding(innerPadding))
-            1 -> InvestissementScreen(modifier = Modifier.padding(innerPadding))
-            2 -> PatrimonialScreen(modifier = Modifier.padding(innerPadding))
-            3 -> DataBaseScreen(modifier = Modifier.padding(innerPadding))
+            0 -> DashboardScreen(modifier = Modifier.padding(innerPadding), viewModel = viewModel)
+            1 -> InvestmentScreen(modifier = Modifier.padding(innerPadding), viewModel = viewModel)
+            2 -> PatrimonialScreen(modifier = Modifier.padding(innerPadding), viewModel = viewModel)
+            3 -> DataBaseScreen(modifier = Modifier.padding(innerPadding), viewModel = viewModel)
             else -> {
                 ErrorScreen(modifier = Modifier.padding(innerPadding))
             }

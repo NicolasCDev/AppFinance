@@ -20,9 +20,14 @@ fun readExcelFile(inputStream: InputStream): List<Transaction> {
             val poste = row.getCell(2).stringCellValue.toString()
             val label = row.getCell(3).stringCellValue.toString()
             val amount = row.getCell(4).numericCellValue.toDouble()
+            val variation = when (category) {
+                "Investissement", "Charge" -> -amount
+                "Revenus", "Gain investissement" -> amount
+                else -> 0.0
+            }
 
             // Ajouter une nouvelle transaction à la liste
-            transactions.add(Transaction(date, category, poste, label, amount))
+            transactions.add(Transaction(date, category, poste, label, amount, variation))
         }
     } catch (e: Exception) {
         e.printStackTrace() // Gérer les erreurs de lecture de fichier
@@ -44,6 +49,7 @@ fun writeExcelFile(outputStream: OutputStream, transactions: List<Transaction>) 
     headerRow.createCell(2).setCellValue("Poste")
     headerRow.createCell(3).setCellValue("Libellé")
     headerRow.createCell(4).setCellValue("Montant")
+    headerRow.createCell(5).setCellValue("Variation")
 
     // Données des transactions
     for ((index, transaction) in transactions.withIndex()) {
@@ -53,6 +59,7 @@ fun writeExcelFile(outputStream: OutputStream, transactions: List<Transaction>) 
         row.createCell(2).setCellValue(transaction.poste)
         row.createCell(3).setCellValue(transaction.label)
         row.createCell(4).setCellValue(transaction.montant)
+        row.createCell(5).setCellValue(transaction.variation)
     }
 
     // Écriture dans le OutputStream
@@ -69,7 +76,8 @@ fun addTransaction(listTransactions: List<Transaction>, viewModel: DataBase_View
             categorie = transaction.categorie,
             poste = transaction.poste,
             label = transaction.label,
-            montant = transaction.montant
+            montant = transaction.montant,
+            variation = transaction.variation
         )
         viewModel.insertTransaction(transactionDB)
     }

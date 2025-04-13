@@ -10,10 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun PatrimonialScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel) {
+fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)  {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Greeting(name = "Patrimoine")
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Greeting(name = "Tableau de bord")
         }
     }
 }

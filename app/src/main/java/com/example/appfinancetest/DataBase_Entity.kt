@@ -19,6 +19,7 @@ data class Transaction_DB(
     @ColumnInfo(name = "poste") val poste: String?,
     @ColumnInfo(name = "label") val label: String?,
     @ColumnInfo(name = "montant") val montant: Double?,
+    @ColumnInfo(name = "variation") val variation: Double?,
 )
 
 @Dao
@@ -34,6 +35,10 @@ interface TransactionDao {
 
     @Query("SELECT * FROM Transaction_DB ORDER BY date DESC")
     fun getTransactionsSortedByDate(): LiveData<List<Transaction_DB>>
+
+    @Query("SELECT * FROM Transaction_DB ORDER BY date DESC LIMIT :limit OFFSET :offset")
+    suspend fun getTransactionsPaged(limit: Int, offset: Int): List<Transaction_DB>
+
 }
 
 @Database(entities = [Transaction_DB::class], version = 1, exportSchema = false)

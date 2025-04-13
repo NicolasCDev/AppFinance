@@ -45,11 +45,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel = viewModel()) {
-    val transactionsViewModel by viewModel.transactionsSortedByDate.observeAsState(emptyList())
+fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel) {
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     var showDialog by remember { mutableStateOf(false) }
@@ -75,7 +75,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
 
                 // Lire le fichier
                 context.contentResolver.openInputStream(it)?.let { inputStream ->
-                    addTransaction(readExcelFile(inputStream),viewModel)
+                    addTransaction(readExcelFile(inputStream), viewModel)
                 }
             } catch (e: SecurityException) {
                 Log.e("FilePicker", "Erreur lors de l'accès au fichier : ${e.message}")
@@ -135,47 +135,70 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
     var amountFilter by remember { mutableStateOf("") }
 
     // Pagination
-    val pageSize = 50 // Nombre de transactions à afficher par "page"
+    val pageSize = 100 // Nombre de transactions à afficher par "page"
+    val beforeRefresh = 20 // Nombre de transactions restant à afficher avant le refresh
     var currentPage by remember { mutableStateOf(1) } // Numéro de la page actuelle
     val transactionsToShow = remember { mutableStateListOf<Transaction_DB>() } // Liste des transactions à afficher
 
     // LazyListState pour suivre le défilement
     val listState = rememberLazyListState()
+    // Flag pour vérifier si c'est le premier chargement
+    var isFirstLoad by remember { mutableStateOf(true) }
 
     // Logique de pagination : charger les transactions lorsque l'on atteint la fin
     LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                if (visibleItems.isNotEmpty()) {
-                    val lastVisibleItemIndex = visibleItems.last().index
-                    if (lastVisibleItemIndex >= transactionsToShow.size - 2) {
-                        currentPage += 1
-                    }
-                }
+        delay(200) // Délai pour éviter de charger trop rapidement
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        }.collect { lastVisibleItemIndex ->
+            if (lastVisibleItemIndex != null &&
+                lastVisibleItemIndex >= transactionsToShow.size - beforeRefresh
+            ) {
+                Log.d("DataBaseScreen", "Next page")
+                currentPage += 1
             }
-    }
-
-    // Charger les transactions (initialement et lors de la pagination)
-    LaunchedEffect(currentPage) {
-        val filteredTransactions = filterTransactions(
-            transactionsViewModel,
-            dateFilter,
-            categoryFilter,
-            posteFilter,
-            labelFilter,
-            amountFilter
-        )
-
-        // Pagination sécurisée
-        val startIndex = (currentPage - 1) * pageSize
-        val endIndex = minOf(startIndex + pageSize, filteredTransactions.size)
-
-        if (startIndex < endIndex) {
-            transactionsToShow.addAll(filteredTransactions.subList(startIndex, endIndex))
         }
     }
+    // Charger les transactions (initialement et lors de la pagination)
 
+    LaunchedEffect(currentPage) {
+        scope.launch {
+            if (isFirstLoad) {
+                Log.d("DataBaseScreen", "First Load")
+                val newTransactions = viewModel.getPagedTransactions(pageSize, 0)
 
+                // Si on veut filtrer après chargement depuis la DB :
+                val filteredTransactions = filterTransactions(
+                    newTransactions,
+                    dateFilter,
+                    categoryFilter,
+                    posteFilter,
+                    labelFilter,
+                    amountFilter
+                )
+                transactionsToShow.clear() // Réinitialiser la liste avant d'ajouter
+                transactionsToShow.addAll(filteredTransactions)
+                // Une fois le premier chargement effectué, changer l'état
+                isFirstLoad = false
+            } else {
+                Log.d("DataBaseScreen", "Not first Load")
+                val offset = (currentPage - 1) * pageSize
+                val newTransactions = viewModel.getPagedTransactions(pageSize, offset)
+                // Appliquer les filtres
+                val filteredTransactions = filterTransactions(
+                    newTransactions,
+                    dateFilter,
+                    categoryFilter,
+                    posteFilter,
+                    labelFilter,
+                    amountFilter
+                )
+
+                transactionsToShow.addAll(filteredTransactions)
+
+            }
+        }
+    }
     Box(modifier = modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -185,6 +208,12 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(16.dp)
                 )
+                Text(
+                    text = "NBTransactions : ${transactionsToShow.size}",
+                    modifier = Modifier.padding(16.dp),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
 
                 // Entête du tableau
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -193,11 +222,12 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                     Text("Poste", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Text("Label", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Text("Amount", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text("Variation", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 }
 
                 // Liste des transactions
                 LazyColumn(state = listState) {
-                    if (transactionsViewModel.isEmpty()) {
+                    if (transactionsToShow.isEmpty()) {
                         item {
                             Text(
                                 "Aucune transaction à afficher.",
@@ -205,7 +235,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                                 textAlign = TextAlign.Center
                             )
                         }
-                    }else {
+                    } else {
                         items(transactionsToShow) { transactionDB ->
                             Row(
                                 modifier = Modifier
@@ -240,6 +270,11 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
                                     modifier = Modifier.weight(1f), fontSize = 11.sp,
                                     textAlign = TextAlign.Center
                                 )
+                                Text(
+                                    text = String.format("%.2f €", transactionDB.variation ?: 0.0),
+                                    modifier = Modifier.weight(1f), fontSize = 11.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
@@ -269,7 +304,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier,viewModel: DataBase_ViewModel =
             FloatingActionButton(
                 onClick = {
                     scope.launch {
-                        if(selectedFileUri.isNotEmpty()){
+                        if (selectedFileUri.isNotEmpty()) {
                             showDialog = true
                         }
                     }
