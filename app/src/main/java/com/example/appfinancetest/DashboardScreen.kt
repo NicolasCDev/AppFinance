@@ -1,6 +1,5 @@
 package com.example.appfinancetest
 
-import SoldeLineChart
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +21,6 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
             modifier = Modifier.padding(16.dp)
         )
 
-        SoldeLineChart(viewModel = viewModel)
+        SoldeChartWithSlider(viewModel = viewModel)
     }
 }
