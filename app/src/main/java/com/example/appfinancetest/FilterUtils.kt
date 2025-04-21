@@ -1,13 +1,13 @@
 package com.example.appfinancetest
 
 fun filterTransactions(
-    transactions: List<Transaction_DB>,
+    transactions: List<TransactionDB>,
     dateQuery: String,
     categoryQuery: String,
     posteQuery: String,
     labelQuery: String,
     montantQuery: String
-): List<Transaction_DB> {
+): List<TransactionDB> {
     return transactions.filter {
         (dateQuery.isBlank() || DateFormattedText(it.date).contains(dateQuery, ignoreCase = true)) &&
                 (categoryQuery.isBlank() || it.categorie?.contains(categoryQuery, ignoreCase = true) == true) &&

@@ -6,5 +6,6 @@ class Transaction(
     val poste: String,
     val label: String,
     val montant: Double,
-    val variation : Double
+    val variation : Double,
+    val solde : Double
 )

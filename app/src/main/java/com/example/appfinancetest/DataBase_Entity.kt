@@ -11,7 +11,7 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 
 @Entity
-data class Transaction_DB(
+data class TransactionDB(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     @ColumnInfo(name = "date") val date: Double?,
@@ -20,28 +20,34 @@ data class Transaction_DB(
     @ColumnInfo(name = "label") val label: String?,
     @ColumnInfo(name = "montant") val montant: Double?,
     @ColumnInfo(name = "variation") val variation: Double?,
+    @ColumnInfo(name = "solde") val solde: Double?,
 )
 
 @Dao
 interface TransactionDao {
-    @Query("SELECT * FROM Transaction_DB")
-    fun getAll(): LiveData<List<Transaction_DB>>
+    @Query("SELECT * FROM TransactionDB")
+    fun getAll(): LiveData<List<TransactionDB>>
 
     @Insert
-    fun insertAll(vararg transactions: Transaction_DB)
+    fun insertAll(vararg transactions: TransactionDB)
 
-    @Query("DELETE FROM Transaction_DB")
+    @Query("DELETE FROM TransactionDB")
     fun deleteAll()
 
-    @Query("SELECT * FROM Transaction_DB ORDER BY date DESC")
-    fun getTransactionsSortedByDate(): LiveData<List<Transaction_DB>>
+    @Query("SELECT * FROM TransactionDB ORDER BY date DESC")
+    fun getTransactionsSortedByDate(): List<TransactionDB>
 
-    @Query("SELECT * FROM Transaction_DB ORDER BY date DESC LIMIT :limit OFFSET :offset")
-    suspend fun getTransactionsPaged(limit: Int, offset: Int): List<Transaction_DB>
+    @Query("SELECT * FROM TransactionDB ORDER BY date ASC")
+    fun getTransactionsSortedByDateASC(): List<TransactionDB>
 
+    @Query("SELECT * FROM TransactionDB ORDER BY date DESC LIMIT :limit OFFSET :offset")
+    suspend fun getTransactionsPaged(limit: Int, offset: Int): List<TransactionDB>
+
+    @Query("UPDATE TransactionDB SET solde = :newSolde WHERE id = :transactionId")
+    fun updateSolde(transactionId: Int, newSolde: Double)
 }
 
-@Database(entities = [Transaction_DB::class], version = 1, exportSchema = false)
+@Database(entities = [TransactionDB::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
 }

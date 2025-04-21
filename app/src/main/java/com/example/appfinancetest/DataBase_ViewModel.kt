@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class DataBase_ViewModel(application: Application) : AndroidViewModel(application) {
     private val transactionDB = Room.databaseBuilder(
@@ -16,7 +17,7 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
         "database-name"
     ).build()
     private val dbDAO = transactionDB.transactionDao()
-    fun insertTransaction(transaction: Transaction_DB) {
+    suspend fun insertTransaction(transaction: TransactionDB) {
         viewModelScope.launch(Dispatchers.IO) {
             dbDAO.insertAll(transaction)
         }
@@ -27,9 +28,18 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
             dbDAO.deleteAll()
         }
     }
-    suspend fun getPagedTransactions(limit: Int, offset: Int): List<Transaction_DB> {
+    suspend fun updateSolde(transactionId: Int, newSolde: Double) {
+        viewModelScope.launch(Dispatchers.IO) {
+            dbDAO.updateSolde(transactionId, newSolde)
+        }
+    }
+    suspend fun getPagedTransactions(limit: Int, offset: Int): List<TransactionDB> {
         return dbDAO.getTransactionsPaged(limit, offset)
     }
-    val transactionsSortedByDate: LiveData<List<Transaction_DB>> = dbDAO.getTransactionsSortedByDate()
-    val transactions: LiveData<List<Transaction_DB>> = dbDAO.getAll()
+    // Appel suspendu pour récupérer les transactions
+    suspend fun getTransactionsSortedByDateASC(): List<TransactionDB> {
+        return withContext(Dispatchers.IO) {
+            dbDAO.getTransactionsSortedByDateASC()
+        }
+    }
 }

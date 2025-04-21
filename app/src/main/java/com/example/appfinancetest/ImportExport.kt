@@ -1,10 +1,18 @@
 package com.example.appfinancetest
 
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.InputStream
 import java.io.OutputStream
+
 
 fun readExcelFile(inputStream: InputStream): List<Transaction> {
     val transactions = mutableListOf<Transaction>()
@@ -27,7 +35,7 @@ fun readExcelFile(inputStream: InputStream): List<Transaction> {
             }
 
             // Ajouter une nouvelle transaction à la liste
-            transactions.add(Transaction(date, category, poste, label, amount, variation))
+            transactions.add(Transaction(date, category, poste, label, amount, variation, solde = 0.0))
         }
     } catch (e: Exception) {
         e.printStackTrace() // Gérer les erreurs de lecture de fichier
@@ -69,16 +77,42 @@ fun writeExcelFile(outputStream: OutputStream, transactions: List<Transaction>) 
     workbook.close() // Fermer le workbook pour libérer les ressources
 }
 
-fun addTransaction(listTransactions: List<Transaction>, viewModel: DataBase_ViewModel){
-    for (transaction in listTransactions) {
-        val transactionDB = Transaction_DB(
-            date = transaction.date,
-            categorie = transaction.categorie,
-            poste = transaction.poste,
-            label = transaction.label,
-            montant = transaction.montant,
-            variation = transaction.variation
-        )
-        viewModel.insertTransaction(transactionDB)
+suspend fun addTransaction(listTransactions: List<Transaction>, viewModel: DataBase_ViewModel) {
+    viewModel.viewModelScope.launch {
+        // Utiliser `async` pour insérer chaque transaction dans une coroutine séparée
+        val insertJobs =
+            listTransactions.map { transaction: Transaction ->
+                // Lancer une coroutine pour insérer chaque transaction
+                async {
+                    val transactionDB = TransactionDB(
+                        date = transaction.date,
+                        categorie = transaction.categorie,
+                        poste = transaction.poste,
+                        label = transaction.label,
+                        montant = transaction.montant,
+                        variation = transaction.variation,
+                        solde = transaction.solde
+                    )
+                    // Insérer la transaction dans la base de données
+                    viewModel.insertTransaction(transactionDB)
+                }
+            }
+
+        // Attendre que toutes les insertions soient terminées
+        insertJobs.awaitAll()
+        delay(2000)
+        // Une fois toutes les transactions insérées, on calcule les soldes
+        calculateRunningBalance(viewModel)
+    }
+}
+
+suspend fun calculateRunningBalance(viewModel: DataBase_ViewModel) {
+    // Récupérer toutes les transactions triées par date
+    val existingTransactions = viewModel.getTransactionsSortedByDateASC()
+    var solde = 0.0
+    existingTransactions.forEach { transaction ->
+        solde += transaction.variation ?: 0.0
+        // Mise à jour du solde pour chaque transaction
+        viewModel.updateSolde(transaction.id, solde)
     }
 }

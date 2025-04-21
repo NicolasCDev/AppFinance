@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -29,7 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,18 +45,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel) {
+    // Saving context
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    var showDialog by remember { mutableStateOf(false) }
-    var isDropdownExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+
+    var showDialog by remember { mutableStateOf(false) }
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+    // Variables pour le filtrage
+    var dateFilter by remember { mutableStateOf("") }
+    var categoryFilter by remember { mutableStateOf("") }
+    var posteFilter by remember { mutableStateOf("") }
+    var labelFilter by remember { mutableStateOf("") }
+    var amountFilter by remember { mutableStateOf("") }
+
+    // Pagination
+    val pageSize = 100 // Nombre de transactions à afficher par "page"
+    val beforeRefresh = 20 // Nombre de transactions restant à afficher avant le refresh
+    var currentPage by remember { mutableStateOf(1) } // Numéro de la page actuelle
+    val transactionsToShow = remember { mutableStateListOf<TransactionDB>() } // Liste des transactions à afficher
+
+    // LazyListState pour suivre le défilement
+    val listState = rememberLazyListState()
+    // Flag pour vérifier si c'est le premier chargement
+    var isFirstLoad by remember { mutableStateOf(true) }
     var selectedFileUri by remember {
         mutableStateOf(sharedPreferences.getString("selected_file_uri", "") ?: "")
     }
@@ -75,7 +97,13 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
 
                 // Lire le fichier
                 context.contentResolver.openInputStream(it)?.let { inputStream ->
-                    addTransaction(readExcelFile(inputStream), viewModel)
+                    val file = readExcelFile(inputStream)
+                    (context as? ComponentActivity)?.lifecycleScope?.launch {
+                        addTransaction(file, viewModel)
+                        refreshTrigger++
+                        isFirstLoad = true
+                        currentPage = 1
+                    }
                 }
             } catch (e: SecurityException) {
                 Log.e("FilePicker", "Erreur lors de l'accès au fichier : ${e.message}")
@@ -127,23 +155,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
         )
     }
 
-    // Variables pour le filtrage
-    var dateFilter by remember { mutableStateOf("") }
-    var categoryFilter by remember { mutableStateOf("") }
-    var posteFilter by remember { mutableStateOf("") }
-    var labelFilter by remember { mutableStateOf("") }
-    var amountFilter by remember { mutableStateOf("") }
 
-    // Pagination
-    val pageSize = 100 // Nombre de transactions à afficher par "page"
-    val beforeRefresh = 20 // Nombre de transactions restant à afficher avant le refresh
-    var currentPage by remember { mutableStateOf(1) } // Numéro de la page actuelle
-    val transactionsToShow = remember { mutableStateListOf<Transaction_DB>() } // Liste des transactions à afficher
-
-    // LazyListState pour suivre le défilement
-    val listState = rememberLazyListState()
-    // Flag pour vérifier si c'est le premier chargement
-    var isFirstLoad by remember { mutableStateOf(true) }
 
     // Logique de pagination : charger les transactions lorsque l'on atteint la fin
     LaunchedEffect(listState) {
@@ -161,7 +173,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
     }
     // Charger les transactions (initialement et lors de la pagination)
 
-    LaunchedEffect(currentPage) {
+    LaunchedEffect(currentPage, refreshTrigger) {
         scope.launch {
             if (isFirstLoad) {
                 Log.d("DataBaseScreen", "First Load")
@@ -223,6 +235,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
                     Text("Label", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Text("Amount", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     Text("Variation", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text("Solde", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 }
 
                 // Liste des transactions
@@ -275,6 +288,11 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
                                     modifier = Modifier.weight(1f), fontSize = 11.sp,
                                     textAlign = TextAlign.Center
                                 )
+                                Text(
+                                    text = String.format("%.2f €", transactionDB.solde ?: 0.0),
+                                    modifier = Modifier.weight(1f), fontSize = 11.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
@@ -282,9 +300,9 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
             }
         }
 
-        // Bouton pour choisir un fichier Excel
+        // Buttons for Excel management
         Column(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
-            // Bouton d'export
+            // Floating action button in order to export transactions list
             AssistChip(
                 onClick = {
                     exportFileLauncher.launch("export.xlsx")
@@ -300,12 +318,12 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
                 modifier = Modifier.padding(bottom = 10.dp),
                 colors = AssistChipDefaults.assistChipColors(leadingIconContentColor = MaterialTheme.colorScheme.primary)
             )
-            // Floating action button pour ouvrir le fichier Excel
+            // Floating action button in order to change transactions list
             FloatingActionButton(
                 onClick = {
                     scope.launch {
                         if (selectedFileUri.isNotEmpty()) {
-                            showDialog = true
+                            showDialog = true // Opening the adding transaction screen
                         }
                     }
                 },

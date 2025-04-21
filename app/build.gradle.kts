@@ -64,4 +64,5 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.runtime.livedata)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.mpandroidchart)
 }
