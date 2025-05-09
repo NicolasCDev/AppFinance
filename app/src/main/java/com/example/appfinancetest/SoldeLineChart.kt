@@ -1,15 +1,18 @@
 package com.example.appfinancetest
 
+import android.app.DatePickerDialog
 import android.content.Context
 import android.graphics.Color
 import android.icu.text.SimpleDateFormat
 import android.icu.util.TimeZone
 import android.widget.TextView
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -25,9 +28,11 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import java.util.*
 import kotlin.math.roundToInt
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
+import kotlinx.coroutines.flow.combine
 
 @Composable
 fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
@@ -86,14 +91,22 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
             chart.xAxis.apply {
                 position = XAxis.XAxisPosition.BOTTOM
                 granularity = 1f
-                valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        val date = Date(value.toLong())  // Conversion en date
-                        val format = SimpleDateFormat("dd/MM/yy", Locale.getDefault())  // Format de la date
-                        return format.format(date)  // Retourner la date formatée
-                    }
-                }
                 textColor = Color.WHITE
+            }
+            val dateRangeInDays = endDate - startDate
+            val useMonthFormat = dateRangeInDays > 365
+
+            val dateFormatter = if (useMonthFormat) {
+                SimpleDateFormat("MMM yy", Locale.getDefault())
+            } else {
+                SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+            }
+
+            chart.xAxis.valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val date = Date(value.toLong())
+                    return dateFormatter.format(date)
+                }
             }
 
             // Mise à jour de l'axe Y et de la légende
@@ -112,30 +125,96 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
 }
 @Composable
 fun SoldeChartWithSlider(viewModel: DataBase_ViewModel) {
-    // Valeurs de dates min et max (à adapter si tu veux dynamiquement)
-    val minDate = 44000f // Ex: 01/01/2020
-    val maxDate = 46000f // Ex: 31/12/2025
+    val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
+        value = viewModel.getTransactionsSortedByDateASC()
+    }
 
+    val validDates = transactions.mapNotNull { it.date }
+    if (validDates.isEmpty()) {
+        Text("Aucune donnée disponible.")
+        return
+    }
+
+    val minDate = validDates.minOrNull()!!.toFloat()
+    val maxDate = validDates.maxOrNull()!!.toFloat()
+    val context = LocalContext.current
+    val prefs = remember { DataStorage(context) }
+
+    // Nouvel état pour signaler que les prefs sont chargées
+    var isPrefsLoaded by remember { mutableStateOf(false) }
     var range by remember { mutableStateOf(minDate..maxDate) }
 
+    LaunchedEffect(Unit) {
+        prefs.startDateFlow.combine(prefs.endDateFlow) { start, end ->
+            start to end
+        }.collect { (savedStart, savedEnd) ->
+            if (savedStart != null && savedEnd != null) {
+                range = savedStart..savedEnd
+            } else {
+                range = minDate..maxDate
+            }
+            isPrefsLoaded = true
+        }
+    }
+
+    // Sauvegarde uniquement si prefs sont chargées
+    LaunchedEffect(range, isPrefsLoaded) {
+        if (isPrefsLoaded) {
+            prefs.saveStartDate(range.start)
+            prefs.saveEndDate(range.endInclusive)
+        }
+    }
+
+    // Ne pas afficher tant que les prefs ne sont pas prêtes
+    if (!isPrefsLoaded) {
+        Text("Chargement de la plage de dates...")
+        return
+    }
+
+    // Ensuite on peut afficher normalement
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
-            text = "Plage de dates : ${range.start.roundToInt()} à ${range.endInclusive.roundToInt()}",
+            text = "Plage de dates : ${DateFormattedText(range.start.roundToInt().toDouble())} à ${DateFormattedText(range.endInclusive.roundToInt().toDouble())}",
             style = MaterialTheme.typography.labelLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
+        // Le reste ne change pas
+        Button(onClick = {
+            val calendar = Calendar.getInstance().apply {
+                timeInMillis = ((range.start - 25569) * 86400 * 1000).toLong()
+            }
+
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    val selectedCalendar = Calendar.getInstance().apply {
+                        set(year, month, dayOfMonth)
+                    }
+                    val selectedExcelDate = (selectedCalendar.timeInMillis / 86400000f) + 25569f
+                    if (selectedExcelDate < range.endInclusive) {
+                        range = selectedExcelDate..range.endInclusive
+                    }
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }) {
+            Text("Choisir date de début")
+        }
+
         RangeSlider(
             value = range,
             onValueChange = { range = it },
             valueRange = minDate..maxDate,
-            steps = ((maxDate - minDate) / 10).toInt(), // Optionnel pour un pas visible
+            steps = ((maxDate - minDate) / 10).toInt(),
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        // Affichage du graphique avec les dates choisies
+
         SoldeLineChart(
             viewModel = viewModel,
             startDate = range.start.toDouble(),
@@ -143,6 +222,7 @@ fun SoldeChartWithSlider(viewModel: DataBase_ViewModel) {
         )
     }
 }
+
 
 class CustomMarkerView(
     context: Context,

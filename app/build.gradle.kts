@@ -65,4 +65,5 @@ dependencies {
     implementation(libs.androidx.compose.runtime.livedata)
     ksp(libs.androidx.room.compiler)
     implementation(libs.mpandroidchart)
+    implementation(libs.androidx.datastore.datastore.preferences)
 }
