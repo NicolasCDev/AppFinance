@@ -25,7 +25,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
     var selectedCategory by remember { mutableStateOf<String?>(null) }
 
     val filteredTransactions = transactions.filter {
-        it.date != null && it.montant != null && it.categorie != null &&
+        it.date != null && it.amount != null && it.categorie != null &&
                 it.date in startDate..endDate
     }
 
@@ -33,7 +33,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
         // Global view: group by category
         filteredTransactions
             .groupBy { it.categorie }
-            .mapValues { entry -> entry.value.sumOf { it.montant ?: 0.0 } }
+            .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
             .map { (category, total) ->
                 PieEntry(total.toFloat(), category)
             }
@@ -42,7 +42,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
         val posteTotals = filteredTransactions
             .filter { it.categorie == selectedCategory && it.poste != null }
             .groupBy { it.poste!! }
-            .mapValues { entry -> entry.value.sumOf { it.montant ?: 0.0 } }
+            .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
         val sortedPostes = posteTotals.entries.sortedByDescending { it.value }
         val top8= sortedPostes.take(8)
@@ -173,7 +173,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
         val previousStart = startDate - periodDuration
         val previousEnd = startDate - 1
         val previousTransactions = transactions.filter {
-            it.date != null && it.montant != null && it.categorie != null &&
+            it.date != null && it.amount != null && it.categorie != null &&
                     it.date in previousStart..previousEnd
         }
 
@@ -187,7 +187,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
                 // Global view: group by category
                 filteredTransactions
                     .groupBy { it.categorie }
-                    .mapValues { entry -> entry.value.sumOf { it.montant ?: 0.0 } }
+                    .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
                     .map { (category, total) ->
                         PieEntry(total.toFloat(), category)
                     }
@@ -196,7 +196,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
                 val posteTotals = filteredTransactions
                     .filter { it.categorie == selectedCategory && it.poste != null }
                     .groupBy { it.poste!! }
-                    .mapValues { entry -> entry.value.sumOf { it.montant ?: 0.0 } }
+                    .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
                 val sortedPostes = posteTotals.entries.sortedByDescending { it.value }
                 val top5= sortedPostes.take(5)
@@ -218,12 +218,12 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
             val previousMap: Map<String, Double> = if (selectedCategory == null) {
                 previousTransactions
                     .groupBy { it.categorie ?: "Inconnu" }
-                    .mapValues { (_, list) -> list.sumOf { it.montant ?: 0.0 } }
+                    .mapValues { (_, list) -> list.sumOf { it.amount ?: 0.0 } }
             } else {
                 previousTransactions
                     .filter { it.categorie == selectedCategory && it.poste != null }
                     .groupBy { it.poste ?: "Inconnu" }
-                    .mapValues { (_, list) -> list.sumOf { it.montant ?: 0.0 } }
+                    .mapValues { (_, list) -> list.sumOf { it.amount ?: 0.0 } }
             }
 
             val total = tableEntries.sumOf { it.value.toDouble() }

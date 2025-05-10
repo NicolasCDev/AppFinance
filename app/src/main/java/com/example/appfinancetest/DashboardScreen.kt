@@ -1,28 +1,22 @@
 package com.example.appfinancetest
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Text
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -67,7 +61,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
     var isPrefsLoaded by remember { mutableStateOf(false) }
     var range by remember { mutableStateOf(minDate..maxDate) }
 
-    // Charger les préférences
+    // Load preferences
     LaunchedEffect(Unit) {
         prefs.startDateFlow.combine(prefs.endDateFlow) { start, end -> start to end }
             .collect { (savedStart, savedEnd) ->
@@ -102,13 +96,11 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
                     Text(
                         text = "Dashboard",
                         color = Color.White, // Text color
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top =18.dp)
                     )
                 },
                 modifier = Modifier,
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.Blue // Background color
-                )
             )
         },
         content = { paddingValues ->

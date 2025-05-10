@@ -5,7 +5,8 @@ class Transaction(
     val categorie: String,
     val poste: String,
     val label: String,
-    val montant: Double,
+    val amount: Double,
     val variation : Double,
-    val solde : Double
+    val solde : Double,
+    val idInvest : String?
 )

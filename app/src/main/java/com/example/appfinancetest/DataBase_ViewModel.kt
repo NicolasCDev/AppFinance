@@ -15,7 +15,10 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
         application.applicationContext,
         AppDatabase::class.java,
         "database-name"
-    ).build()
+    )
+    .fallbackToDestructiveMigration(false)
+    .build()
+
     private val dbDAO = transactionDB.transactionDao()
     suspend fun insertTransaction(transaction: TransactionDB) {
         viewModelScope.launch(Dispatchers.IO) {

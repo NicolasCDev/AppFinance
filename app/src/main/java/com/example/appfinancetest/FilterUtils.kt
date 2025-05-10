@@ -13,6 +13,6 @@ fun filterTransactions(
                 (categoryQuery.isBlank() || it.categorie?.contains(categoryQuery, ignoreCase = true) == true) &&
                 (posteQuery.isBlank() || it.poste?.contains(posteQuery, ignoreCase = true) == true) &&
                 (labelQuery.isBlank() || it.label?.contains(labelQuery, ignoreCase = true) == true) &&
-                (montantQuery.isBlank() || it.montant.toString().contains(montantQuery))
+                (montantQuery.isBlank() || it.amount.toString().contains(montantQuery))
     }
 }

@@ -18,9 +18,10 @@ data class TransactionDB(
     @ColumnInfo(name = "categorie") val categorie: String?,
     @ColumnInfo(name = "poste") val poste: String?,
     @ColumnInfo(name = "label") val label: String?,
-    @ColumnInfo(name = "montant") val montant: Double?,
+    @ColumnInfo(name = "amount") val amount: Double?,
     @ColumnInfo(name = "variation") val variation: Double?,
     @ColumnInfo(name = "solde") val solde: Double?,
+    @ColumnInfo(name = "idInvest") val idInvest: String?
 )
 
 @Dao
@@ -29,7 +30,7 @@ interface TransactionDao {
     fun getAll(): LiveData<List<TransactionDB>>
 
     @Insert
-    fun insertAll(vararg transactions: TransactionDB)
+    suspend fun insertAll(vararg transactions: TransactionDB)
 
     @Query("DELETE FROM TransactionDB")
     fun deleteAll()
