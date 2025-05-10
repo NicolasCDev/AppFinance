@@ -2,6 +2,8 @@ package com.example.appfinancetest
 
 import android.util.Log
 import android.os.Bundle
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Settings
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.poi.ss.usermodel.Workbook
@@ -43,6 +46,13 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Hide system bars through immersive mode
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        window.insetsController?.apply {
+            hide(WindowInsets.Type.systemBars())
+            systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         enableEdgeToEdge()
         setContent {
             AppFinanceTestTheme {
@@ -54,7 +64,7 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 fun MainScreen() {
-    val viewModel: DataBase_ViewModel = viewModel() // <- une seule instance ici
+    val viewModel: DataBase_ViewModel = viewModel() // <- the only instance is here
     var selectedItem by remember { mutableIntStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
     val items = listOf("Tableau de bord", "Investment", "Patrimonial", "DataBase")

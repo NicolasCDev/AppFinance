@@ -12,7 +12,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Text
+import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.DatePickerState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +29,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
+import androidx.compose.material3.rememberDateRangePickerState
+import androidx.compose.material3.DateRangePicker
 import com.github.mikephil.charting.formatter.ValueFormatter
 import java.util.*
 import kotlin.math.roundToInt
@@ -125,105 +131,6 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
 
     )
 }
-@Composable
-fun SoldeChartWithSlider(viewModel: DataBase_ViewModel) {
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
-        value = viewModel.getTransactionsSortedByDateASC()
-    }
-
-    val validDates = transactions.mapNotNull { it.date }
-    if (validDates.isEmpty()) {
-        Text("Aucune donnée disponible.")
-        return
-    }
-
-    val minDate = validDates.minOrNull()!!.toFloat()
-    val maxDate = validDates.maxOrNull()!!.toFloat()
-    val context = LocalContext.current
-    val activity = context as FragmentActivity
-    val prefs = remember { DataStorage(context) }
-
-    // Nouvel état pour signaler que les prefs sont chargées
-    var isPrefsLoaded by remember { mutableStateOf(false) }
-    var range by remember { mutableStateOf(minDate..maxDate) }
-
-    LaunchedEffect(Unit) {
-        prefs.startDateFlow.combine(prefs.endDateFlow) { start, end ->
-            start to end
-        }.collect { (savedStart, savedEnd) ->
-            if (savedStart != null && savedEnd != null) {
-                range = savedStart..savedEnd
-            } else {
-                range = minDate..maxDate
-            }
-            isPrefsLoaded = true
-        }
-    }
-
-    // Sauvegarde uniquement si prefs sont chargées
-    LaunchedEffect(range, isPrefsLoaded) {
-        if (isPrefsLoaded) {
-            prefs.saveStartDate(range.start)
-            prefs.saveEndDate(range.endInclusive)
-        }
-    }
-
-    // Ne pas afficher tant que les prefs ne sont pas prêtes
-    if (!isPrefsLoaded) {
-        Text("Chargement de la plage de dates...")
-        return
-    }
-
-    // Ensuite on peut afficher normalement
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            text = "Plage de dates : ${DateFormattedText(range.start.roundToInt().toDouble())} à ${DateFormattedText(range.endInclusive.roundToInt().toDouble())}",
-            style = MaterialTheme.typography.labelLarge,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-
-        //if (activity != null) {
-        Button(onClick = {
-            val picker = MaterialDatePicker.Builder.dateRangePicker()
-                .setTitleText("Choisir une plage de dates")
-                .build()
-
-            picker.addOnPositiveButtonClickListener { selection ->
-                val startMillis = selection.first
-                val endMillis = selection.second
-                val startExcelDate = (startMillis / 86400000f) + 25569f
-                val endExcelDate = (endMillis / 86400000f) + 25569f
-
-                // Empêche l'inversion accidentelle
-                range = minOf(startExcelDate, endExcelDate)..maxOf(startExcelDate, endExcelDate)
-
-            }
-
-            picker.show(activity.supportFragmentManager, "date_range_picker")
-        }) {
-            Text("Choisir une plage de dates")
-        }
-
-
-        RangeSlider(
-            value = range,
-            onValueChange = { range = it },
-            valueRange = minDate..maxDate,
-            steps = ((maxDate - minDate) / 10).toInt(),
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        SoldeLineChart(
-            viewModel = viewModel,
-            startDate = range.start.toDouble(),
-            endDate = range.endInclusive.toDouble()
-        )
-    }
-}
-
 
 class CustomMarkerView(
     context: Context,
