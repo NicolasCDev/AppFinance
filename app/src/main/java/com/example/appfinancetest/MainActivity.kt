@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Settings
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -38,7 +39,7 @@ import java.io.OutputStream
 import java.util.*
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

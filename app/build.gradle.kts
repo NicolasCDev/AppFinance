@@ -66,4 +66,5 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.mpandroidchart)
     implementation(libs.androidx.datastore.datastore.preferences)
+    implementation(libs.android.material)
 }

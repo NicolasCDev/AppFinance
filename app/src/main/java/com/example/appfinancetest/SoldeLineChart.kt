@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import com.google.android.material.datepicker.MaterialDatePicker
 import android.app.DatePickerDialog
 import android.content.Context
 import android.graphics.Color
@@ -29,6 +30,7 @@ import java.util.*
 import kotlin.math.roundToInt
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.fragment.app.FragmentActivity
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
@@ -138,6 +140,7 @@ fun SoldeChartWithSlider(viewModel: DataBase_ViewModel) {
     val minDate = validDates.minOrNull()!!.toFloat()
     val maxDate = validDates.maxOrNull()!!.toFloat()
     val context = LocalContext.current
+    val activity = context as FragmentActivity
     val prefs = remember { DataStorage(context) }
 
     // Nouvel état pour signaler que les prefs sont chargées
@@ -180,30 +183,28 @@ fun SoldeChartWithSlider(viewModel: DataBase_ViewModel) {
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
-        // Le reste ne change pas
+        //if (activity != null) {
         Button(onClick = {
-            val calendar = Calendar.getInstance().apply {
-                timeInMillis = ((range.start - 25569) * 86400 * 1000).toLong()
+            val picker = MaterialDatePicker.Builder.dateRangePicker()
+                .setTitleText("Choisir une plage de dates")
+                .build()
+
+            picker.addOnPositiveButtonClickListener { selection ->
+                val startMillis = selection.first
+                val endMillis = selection.second
+                val startExcelDate = (startMillis / 86400000f) + 25569f
+                val endExcelDate = (endMillis / 86400000f) + 25569f
+
+                // Empêche l'inversion accidentelle
+                range = minOf(startExcelDate, endExcelDate)..maxOf(startExcelDate, endExcelDate)
+
             }
 
-            DatePickerDialog(
-                context,
-                { _, year, month, dayOfMonth ->
-                    val selectedCalendar = Calendar.getInstance().apply {
-                        set(year, month, dayOfMonth)
-                    }
-                    val selectedExcelDate = (selectedCalendar.timeInMillis / 86400000f) + 25569f
-                    if (selectedExcelDate < range.endInclusive) {
-                        range = selectedExcelDate..range.endInclusive
-                    }
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-            ).show()
+            picker.show(activity.supportFragmentManager, "date_range_picker")
         }) {
-            Text("Choisir date de début")
+            Text("Choisir une plage de dates")
         }
+
 
         RangeSlider(
             value = range,
