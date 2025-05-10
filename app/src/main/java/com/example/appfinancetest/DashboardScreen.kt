@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
@@ -19,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.SliderDefaults
@@ -35,8 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.combine
 import kotlin.math.roundToInt
 
@@ -123,7 +127,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Date picker button with calendar image
-                    FloatingActionButton(
+                    IconButton(
                         onClick = { showDateRangePicker = true },
                         modifier = Modifier
                             .width(50.dp)
@@ -131,8 +135,8 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
                             .padding(end = 16.dp),
                     ) {
                         Icon(
-                            painterResource(id = R.drawable.ic_add_transac),
-                            contentDescription = "Choose dates"
+                            painterResource(id = R.drawable.ic_calendar),
+                            contentDescription = "Choose dates",
                         )
                     }
 
@@ -187,6 +191,19 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
                         }
                     )
                 }
+                val lastTransaction = transactions.filter {
+                    it.date != null && it.date in range.start..range.endInclusive
+                }.maxByOrNull { it.date ?: Double.MIN_VALUE }
+
+                // Afficher le solde de la dernière transaction si elle existe
+                val lastBalance = lastTransaction?.solde ?: 0.0
+
+                // Affichage du solde au-dessus du LineChart
+                Text(
+                    text = "Solde en fin de période: ${"%.2f".format(lastBalance)} €",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
                 SoldeLineChart(
                     viewModel = viewModel,

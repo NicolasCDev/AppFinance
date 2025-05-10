@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Settings
@@ -67,7 +68,7 @@ fun MainScreen() {
     val viewModel: DataBase_ViewModel = viewModel() // <- the only instance is here
     var selectedItem by remember { mutableIntStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
-    val items = listOf("Tableau de bord", "Investment", "Patrimonial", "DataBase")
+    val items = listOf("Dashboard", "Investment", "Patrimonial", "DataBase")
     val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine, R.drawable.ic_database)
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -84,7 +85,9 @@ fun MainScreen() {
             }
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                modifier = Modifier.height(65.dp)
+            ) {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         icon = {

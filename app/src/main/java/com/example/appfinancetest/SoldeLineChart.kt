@@ -29,11 +29,10 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
     AndroidView(
         modifier = Modifier
             .fillMaxWidth()
-            .height(250.dp)
+            .height(230.dp)
             .padding(4.dp),
         factory = { context ->
             LineChart(context).apply {
-                description.text = "Évolution du solde"
                 axisRight.isEnabled = false
                 xAxis.position = XAxis.XAxisPosition.BOTTOM
                 xAxis.granularity = 1f
@@ -66,8 +65,8 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
                 color = Color.BLUE
                 valueTextColor = Color.WHITE
                 lineWidth = 2f
-                circleRadius = 4f
-                setDrawValues(true)
+                circleRadius = 1f
+                setDrawValues(false)
                 setDrawCircles(true)
                 setDrawFilled(true)
                 fillColor = Color.CYAN
@@ -94,6 +93,12 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
                     return dateFormatter.format(date)
                 }
             }
+            chart.axisLeft.valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return "%.0f €".format(value)
+                }
+            }
+
 
             // Mise à jour de l'axe Y et de la légende
             chart.axisLeft.textColor = Color.WHITE

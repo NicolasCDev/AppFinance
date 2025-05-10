@@ -169,6 +169,14 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
             )
 
         }
+        val periodDuration = endDate - startDate
+        val previousStart = startDate - periodDuration
+        val previousEnd = startDate - 1
+        val previousTransactions = transactions.filter {
+            it.date != null && it.montant != null && it.categorie != null &&
+                    it.date in previousStart..previousEnd
+        }
+
         Spacer(modifier = Modifier.height(4.dp))
         Column(
             modifier = Modifier
@@ -206,12 +214,32 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
                 }
                 tableEntries
             }
+
+            val previousMap: Map<String, Double> = if (selectedCategory == null) {
+                previousTransactions
+                    .groupBy { it.categorie ?: "Inconnu" }
+                    .mapValues { (_, list) -> list.sumOf { it.montant ?: 0.0 } }
+            } else {
+                previousTransactions
+                    .filter { it.categorie == selectedCategory && it.poste != null }
+                    .groupBy { it.poste ?: "Inconnu" }
+                    .mapValues { (_, list) -> list.sumOf { it.montant ?: 0.0 } }
+            }
+
             val total = tableEntries.sumOf { it.value.toDouble() }
 
-            tableEntries.take(6).forEach { entry -> // Top 5 + "Autres" éventuel
+            tableEntries.take(6).forEach { entry ->
                 val label = entry.label
                 val amount = entry.value.toDouble()
                 val percent = if (total > 0) (amount / total * 100) else 0.0
+
+                val previousAmount = previousMap[label] ?: 0.0
+                val evolution = if (previousAmount != 0.0) ((amount - previousAmount) / previousAmount * 100) else null
+                val evolutionText = when {
+                    evolution == null -> "N/A"
+                    evolution >= 0 -> "+%.1f%%".format(evolution)
+                    else -> "%.1f%%".format(evolution)
+                }
 
                 Row(
                     modifier = Modifier
@@ -220,9 +248,13 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = label, fontSize = 12.sp)
-                    Text(text = String.format("%.2f € (%.1f%%)", amount, percent), fontSize = 12.sp)
+                    Text(
+                        text = String.format("%.2f € (%.1f%%) %s", amount, percent, evolutionText),
+                        fontSize = 12.sp
+                    )
                 }
             }
+
         }
     }
 
