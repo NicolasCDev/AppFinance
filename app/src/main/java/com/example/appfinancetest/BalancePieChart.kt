@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.github.mikephil.charting.components.Legend
 
 @Composable
-fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Double) {
+fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Double) {
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
@@ -25,38 +25,38 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
     var selectedCategory by remember { mutableStateOf<String?>(null) }
 
     val filteredTransactions = transactions.filter {
-        it.date != null && it.amount != null && it.categorie != null &&
+        it.date != null && it.amount != null && it.category != null &&
                 it.date in startDate..endDate
     }
 
     val chartEntries = if (selectedCategory == null) {
         // Global view: group by category
         filteredTransactions
-            .groupBy { it.categorie }
+            .groupBy { it.category }
             .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
             .map { (category, total) ->
                 PieEntry(total.toFloat(), category)
             }
     } else {
         // Drill-down: group by label within the selected category
-        val posteTotals = filteredTransactions
-            .filter { it.categorie == selectedCategory && it.poste != null }
-            .groupBy { it.poste!! }
+        val itemTotals = filteredTransactions
+            .filter { it.category == selectedCategory && it.item != null }
+            .groupBy { it.item!! }
             .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-        val sortedPostes = posteTotals.entries.sortedByDescending { it.value }
-        val top8= sortedPostes.take(8)
-        val others = sortedPostes.drop(8)
+        val sortedItems = itemTotals.entries.sortedByDescending { it.value }
+        val top8= sortedItems.take(8)
+        val others = sortedItems.drop(8)
 
         val chartEntries = mutableListOf<PieEntry>()
 
-        for ((poste, total) in top8) {
-            chartEntries.add(PieEntry(total.toFloat(), poste))
+        for ((item, total) in top8) {
+            chartEntries.add(PieEntry(total.toFloat(), item))
         }
 
         val othersTotal = others.sumOf { it.value }
         if (othersTotal > 0) {
-            chartEntries.add(PieEntry(othersTotal.toFloat(), "Autres"))
+            chartEntries.add(PieEntry(othersTotal.toFloat(), "Others"))
         }
         chartEntries
     }
@@ -173,7 +173,7 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
         val previousStart = startDate - periodDuration
         val previousEnd = startDate - 1
         val previousTransactions = transactions.filter {
-            it.date != null && it.amount != null && it.categorie != null &&
+            it.date != null && it.amount != null && it.category != null &&
                     it.date in previousStart..previousEnd
         }
 
@@ -186,21 +186,21 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
             val tableEntries = if (selectedCategory == null) {
                 // Global view: group by category
                 filteredTransactions
-                    .groupBy { it.categorie }
+                    .groupBy { it.category }
                     .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
                     .map { (category, total) ->
                         PieEntry(total.toFloat(), category)
                     }
             } else {
                 // Drill-down: group by label within the selected category
-                val posteTotals = filteredTransactions
-                    .filter { it.categorie == selectedCategory && it.poste != null }
-                    .groupBy { it.poste!! }
+                val itemTotals = filteredTransactions
+                    .filter { it.category == selectedCategory && it.item != null }
+                    .groupBy { it.item!! }
                     .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-                val sortedPostes = posteTotals.entries.sortedByDescending { it.value }
-                val top5= sortedPostes.take(5)
-                val others = sortedPostes.drop(5)
+                val sortedItems = itemTotals.entries.sortedByDescending { it.value }
+                val top5= sortedItems.take(5)
+                val others = sortedItems.drop(5)
 
                 val tableEntries = mutableListOf<PieEntry>()
 
@@ -217,12 +217,12 @@ fun SoldePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Dou
 
             val previousMap: Map<String, Double> = if (selectedCategory == null) {
                 previousTransactions
-                    .groupBy { it.categorie ?: "Inconnu" }
+                    .groupBy { it.category ?: "Inconnu" }
                     .mapValues { (_, list) -> list.sumOf { it.amount ?: 0.0 } }
             } else {
                 previousTransactions
-                    .filter { it.categorie == selectedCategory && it.poste != null }
-                    .groupBy { it.poste ?: "Inconnu" }
+                    .filter { it.category == selectedCategory && it.item != null }
+                    .groupBy { it.item ?: "Inconnu" }
                     .mapValues { (_, list) -> list.sumOf { it.amount ?: 0.0 } }
             }
 

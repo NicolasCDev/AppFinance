@@ -4,15 +4,15 @@ fun filterTransactions(
     transactions: List<TransactionDB>,
     dateQuery: String,
     categoryQuery: String,
-    posteQuery: String,
+    itemQuery: String,
     labelQuery: String,
-    montantQuery: String
+    amountQuery: String
 ): List<TransactionDB> {
     return transactions.filter {
         (dateQuery.isBlank() || DateFormattedText(it.date).contains(dateQuery, ignoreCase = true)) &&
-                (categoryQuery.isBlank() || it.categorie?.contains(categoryQuery, ignoreCase = true) == true) &&
-                (posteQuery.isBlank() || it.poste?.contains(posteQuery, ignoreCase = true) == true) &&
+                (categoryQuery.isBlank() || it.category?.contains(categoryQuery, ignoreCase = true) == true) &&
+                (itemQuery.isBlank() || it.item?.contains(itemQuery, ignoreCase = true) == true) &&
                 (labelQuery.isBlank() || it.label?.contains(labelQuery, ignoreCase = true) == true) &&
-                (montantQuery.isBlank() || it.amount.toString().contains(montantQuery))
+                (amountQuery.isBlank() || it.amount.toString().contains(amountQuery))
     }
 }

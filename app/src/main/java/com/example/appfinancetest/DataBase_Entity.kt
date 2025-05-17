@@ -15,12 +15,12 @@ data class TransactionDB(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     @ColumnInfo(name = "date") val date: Double?,
-    @ColumnInfo(name = "categorie") val categorie: String?,
-    @ColumnInfo(name = "poste") val poste: String?,
+    @ColumnInfo(name = "category") val category: String?,
+    @ColumnInfo(name = "item") val item: String?,
     @ColumnInfo(name = "label") val label: String?,
     @ColumnInfo(name = "amount") val amount: Double?,
     @ColumnInfo(name = "variation") val variation: Double?,
-    @ColumnInfo(name = "solde") val solde: Double?,
+    @ColumnInfo(name = "balance") val balance: Double?,
     @ColumnInfo(name = "idInvest") val idInvest: String?
 )
 
@@ -44,8 +44,15 @@ interface TransactionDao {
     @Query("SELECT * FROM TransactionDB ORDER BY date DESC LIMIT :limit OFFSET :offset")
     suspend fun getTransactionsPaged(limit: Int, offset: Int): List<TransactionDB>
 
-    @Query("UPDATE TransactionDB SET solde = :newSolde WHERE id = :transactionId")
-    fun updateSolde(transactionId: Int, newSolde: Double)
+    @Query("UPDATE TransactionDB SET balance = :newBalance WHERE id = :transactionId")
+    fun updateBalance(transactionId: Int, newBalance: Double)
+
+    @Query("SELECT * FROM TransactionDB WHERE idInvest IS NOT NULL")
+    fun getInvestmentTransactions(): List<TransactionDB>
+
+    @Query("SELECT * FROM TransactionDB WHERE idInvest = :idInvest")
+    fun getInvestmentTransactionsByID(idInvest: String): List<TransactionDB>
+
 }
 
 @Database(entities = [TransactionDB::class], version = 1, exportSchema = false)

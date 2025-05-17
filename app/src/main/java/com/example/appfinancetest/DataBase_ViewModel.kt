@@ -3,7 +3,6 @@ package com.example.appfinancetest
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +32,7 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
     }
     suspend fun updateSolde(transactionId: Int, newSolde: Double) {
         viewModelScope.launch(Dispatchers.IO) {
-            dbDAO.updateSolde(transactionId, newSolde)
+            dbDAO.updateBalance(transactionId, newSolde)
         }
     }
     suspend fun getPagedTransactions(limit: Int, offset: Int): List<TransactionDB> {
@@ -43,6 +42,16 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
     suspend fun getTransactionsSortedByDateASC(): List<TransactionDB> {
         return withContext(Dispatchers.IO) {
             dbDAO.getTransactionsSortedByDateASC()
+        }
+    }
+    suspend fun getInvestmentTransactions(): List<TransactionDB> {
+        return withContext(Dispatchers.IO) {
+            dbDAO.getInvestmentTransactions()
+        }
+    }
+    suspend fun getInvestmentTransactionsByID(idInvest: String): List<TransactionDB> {
+        return withContext(Dispatchers.IO) {
+            dbDAO.getInvestmentTransactionsByID(idInvest)
         }
     }
 }

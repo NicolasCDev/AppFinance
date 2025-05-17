@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel) {
+fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel) {
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     val scope = rememberCoroutineScope()
@@ -63,7 +63,8 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
                 context.contentResolver.openInputStream(it)?.let { inputStream ->
                     val file = readExcelFile(inputStream)
                     (context as? ComponentActivity)?.lifecycleScope?.launch {
-                        addTransaction(file, viewModel)
+                        addTransaction(file, databaseViewModel)
+                        addInvestments(databaseViewModel, investmentViewModel)
                         refreshTrigger++
                         isFirstLoad = true
                         currentPage = 1
@@ -99,7 +100,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
     LaunchedEffect(currentPage, refreshTrigger) {
         scope.launch {
             val offset = (currentPage - 1) * pageSize
-            val newTransactions = viewModel.getPagedTransactions(pageSize, offset)
+            val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
             val filtered = filterTransactions(
                 newTransactions,
                 dateFilter, categoryFilter, posteFilter, labelFilter, amountFilter
@@ -115,7 +116,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Choisir une option") },
+            title = { Text("Choose an option") },
             text = {
                 Column {
                     Button(onClick = {
@@ -125,7 +126,8 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
                     Spacer(modifier = Modifier.padding(10.dp))
                     Button(onClick = {
                         if (selectedFileUri.isNotEmpty()) {
-                            viewModel.deleteAllTransactions()
+                            databaseViewModel.deleteAllTransactions()
+                            investmentViewModel.deleteAllInvestments()
                             filePickerLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                             showDialog = false
                         }
@@ -238,12 +240,12 @@ fun DataBaseScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)
                             ) {
                                 val data = listOf(
                                     DateFormattedText(transactionDB.date),
-                                    transactionDB.categorie ?: "N/A",
-                                    transactionDB.poste ?: "N/A",
+                                    transactionDB.category ?: "N/A",
+                                    transactionDB.item?: "N/A",
                                     transactionDB.label ?: "N/A",
                                     "%.2f €".format(transactionDB.amount ?: 0.0),
                                     "%.2f €".format(transactionDB.variation ?: 0.0),
-                                    "%.2f €".format(transactionDB.solde ?: 0.0)
+                                    "%.2f €".format(transactionDB.balance ?: 0.0)
                                 )
                                 data.forEach {
                                     Text(

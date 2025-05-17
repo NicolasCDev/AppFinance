@@ -18,7 +18,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,9 +39,9 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel)  {
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
-        value = viewModel.getTransactionsSortedByDateASC()
+fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel)  {
+    val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel) {
+        value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
     val validDates = transactions.mapNotNull { it.date }
@@ -187,23 +186,23 @@ fun DashboardScreen(modifier: Modifier = Modifier, viewModel: DataBase_ViewModel
                     it.date != null && it.date in range.start..range.endInclusive
                 }.maxByOrNull { it.date ?: Double.MIN_VALUE }
 
-                // Afficher le solde de la dernière transaction si elle existe
-                val lastBalance = lastTransaction?.solde ?: 0.0
+                // Print balance of last transaction if it exists
+                val lastBalance = lastTransaction?.balance ?: 0.0
 
-                // Affichage du solde au-dessus du LineChart
+                // Print balance on the top of the LineChart
                 Text(
                     text = "Solde en fin de période: ${"%.2f".format(lastBalance)} €",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                SoldeLineChart(
-                    viewModel = viewModel,
+                BalanceLineChart(
+                    viewModel = databaseViewModel,
                     startDate = range.start.toDouble(),
                     endDate = range.endInclusive.toDouble()
                 )
-                SoldePieChart(
-                    viewModel = viewModel,
+                BalancePieChart(
+                    viewModel = databaseViewModel,
                     startDate = range.start.toDouble(),
                     endDate = range.endInclusive.toDouble()
                 )

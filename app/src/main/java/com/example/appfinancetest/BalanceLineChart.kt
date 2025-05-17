@@ -21,7 +21,7 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 
 @Composable
-fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
+fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
@@ -40,20 +40,20 @@ fun SoldeLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDa
         },
         update = { chart ->
             val filteredTransactions = transactions.filter {
-                it.date != null && it.solde != null && it.date in startDate..endDate
+                it.date != null && it.balance != null && it.date in startDate..endDate
             }
             val entries = mutableListOf<Entry>()
             val labels = mutableListOf<String>()
 
             // Transformation des transactions
             filteredTransactions.forEach { transaction ->
-                val solde = transaction.solde
+                val balance = transaction.balance
                 val date = transaction.date
 
-                if (solde != null && date != null) {
+                if (balance != null && date != null) {
                     // Conversion du timestamp Excel (en jour depuis 1900) en millisecondes
                     val millis = ((date - 25569) * 86400 * 1000).toLong()
-                    entries.add(Entry(millis.toFloat(), solde.toFloat()))
+                    entries.add(Entry(millis.toFloat(), balance.toFloat()))
 
                     // Formatage de la date
                     val formattedDate = DateFormattedText(date)
