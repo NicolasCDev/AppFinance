@@ -2,12 +2,12 @@ package com.example.appfinancetest
 
 class Investment(
     val idInvest : String?,
-    val dateEnd : Double,
-    val invested : Double,
-    val earned : Double,
-    val profitability : Double,
-    val annualProfitability : Double,
-    val category : String?,
+    val dateBegin : Double?,
+    val dateEnd : Double?,
+    val invested : Double?,
+    val earned : Double?,
+    val profitability : Double?,
+    val annualProfitability : Double?,
     val item : String?,
     val label : String?
 )

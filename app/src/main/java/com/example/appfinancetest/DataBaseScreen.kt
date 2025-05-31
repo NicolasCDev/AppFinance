@@ -37,13 +37,13 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var dateFilter by remember { mutableStateOf("") }
     var categoryFilter by remember { mutableStateOf("") }
-    var posteFilter by remember { mutableStateOf("") }
+    var itemFilter by remember { mutableStateOf("") }
     var labelFilter by remember { mutableStateOf("") }
     var amountFilter by remember { mutableStateOf("") }
 
     val pageSize = 100
     val beforeRefresh = 20
-    var currentPage by remember { mutableStateOf(1) }
+    var currentPage by remember { mutableIntStateOf(1) }
     val transactionsToShow = remember { mutableStateListOf<TransactionDB>() }
     val listState = rememberLazyListState()
     var isFirstLoad by remember { mutableStateOf(true) }
@@ -71,7 +71,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                     }
                 }
             } catch (e: SecurityException) {
-                Log.e("FilePicker", "Erreur : ${e.message}")
+                Log.e("FilePicker", "Error : ${e.message}")
             }
         }
     }
@@ -103,7 +103,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
             val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
             val filtered = filterTransactions(
                 newTransactions,
-                dateFilter, categoryFilter, posteFilter, labelFilter, amountFilter
+                dateFilter, categoryFilter, itemFilter, labelFilter, amountFilter
             )
             if (isFirstLoad) {
                 transactionsToShow.clear()
@@ -120,18 +120,28 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
             text = {
                 Column {
                     Button(onClick = {
-                        filePickerLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                        showDialog = false
-                    }) { Text("Ajouter") }
-                    Spacer(modifier = Modifier.padding(10.dp))
-                    Button(onClick = {
-                        if (selectedFileUri.isNotEmpty()) {
-                            databaseViewModel.deleteAllTransactions()
+                        (context as? ComponentActivity)?.lifecycleScope?.launch {
                             investmentViewModel.deleteAllInvestments()
-                            filePickerLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                            filePickerLauncher.launch(
+                                arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                            )
                             showDialog = false
                         }
-                    }) { Text("Remplacer") }
+                    }) { Text("Add") }
+
+                    Spacer(modifier = Modifier.padding(10.dp))
+
+                    Button(onClick = {
+                        (context as? ComponentActivity)?.lifecycleScope?.launch {
+                            databaseViewModel.deleteAllTransactions()
+                            investmentViewModel.deleteAllInvestments()
+                            // We launch the filePicker
+                            filePickerLauncher.launch(
+                                arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                            )
+                            showDialog = false
+                        }
+                    }) { Text("Replace") }
                 }
             },
             confirmButton = {},
@@ -159,7 +169,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                     ) {
                         AssistChip(
                             onClick = { exportFileLauncher.launch("export.xlsx") },
-                            label = { Text("Exporter") },
+                            label = { Text("Export") },
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_export),
@@ -171,9 +181,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                         FloatingActionButton(
                             onClick = {
                                 scope.launch {
-                                    if (selectedFileUri.isNotEmpty()) {
-                                        showDialog = true
-                                    }
+                                    showDialog = true
                                 }
                             },
                             modifier = Modifier.size(40.dp),
@@ -183,7 +191,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                         ) {
                             Icon(
                                 painterResource(id = R.drawable.ic_add_transac),
-                                contentDescription = "Ajouter",
+                                contentDescription = "Add",
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -195,7 +203,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
             Column(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding().coerceAtMost(8.dp)) // Réduire ou ajuster le padding du haut
+                    .padding(top = paddingValues.calculateTopPadding().coerceAtMost(8.dp))
             ) {
                 Text(
                     text = "NBTransactions : ${transactionsToShow.size}",
@@ -208,11 +216,11 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                     listOf(
                         "Date",
                         "Category",
-                        "Poste",
+                        "Item",
                         "Label",
                         "Amount",
                         "Variation",
-                        "Solde"
+                        "Balance"
                     ).forEach {
                         Text(
                             it,
@@ -226,7 +234,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                     if (transactionsToShow.isEmpty()) {
                         item {
                             Text(
-                                "Aucune transaction à afficher.",
+                                "No transaction to print",
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center
                             )

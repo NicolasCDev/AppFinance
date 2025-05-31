@@ -33,25 +33,25 @@ interface TransactionDao {
     suspend fun insertAll(vararg transactions: TransactionDB)
 
     @Query("DELETE FROM TransactionDB")
-    fun deleteAll()
+    suspend fun deleteAll()
 
     @Query("SELECT * FROM TransactionDB ORDER BY date DESC")
-    fun getTransactionsSortedByDate(): List<TransactionDB>
+    suspend fun getTransactionsSortedByDate(): List<TransactionDB>
 
     @Query("SELECT * FROM TransactionDB ORDER BY date ASC")
-    fun getTransactionsSortedByDateASC(): List<TransactionDB>
+    suspend fun getTransactionsSortedByDateASC(): List<TransactionDB>
 
     @Query("SELECT * FROM TransactionDB ORDER BY date DESC LIMIT :limit OFFSET :offset")
     suspend fun getTransactionsPaged(limit: Int, offset: Int): List<TransactionDB>
 
     @Query("UPDATE TransactionDB SET balance = :newBalance WHERE id = :transactionId")
-    fun updateBalance(transactionId: Int, newBalance: Double)
+    suspend fun updateBalance(transactionId: Int, newBalance: Double)
 
-    @Query("SELECT * FROM TransactionDB WHERE idInvest IS NOT NULL")
-    fun getInvestmentTransactions(): List<TransactionDB>
+    @Query("SELECT * FROM TransactionDB WHERE idInvest IS NOT NULL AND idInvest != ''")
+    suspend fun getInvestmentTransactions(): List<TransactionDB>
 
     @Query("SELECT * FROM TransactionDB WHERE idInvest = :idInvest")
-    fun getInvestmentTransactionsByID(idInvest: String): List<TransactionDB>
+    suspend fun getInvestmentTransactionsByID(idInvest: String): List<TransactionDB>
 
 }
 

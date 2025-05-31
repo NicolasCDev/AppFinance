@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.apache.poi.ss.usermodel.CellType
@@ -79,97 +80,101 @@ fun writeExcelFile(outputStream: OutputStream, transactions: List<Transaction>) 
 
     }
 
-    // Écriture dans le OutputStream
-    workbook.write(outputStream) // Cette ligne permet de sauvegarder le contenu du workbook dans le OutputStream
+    // Write the workbook in OutputStream
+    workbook.write(outputStream)
 
-    // Libération des ressources
-    workbook.close() // Close workbook -> free ressources
+    // Close workbook -> free resources
+    workbook.close()
 }
 
 suspend fun addTransaction(listTransactions: List<Transaction>, databaseViewModel: DataBase_ViewModel) {
-    databaseViewModel.viewModelScope.launch {
-        val insertJobs =
-            listTransactions.map { transaction: Transaction ->
-                // Launch a coroutine for transaction insertion
-                async {
-                    val transactionDB = TransactionDB(
-                        date = transaction.date,
-                        category = transaction.category,
-                        item = transaction.item,
-                        label = transaction.label,
-                        amount = transaction.amount,
-                        variation = transaction.variation,
-                        balance = transaction.balance,
-                        idInvest = transaction.idInvest
-                    )
-                    // Insertion of the transaction inside the DB
-                    databaseViewModel.insertTransaction(transactionDB)
-                }
+    Log.d("Import/Export", "Adding transactions")
+    coroutineScope {
+        val insertJobs = listTransactions.map { transaction ->
+            async {
+                val transactionDB = TransactionDB(
+                    date = transaction.date,
+                    category = transaction.category,
+                    item = transaction.item,
+                    label = transaction.label,
+                    amount = transaction.amount,
+                    variation = transaction.variation,
+                    balance = transaction.balance,
+                    idInvest = transaction.idInvest
+                )
+                databaseViewModel.insertTransaction(transactionDB)
             }
+        }
 
-        // Waiting end of insertion
+        // Waiting for all insertions to finish
         insertJobs.awaitAll()
-        delay(2000)
-        // Then we can calculate the balances
+
+        // Then calculate the balance
         calculateRunningBalance(databaseViewModel)
     }
 }
 
 suspend fun calculateRunningBalance(databaseViewModel: DataBase_ViewModel) {
-    // Récupérer toutes les transactions triées par date
+    Log.d("Import/Export", "Calculating running balance")
+    // Gather every transactions order by date
     val existingTransactions = databaseViewModel.getTransactionsSortedByDateASC()
-    var solde = 0.0
+    var balance = 0.0
     existingTransactions.forEach { transaction ->
-        solde += transaction.variation ?: 0.0
-        // Mise à jour du solde pour chaque transaction
-        databaseViewModel.updateSolde(transaction.id, solde)
+        balance += transaction.variation ?: 0.0
+        // Update balance of each transaction
+        databaseViewModel.updateBalance(transaction.id, balance)
     }
 }
 
 suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel) {
+    Log.d("Import/Export", "Adding investments")
     val investmentList = databaseViewModel.getInvestmentTransactions()
+    Log.d("Import/Export", "Investment transaction list size: ${investmentList.size}")
 
     val investmentListGrouped = investmentList.groupBy { it.idInvest }
         .map { (idInvest, transactions) ->
             val investedTransactions = transactions.filter { it.category == "Investissement" }
             val earnedTransactions = transactions.filter { it.category == "Gain investissement" }
 
-            val invested = investedTransactions.sumOf { (it.amount as Double) }
-            val earned = earnedTransactions.sumOf { (it.amount as Double) }
+            val dateBegin = transactions.minOfOrNull { it.date as Double } ?: 0.0
+            val invested = investedTransactions.sumOf { it.amount as Double }
+            val earned = earnedTransactions.sumOf { it.amount as Double }
 
-
-            val category = transactions.firstOrNull()?.category ?: ""
             val item = transactions.firstOrNull()?.item ?: ""
             val description = transactions.firstOrNull()?.label ?: ""
 
-            Investment(idInvest, 0.0, invested, earned, 0.0, 0.0, category, item, description)
+            Investment(idInvest, dateBegin, null, invested, earned, 0.0, 0.0, item, description)
         }
 
-    investmentViewModel.viewModelScope.launch {
-        investmentListGrouped.map { investment: Investment ->
+    Log.d("Import/Export", "Investment list size: ${investmentListGrouped.size}")
+
+    coroutineScope {
+        val jobs = investmentListGrouped.map { investment ->
             async {
                 val existing = investmentViewModel.getInvestmentById(investment.idInvest ?: "")
                 val investmentDB = InvestmentDB(
                     idInvest = investment.idInvest ?: "",
+                    dateBegin = investment.dateBegin,
                     dateEnd = investment.dateEnd,
                     invested = investment.invested,
                     earned = investment.earned,
                     profitability = investment.profitability,
                     annualProfitability = investment.annualProfitability,
-                    category = investment.category,
                     item = investment.item,
-                    description = investment.label
+                    label = investment.label
                 )
                 if (existing == null) {
                     investmentViewModel.insertInvestment(investmentDB)
+                    Log.d("Import/Export", "Investment inserted")
                 } else {
                     investmentViewModel.updateInvestment(investmentDB)
+                    Log.d("Import/Export", "Investment updated")
                 }
             }
         }
+        jobs.awaitAll()
     }
 }
-
 
 suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String) {
     val investmentTransactions = databaseViewModel.getInvestmentTransactionsByID(idInvest)
@@ -200,19 +205,21 @@ suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmen
         0.0
     }
 
+
+    val dateBegin = investmentTransactions.minOfOrNull { it.date as Double } ?: 0.0
     val dateEnd = investmentTransactions.maxOfOrNull { it.date as Double } ?: 0.0
 
     if (investmentRow != null) {
         val updatedInvestment = InvestmentDB(
             idInvest = investmentRow.idInvest,
+            dateBegin = dateBegin,
             dateEnd = dateEnd,
             invested = invested,
             earned = earned,
             profitability = profitability,
             annualProfitability = annualProfitability,
-            category = investmentRow.category,
             item = investmentRow.item,
-            description = investmentRow.description
+            label = investmentRow.label
         )
         investmentViewModel.updateInvestment(updatedInvestment)
     }

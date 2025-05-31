@@ -13,22 +13,23 @@ import androidx.room.Update
 
 @Entity
 class InvestmentDB (
-    @PrimaryKey(autoGenerate = false)
-    val idInvest: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    @ColumnInfo(name = "idInvest") val idInvest: String?,
+    @ColumnInfo(name = "dateBegin") val dateBegin: Double?,
     @ColumnInfo(name = "dateEnd") val dateEnd: Double?,
     @ColumnInfo(name = "invested") val invested: Double?,
     @ColumnInfo(name = "earned") val earned: Double?,
     @ColumnInfo(name = "profitability") val profitability: Double?,
     @ColumnInfo(name = "annualProfitability") val annualProfitability: Double?,
-    @ColumnInfo(name = "category") val category: String?,
     @ColumnInfo(name = "item") val item: String?,
-    @ColumnInfo(name = "label") val description: String?
+    @ColumnInfo(name = "label") val label: String?
 )
 
 @Dao
 interface InvestmentDao{
     @Query("SELECT * FROM InvestmentDB")
-    fun getAll(): LiveData<List<InvestmentDB>>
+    fun getAll(): List<InvestmentDB>
 
     @Insert
     suspend fun insertAll(vararg investments: InvestmentDB)
@@ -36,14 +37,17 @@ interface InvestmentDao{
     @Query("DELETE FROM InvestmentDB")
     fun deleteAll()
 
-    @Query("SELECT * FROM InvestmentDB WHERE dateEnd IS NULL OR dateEnd = ''")
+    @Query("SELECT * FROM InvestmentDB WHERE dateEnd IS NULL")
     suspend fun getCurrentInvestments(): List<InvestmentDB>?
 
-    @Query("SELECT * FROM InvestmentDB WHERE dateEnd IS NOT NULL OR dateEnd != ''")
+    @Query("SELECT * FROM InvestmentDB WHERE dateEnd IS NOT NULL")
     suspend fun getEndedInvestments(): List<InvestmentDB>?
 
     @Query("SELECT * FROM InvestmentDB WHERE idInvest = :idInvest LIMIT 1")
     suspend fun getInvestmentById(idInvest: String): InvestmentDB?
+
+    @Query("SELECT * FROM InvestmentDB ORDER BY idInvest DESC LIMIT :limit OFFSET :offset")
+    suspend fun getInvestmentsPaged(limit: Int, offset: Int): List<InvestmentDB>
 
     @Update
     suspend fun updateInvestment(investment: InvestmentDB)

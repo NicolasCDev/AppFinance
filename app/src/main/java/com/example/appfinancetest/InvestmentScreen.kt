@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -28,17 +32,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +76,57 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
     var isPrefsLoaded by remember { mutableStateOf(false) }
     var range by remember { mutableStateOf(minDate..maxDate) }
 
+    // Printing investments
+
+    val scope = rememberCoroutineScope()
+    var dateBeginFilter by remember { mutableStateOf("") }
+    var dateEndFilter by remember { mutableStateOf("") }
+    var categoryFilter by remember { mutableStateOf("") }
+    var itemFilter by remember { mutableStateOf("") }
+    var labelFilter by remember { mutableStateOf("") }
+    var investedFilter by remember { mutableStateOf("") }
+    var earnedFilter by remember { mutableStateOf("") }
+
+    val listState = rememberLazyListState()
+    var currentPage by remember { mutableIntStateOf(1) }
+    val investmentsToShow = remember { mutableStateListOf<InvestmentDB>() }
+    val pageSize = 100
+    val beforeRefresh = 20
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+    var isFirstLoad by remember { mutableStateOf(true) }
+
+    LaunchedEffect(listState) {
+        delay(200)
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        }.collect { lastVisibleItemIndex ->
+            if (lastVisibleItemIndex != null &&
+                lastVisibleItemIndex >= investmentsToShow.size - beforeRefresh
+            ) {
+                currentPage += 1
+            }
+        }
+    }
+
+    LaunchedEffect(currentPage, refreshTrigger) {
+        scope.launch {
+            val offset = (currentPage - 1) * pageSize
+            val newInvestment = investmentViewModel.getPagedInvestments(pageSize, offset)
+
+            val filtered = filterInvestments(
+                newInvestment,
+                dateBeginFilter, dateEndFilter, itemFilter, labelFilter, investedFilter, earnedFilter
+            )
+
+            Log.d("InvestmentDebug", "Fetched: ${newInvestment.size} - After filter: ${filtered.size}")
+            if (isFirstLoad) {
+                investmentsToShow.clear()
+                isFirstLoad = false
+            }
+            investmentsToShow.addAll(filtered)
+        }
+    }
+
     // Load preferences
     LaunchedEffect(Unit) {
         prefs.startDateFlow.combine(prefs.endDateFlow) { start, end -> start to end }
@@ -87,7 +150,7 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
 
     // Doesn't show until prefs are loaded
     if (!isPrefsLoaded) {
-        Text("Chargement de la plage de dates...")
+        Text("Loading of data range...")
         return
     }
     var showDialog by remember { mutableStateOf(false) }
@@ -97,6 +160,57 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
             title = { Text("Validate operations") },
             text = {
                 Column {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        listOf(
+                            "DateBegin",
+                            "Item",
+                            "Label",
+                            "Invested",
+                            "Earned"
+                        ).forEach {
+                            Text(
+                                it,
+                                modifier = Modifier.weight(1f),
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    LazyColumn(state = listState) {
+                        if (investmentsToShow.isEmpty()) {
+                            item {
+                                Text(
+                                    "No investment to print",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            items(investmentsToShow) { investmentDB ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    val data = listOf(
+                                        DateFormattedText(investmentDB.dateBegin),
+                                        investmentDB.item?: "N/A",
+                                        investmentDB.label ?: "N/A",
+                                        "%.2f €".format(investmentDB.invested ?: 0.0),
+                                        "%.2f €".format(investmentDB.earned ?: 0.0)
+                                    )
+                                    data.forEach {
+                                        Text(
+                                            it,
+                                            modifier = Modifier.weight(1f),
+                                            fontSize = 11.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {},
@@ -174,7 +288,7 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Plage de dates : ${
+                            text = "Range of dates : ${
                                 DateFormattedText(range.start.roundToInt().toDouble())
                             } à ${DateFormattedText(range.endInclusive.roundToInt().toDouble())}",
                             style = MaterialTheme.typography.labelLarge,
@@ -184,9 +298,9 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                         // Box around RangeSlider to control its size
                         Box(
                             modifier = Modifier
-                                .padding(vertical = 0.dp)  // Padding autour de la Box
-                                .fillMaxWidth()  // Remplir toute la largeur disponible
-                                .height(20.dp)  // Définir une hauteur spécifique pour le RangeSlider
+                                .padding(vertical = 0.dp)
+                                .fillMaxWidth()
+                                .height(20.dp)
                         ) {
                             // RangeSlider inside the Box
                             RangeSlider(
@@ -195,14 +309,14 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                                 valueRange = minDate..maxDate,
                                 steps = ((maxDate - minDate) / 10).toInt(),
                                 modifier = Modifier
-                                    .align(Alignment.Center) // Aligner le RangeSlider au centre de la Box
-                                    .fillMaxWidth(), // Rendre le RangeSlider aussi large que la Box
+                                    .align(Alignment.Center)
+                                    .fillMaxWidth(),
                                 colors = SliderDefaults.colors(
-                                    thumbColor = Color.Blue, // Couleur du curseur
-                                    activeTrackColor = Color.Green, // Couleur de la piste active
-                                    inactiveTrackColor = Color.Gray.copy(alpha = 0.3f), // Couleur de la piste inactive
-                                    activeTickColor = Color.Transparent, // Masquer les "ticks" actifs
-                                    inactiveTickColor = Color.Transparent // Masquer les "ticks" inactifs
+                                    thumbColor = Color.Blue, // Cursor color
+                                    activeTrackColor = Color.Green, // Active track color
+                                    inactiveTrackColor = Color.Gray.copy(alpha = 0.3f), // Inactive track color
+                                    activeTickColor = Color.Transparent, // Hide active "ticks"
+                                    inactiveTickColor = Color.Transparent // Hide inactive "ticks"
                                 )
                             )
                         }

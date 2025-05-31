@@ -13,32 +13,32 @@ class DataBase_ViewModel(application: Application) : AndroidViewModel(applicatio
     private val transactionDB = Room.databaseBuilder(
         application.applicationContext,
         AppDatabase::class.java,
-        "database-name"
+        "TransactionDB"
     )
     .fallbackToDestructiveMigration(false)
     .build()
 
     private val dbDAO = transactionDB.transactionDao()
     suspend fun insertTransaction(transaction: TransactionDB) {
-        viewModelScope.launch(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             dbDAO.insertAll(transaction)
         }
     }
-    fun deleteAllTransactions() {
-        viewModelScope.launch(Dispatchers.IO) {
-            Log.d("DataBase_ViewModel", "Suppression de toutes les transactions")
+    suspend fun deleteAllTransactions() {
+        withContext(Dispatchers.IO) {
+            Log.d("DataBase_ViewModel", "Deleting every transactions")
             dbDAO.deleteAll()
         }
     }
-    suspend fun updateSolde(transactionId: Int, newSolde: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
-            dbDAO.updateBalance(transactionId, newSolde)
+    suspend fun updateBalance(transactionId: Int, newBalance: Double) {
+        withContext(Dispatchers.IO) {
+            dbDAO.updateBalance(transactionId, newBalance)
         }
     }
     suspend fun getPagedTransactions(limit: Int, offset: Int): List<TransactionDB> {
         return dbDAO.getTransactionsPaged(limit, offset)
     }
-    // Appel suspendu pour récupérer les transactions
+    // Suspend call for gathering every transaction
     suspend fun getTransactionsSortedByDateASC(): List<TransactionDB> {
         return withContext(Dispatchers.IO) {
             dbDAO.getTransactionsSortedByDateASC()

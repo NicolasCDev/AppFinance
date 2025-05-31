@@ -3,10 +3,8 @@ package com.example.appfinancetest
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class InvestmentDB_ViewModel (application: Application) : AndroidViewModel(application) {
@@ -19,29 +17,29 @@ class InvestmentDB_ViewModel (application: Application) : AndroidViewModel(appli
         .build()
 
     private val dbDAO = investmentDB.investmentDao()
-    fun getInvestment() {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun getInvestment(): List<InvestmentDB> {
+        return withContext(Dispatchers.IO) {
             dbDAO.getAll()
         }
     }
     suspend fun insertInvestment(investmentDB: InvestmentDB) {
-        viewModelScope.launch(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             dbDAO.insertAll(investmentDB)
         }
     }
-    fun deleteAllInvestments() {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun deleteAllInvestments() {
+        withContext(Dispatchers.IO) {
             Log.d("InvestmentDB_ViewModel", "Deleted every investment")
             dbDAO.deleteAll()
         }
     }
-    suspend fun getCurrentInvestments() {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun getCurrentInvestments(): List<InvestmentDB>? {
+        return withContext(Dispatchers.IO) {
             dbDAO.getCurrentInvestments()
         }
     }
-    suspend fun getEndedInvestments() {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun getEndedInvestments(): List<InvestmentDB>? {
+        return withContext(Dispatchers.IO) {
             dbDAO.getEndedInvestments()
         }
     }
@@ -51,8 +49,11 @@ class InvestmentDB_ViewModel (application: Application) : AndroidViewModel(appli
         }
     }
     suspend fun updateInvestment(investmentDB: InvestmentDB) {
-        viewModelScope.launch(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             dbDAO.updateInvestment(investmentDB)
         }
+    }
+    suspend fun getPagedInvestments(limit: Int, offset: Int): List<InvestmentDB> {
+        return dbDAO.getInvestmentsPaged(limit, offset)
     }
 }

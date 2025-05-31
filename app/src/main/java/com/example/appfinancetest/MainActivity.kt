@@ -1,6 +1,7 @@
 package com.example.appfinancetest
 
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import androidx.activity.compose.setContent
@@ -59,7 +60,9 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 fun MainScreen() {
+    Log.d("DataBase_ViewModel", "DataBase_ViewModel created")
     val databaseViewModel: DataBase_ViewModel = viewModel()
+    Log.d("InvestmentDB_ViewModel", "InvestmentDB_ViewModel created")
     val investmentViewModel: InvestmentDB_ViewModel = viewModel()
     var selectedItem by remember { mutableIntStateOf(0) }
     var showSettings by remember { mutableStateOf(false) }
