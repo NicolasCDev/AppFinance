@@ -39,29 +39,30 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
             }
         },
         update = { chart ->
+            chart.description.isEnabled = false
             val filteredTransactions = transactions.filter {
                 it.date != null && it.balance != null && it.date in startDate..endDate
             }
             val entries = mutableListOf<Entry>()
             val labels = mutableListOf<String>()
 
-            // Transformation des transactions
+            // Transformation of transactions
             filteredTransactions.forEach { transaction ->
                 val balance = transaction.balance
                 val date = transaction.date
 
                 if (balance != null && date != null) {
-                    // Conversion du timestamp Excel (en jour depuis 1900) en millisecondes
+                    // Conversion milliseconds to date
                     val millis = ((date - 25569) * 86400 * 1000).toLong()
                     entries.add(Entry(millis.toFloat(), balance.toFloat()))
 
-                    // Formatage de la date
+                    // Printing date
                     val formattedDate = DateFormattedText(date)
                     labels.add(formattedDate)
                 }
             }
 
-            val dataSet = LineDataSet(entries, "Solde en €").apply {
+            val dataSet = LineDataSet(entries, "Balance in €").apply {
                 color = Color.BLUE
                 valueTextColor = Color.WHITE
                 lineWidth = 2f
@@ -72,7 +73,7 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
                 fillColor = Color.CYAN
             }
 
-            // Utilisation d'un ValueFormatter personnalisé pour l'axe X
+            // Personalized ValueFormatter for X axis
             chart.xAxis.apply {
                 position = XAxis.XAxisPosition.BOTTOM
                 granularity = 1f
@@ -99,18 +100,17 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
                 }
             }
 
-
-            // Mise à jour de l'axe Y et de la légende
             chart.axisLeft.textColor = Color.WHITE
             chart.legend.textColor = Color.WHITE
             chart.data = LineData(dataSet)
 
             val marker = CustomMarkerView(chart.context, R.layout.marker_view)
-            marker.chartView = chart // important !
+            marker.chartView = chart
             chart.marker = marker
 
             chart.invalidate()
         }
+
 
     )
 }
@@ -126,16 +126,16 @@ class CustomMarkerView(
 
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
         e?.let {
-            // Convertir la valeur X (millis) en date
+            // Conversion milliseconds to date
             val date = Date(it.x.toLong())
             tvDate.text = "Date : ${dateFormat.format(date)}"
-            tvValue.text = "Solde : %.2f €".format(it.y)
+            tvValue.text = "Balance: %.2f €".format(it.y)
         }
         super.refreshContent(e, highlight)
     }
 
     override fun getOffset(): MPPointF {
-        // Pour centrer au-dessus du point
+        // Center on the top of the point
         return MPPointF(-(width / 2f), -height.toFloat())
     }
 }

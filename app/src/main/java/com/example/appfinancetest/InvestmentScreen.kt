@@ -5,18 +5,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -26,6 +32,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -46,11 +56,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,53 +91,89 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
     var range by remember { mutableStateOf(minDate..maxDate) }
 
     // Printing investments
-
     val scope = rememberCoroutineScope()
     var dateBeginFilter by remember { mutableStateOf("") }
     var dateEndFilter by remember { mutableStateOf("") }
-    var categoryFilter by remember { mutableStateOf("") }
     var itemFilter by remember { mutableStateOf("") }
     var labelFilter by remember { mutableStateOf("") }
     var investedFilter by remember { mutableStateOf("") }
     var earnedFilter by remember { mutableStateOf("") }
 
+    var dateBeginFilterValidated by remember { mutableStateOf("") }
+    var dateEndFilterValidated by remember { mutableStateOf("") }
+    var itemFilterValidated by remember { mutableStateOf("") }
+    var labelFilterValidated by remember { mutableStateOf("") }
+    var investedFilterValidated by remember { mutableStateOf("") }
+    var earnedFilterValidated by remember { mutableStateOf("") }
+
     val listState = rememberLazyListState()
-    var currentPage by remember { mutableIntStateOf(1) }
-    val investmentsToShow = remember { mutableStateListOf<InvestmentDB>() }
+    var currentPageOngoing by remember { mutableIntStateOf(1) }
+    var currentPageFinished by remember { mutableIntStateOf(1) }
+    val ongoingToShow = remember { mutableStateListOf<InvestmentDB>() }
+    val finishedToShow = remember { mutableStateListOf<InvestmentDB>() }
     val pageSize = 100
     val beforeRefresh = 20
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var isFirstLoad by remember { mutableStateOf(true) }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(listState) {
+    LaunchedEffect(listState, selectedTabIndex) {
         delay(200)
         snapshotFlow {
             listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
         }.collect { lastVisibleItemIndex ->
+            val currentListSize = when(selectedTabIndex) {
+                0 -> ongoingToShow.size
+                1 -> finishedToShow.size
+                else -> 0
+            }
             if (lastVisibleItemIndex != null &&
-                lastVisibleItemIndex >= investmentsToShow.size - beforeRefresh
+                lastVisibleItemIndex >= currentListSize - beforeRefresh
             ) {
-                currentPage += 1
+                when(selectedTabIndex) {
+                    0 -> currentPageOngoing += 1
+                    1 -> currentPageFinished += 1
+                }
             }
         }
     }
-
-    LaunchedEffect(currentPage, refreshTrigger) {
+    var currentPage = when(selectedTabIndex) {
+        0 -> currentPageOngoing
+        1 -> currentPageFinished
+        else -> 0
+    }
+    LaunchedEffect(currentPage, refreshTrigger, selectedTabIndex) {
         scope.launch {
+            if (refreshTrigger > 0) {
+                currentPageOngoing = 1
+                currentPageFinished = 1
+            }
             val offset = (currentPage - 1) * pageSize
             val newInvestment = investmentViewModel.getPagedInvestments(pageSize, offset)
 
-            val filtered = filterInvestments(
-                newInvestment,
+            val ongoingInvestments = newInvestment.filter { it.dateEnd == null || it.dateEnd == 0.0 }
+            val finishedInvestments = newInvestment.filter { it.dateEnd != null && it.dateEnd != 0.0 }
+
+            val ongoingFiltered = filterInvestments(
+                ongoingInvestments,
                 dateBeginFilter, dateEndFilter, itemFilter, labelFilter, investedFilter, earnedFilter
             )
+            val finishedFiltered = filterInvestments(
+                finishedInvestments,
+                dateBeginFilterValidated, dateEndFilterValidated, itemFilterValidated, labelFilterValidated, investedFilterValidated, earnedFilterValidated
+            )
 
-            Log.d("InvestmentDebug", "Fetched: ${newInvestment.size} - After filter: ${filtered.size}")
-            if (isFirstLoad) {
-                investmentsToShow.clear()
+            Log.d("InvestmentScreen", "OngoingFetched: ${ongoingInvestments.size} - After filter: ${ongoingFiltered.size}")
+            Log.d("InvestmentScreen", "ValidatedFetched: ${finishedInvestments.size} - After filter: ${finishedFiltered.size}")
+
+            if (isFirstLoad || refreshTrigger > 0 || currentPage == 1) {
+                ongoingToShow.clear()
+                finishedToShow.clear()
                 isFirstLoad = false
+                refreshTrigger = 0
             }
-            investmentsToShow.addAll(filtered)
+            ongoingToShow.addAll(ongoingFiltered)
+            finishedToShow.addAll(finishedFiltered)
         }
     }
 
@@ -154,30 +204,77 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
         return
     }
     var showDialog by remember { mutableStateOf(false) }
+
+    val tabTitles = listOf("Ongoing", "Validated")
+
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Validate operations") },
-            text = {
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        listOf(
-                            "DateBegin",
-                            "Item",
-                            "Label",
-                            "Invested",
-                            "Earned"
-                        ).forEach {
-                            Text(
-                                it,
-                                modifier = Modifier.weight(1f),
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
+        Dialog(onDismissRequest = { showDialog = false }) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                tonalElevation = 8.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 300.dp, max = 600.dp)
+                    .padding(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(4.dp)) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Validate operations",
+                            modifier = Modifier.align(Alignment.Center),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        IconButton(
+                            onClick = { showDialog = false },
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = Color.Gray
                             )
                         }
                     }
+                    TabRow(selectedTabIndex = selectedTabIndex) {
+                        tabTitles.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTabIndex == index,
+                                onClick = { selectedTabIndex = index },
+                                text = { Text(title) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        when (selectedTabIndex) {
+                            0 -> listOf("Began","Item", "Label", "Invested", "Earned", "Validated").forEach {
+                                Text(
+                                    it,
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            1 -> listOf("End", "Item", "Label", "Invested", "Earned", "Validated").forEach {
+                                Text(
+                                    it,
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            else -> {}
+                        }
+                    }
+
+                    val currentList = if (selectedTabIndex == 0) ongoingToShow else finishedToShow
+
                     LazyColumn(state = listState) {
-                        if (investmentsToShow.isEmpty()) {
+                        if (currentList.isEmpty()) {
                             item {
                                 Text(
                                     "No investment to print",
@@ -186,39 +283,83 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                                 )
                             }
                         } else {
-                            items(investmentsToShow) { investmentDB ->
+                            items(currentList) { investmentDB ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .padding(horizontal = 0.dp, vertical = 0.dp)
                                 ) {
-                                    val data = listOf(
-                                        DateFormattedText(investmentDB.dateBegin),
-                                        investmentDB.item?: "N/A",
-                                        investmentDB.label ?: "N/A",
-                                        "%.2f €".format(investmentDB.invested ?: 0.0),
-                                        "%.2f €".format(investmentDB.earned ?: 0.0)
-                                    )
+                                    val data = when (selectedTabIndex) {
+                                        0 -> listOf(
+                                            DateFormattedText(investmentDB.dateBegin),
+                                            when (investmentDB.item) {
+                                                "Bourse - PEA" -> "PEA"
+                                                "Bourse - Compte titre" -> "Compte titre"
+                                                else -> investmentDB.item ?: "N/A"
+                                            },
+                                            investmentDB.label ?: "N/A",
+                                            "%.0f €".format(investmentDB.invested ?: 0.0),
+                                            "%.0f €".format(investmentDB.earned ?: 0.0)
+                                        )
+                                        1 -> listOf(
+                                            DateFormattedText(investmentDB.dateEnd),
+                                            when (investmentDB.item) {
+                                                "Bourse - PEA" -> "PEA"
+                                                "Bourse - Compte titre" -> "Compte titre"
+                                                else -> investmentDB.item ?: "N/A"
+                                            },
+                                            investmentDB.label ?: "N/A",
+                                            "%.0f €".format(investmentDB.invested ?: 0.0),
+                                            "%.0f €".format(investmentDB.earned ?: 0.0)
+                                        )
+                                        else -> emptyList()
+                                    }
                                     data.forEach {
                                         Text(
                                             it,
                                             modifier = Modifier.weight(1f),
-                                            fontSize = 11.sp,
-                                            textAlign = TextAlign.Center
+                                            fontSize = 9.sp,
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
+                                    val isValidatedTab = (selectedTabIndex == 1)
+                                    val checkedItems = remember { mutableStateMapOf<String, Boolean>() }
+                                    Checkbox(
+                                        checked = checkedItems[investmentDB.idInvest.orEmpty()] ?: isValidatedTab,
+                                        onCheckedChange = {isChecked ->
+                                            investmentDB.idInvest?.let { id ->
+                                                checkedItems[id] = isChecked
+                                                scope.launch {
+                                                    if (isValidatedTab) {
+                                                        if (!isChecked) {
+                                                            invalidateInvestments(databaseViewModel, investmentViewModel, id) {
+                                                                refreshTrigger++
+                                                            }
+                                                        }
+                                                    } else {
+                                                        if (isChecked) {
+                                                            validateInvestments(databaseViewModel, investmentViewModel, id) {
+                                                                refreshTrigger++
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                         }
                     }
                 }
-            },
-            confirmButton = {},
-            dismissButton = {
-                Button(onClick = { showDialog = false }) { Text("Cancel") }
             }
-        )
+        }
     }
+
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(

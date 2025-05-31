@@ -141,9 +141,9 @@ suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentView
             val earned = earnedTransactions.sumOf { it.amount as Double }
 
             val item = transactions.firstOrNull()?.item ?: ""
-            val description = transactions.firstOrNull()?.label ?: ""
+            val label = transactions.firstOrNull()?.label ?: ""
 
-            Investment(idInvest, dateBegin, null, invested, earned, 0.0, 0.0, item, description)
+            Investment(idInvest, dateBegin, null, invested, earned, 0.0, 0.0, item, label)
         }
 
     Log.d("Import/Export", "Investment list size: ${investmentListGrouped.size}")
@@ -176,7 +176,9 @@ suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentView
     }
 }
 
-suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String) {
+suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String?, onValidated: () -> Unit) {
+    Log.d("Import/Export", "Validating investments: $idInvest")
+    if (idInvest == null) return
     val investmentTransactions = databaseViewModel.getInvestmentTransactionsByID(idInvest)
     val investmentRow = investmentViewModel.getInvestmentById(idInvest)
 
@@ -208,9 +210,11 @@ suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmen
 
     val dateBegin = investmentTransactions.minOfOrNull { it.date as Double } ?: 0.0
     val dateEnd = investmentTransactions.maxOfOrNull { it.date as Double } ?: 0.0
+    Log.d("Import/Export", "Date begin: $dateBegin, date end: $dateEnd")
 
     if (investmentRow != null) {
         val updatedInvestment = InvestmentDB(
+            id = investmentRow.id,
             idInvest = investmentRow.idInvest,
             dateBegin = dateBegin,
             dateEnd = dateEnd,
@@ -221,6 +225,37 @@ suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmen
             item = investmentRow.item,
             label = investmentRow.label
         )
+        Log.d("Import/Export", "updatedInvestment.dateEnd = ${updatedInvestment.dateEnd}")
         investmentViewModel.updateInvestment(updatedInvestment)
+        Log.d("Import/Export", "Investment updated")
+        onValidated()
+    }
+}
+
+suspend fun invalidateInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String?, onValidated: () -> Unit) {
+    Log.d("Import/Export", "Invalidating investments: $idInvest")
+    if (idInvest == null) return
+    val investmentTransactions = databaseViewModel.getInvestmentTransactionsByID(idInvest)
+    val investmentRow = investmentViewModel.getInvestmentById(idInvest)
+
+    val invested = investmentRow?.invested ?: 0.0
+    val earned = investmentRow?.earned ?: 0.0
+    val dateBegin = investmentTransactions.minOfOrNull { it.date as Double } ?: 0.0
+
+    if (investmentRow != null) {
+        val updatedInvestment = InvestmentDB(
+            id = investmentRow.id,
+            idInvest = investmentRow.idInvest,
+            dateBegin = dateBegin,
+            dateEnd = null,
+            invested = invested,
+            earned = earned,
+            profitability = 0.0,
+            annualProfitability = 0.0,
+            item = investmentRow.item,
+            label = investmentRow.label
+        )
+        investmentViewModel.updateInvestment(updatedInvestment)
+        onValidated()
     }
 }
