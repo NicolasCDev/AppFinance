@@ -137,13 +137,14 @@ suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentView
             val earnedTransactions = transactions.filter { it.category == "Gain investissement" }
 
             val dateBegin = transactions.minOfOrNull { it.date as Double } ?: 0.0
+            val transactionList = transactions.mapNotNull { it.id }
             val invested = investedTransactions.sumOf { it.amount as Double }
             val earned = earnedTransactions.sumOf { it.amount as Double }
 
             val item = transactions.firstOrNull()?.item ?: ""
             val label = transactions.firstOrNull()?.label ?: ""
 
-            Investment(idInvest, dateBegin, null, invested, earned, 0.0, 0.0, item, label)
+            Investment(idInvest, dateBegin, null, transactionList, invested, earned, 0.0, 0.0, item, label)
         }
 
     Log.d("Import/Export", "Investment list size: ${investmentListGrouped.size}")
@@ -156,6 +157,7 @@ suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentView
                     idInvest = investment.idInvest ?: "",
                     dateBegin = investment.dateBegin,
                     dateEnd = investment.dateEnd,
+                    transactionList = investment.transactionList,
                     invested = investment.invested,
                     earned = investment.earned,
                     profitability = investment.profitability,
@@ -218,6 +220,7 @@ suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmen
             idInvest = investmentRow.idInvest,
             dateBegin = dateBegin,
             dateEnd = dateEnd,
+            transactionList = investmentRow.transactionList,
             invested = invested,
             earned = earned,
             profitability = profitability,
@@ -248,6 +251,7 @@ suspend fun invalidateInvestments(databaseViewModel: DataBase_ViewModel, investm
             idInvest = investmentRow.idInvest,
             dateBegin = dateBegin,
             dateEnd = null,
+            transactionList = investmentRow.transactionList,
             invested = invested,
             earned = earned,
             profitability = 0.0,

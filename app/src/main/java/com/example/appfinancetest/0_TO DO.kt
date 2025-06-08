@@ -1,7 +1,6 @@
 package com.example.appfinancetest
 //
-//// Have to build Investment graph
-//// (minus investment closed after date of closing -> How to close an investment?)
+// Hiding markers when user click outside of the chart (investment + balance)
 //// Import export investmentDB?
 //
 // DataBaseScreen scroll is broken (sometimes stuck at 307 transactions) + ( sometimes adding two pages at the same time)

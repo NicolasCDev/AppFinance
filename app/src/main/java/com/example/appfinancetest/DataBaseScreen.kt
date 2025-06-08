@@ -247,7 +247,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 val data = listOf(
-                                    DateFormattedText(transactionDB.date),
+                                    dateFormattedText(transactionDB.date),
                                     transactionDB.category ?: "N/A",
                                     transactionDB.item?: "N/A",
                                     transactionDB.label ?: "N/A",

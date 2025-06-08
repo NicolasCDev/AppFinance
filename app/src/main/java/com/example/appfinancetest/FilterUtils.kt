@@ -9,7 +9,7 @@ fun filterTransactions(
     amountQuery: String
 ): List<TransactionDB> {
     return transactions.filter {
-        (dateQuery.isBlank() || DateFormattedText(it.date).contains(dateQuery, ignoreCase = true)) &&
+        (dateQuery.isBlank() || dateFormattedText(it.date).contains(dateQuery, ignoreCase = true)) &&
                 (categoryQuery.isBlank() || it.category?.contains(categoryQuery, ignoreCase = true) == true) &&
                 (itemQuery.isBlank() || it.item?.contains(itemQuery, ignoreCase = true) == true) &&
                 (labelQuery.isBlank() || it.label?.contains(labelQuery, ignoreCase = true) == true) &&
@@ -27,8 +27,8 @@ fun filterInvestments(
     earnedQuery: String
 ): List<InvestmentDB> {
     return investments.filter {
-        (dateBeginQuery.isBlank() || DateFormattedText(it.dateBegin).contains(dateBeginQuery, ignoreCase = true)) &&
-                (dateEndQuery.isBlank() || DateFormattedText(it.dateEnd).contains(dateEndQuery, ignoreCase = true)) &&
+        (dateBeginQuery.isBlank() || dateFormattedText(it.dateBegin).contains(dateBeginQuery, ignoreCase = true)) &&
+                (dateEndQuery.isBlank() || dateFormattedText(it.dateEnd).contains(dateEndQuery, ignoreCase = true)) &&
                 (itemQuery.isBlank() || it.item?.contains(itemQuery, ignoreCase = true) == true) &&
                 (labelQuery.isBlank() || it.label?.contains(labelQuery, ignoreCase = true) == true) &&
                 (investedQuery.isBlank() || it.invested.toString().contains(investedQuery)) &&

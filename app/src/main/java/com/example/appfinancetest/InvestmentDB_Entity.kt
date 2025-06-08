@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
+import androidx.room.TypeConverter
 
 @Entity
 class InvestmentDB (
@@ -18,6 +19,7 @@ class InvestmentDB (
     @ColumnInfo(name = "idInvest") val idInvest: String?,
     @ColumnInfo(name = "dateBegin") val dateBegin: Double?,
     @ColumnInfo(name = "dateEnd") val dateEnd: Double?,
+    @ColumnInfo(name = "transactionList") val transactionList: List<Int>,
     @ColumnInfo(name = "invested") val invested: Double?,
     @ColumnInfo(name = "earned") val earned: Double?,
     @ColumnInfo(name = "profitability") val profitability: Double?,
@@ -55,6 +57,19 @@ interface InvestmentDao{
 }
 
 @Database(entities = [InvestmentDB::class], version = 1, exportSchema = false)
+@androidx.room.TypeConverters(Converters::class)
 abstract class InvestmentDatabase : RoomDatabase() {
     abstract fun investmentDao(): InvestmentDao
+}
+
+class Converters {
+    @TypeConverter
+    fun fromIntList(value: List<Int>): String {
+        return value.joinToString(",")
+    }
+
+    @TypeConverter
+    fun toIntList(value: String): List<Int> {
+        return if (value.isBlank()) emptyList() else value.split(",").map { it.toInt() }
+    }
 }

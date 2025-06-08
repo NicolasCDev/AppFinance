@@ -22,6 +22,7 @@ import com.github.mikephil.charting.utils.MPPointF
 
 @Composable
 fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
+    // Getting transactions from database
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
@@ -39,7 +40,10 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
             }
         },
         update = { chart ->
+            // Hiding chart description
             chart.description.isEnabled = false
+
+            // Filtering transactions between dates
             val filteredTransactions = transactions.filter {
                 it.date != null && it.balance != null && it.date in startDate..endDate
             }
@@ -57,11 +61,12 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
                     entries.add(Entry(millis.toFloat(), balance.toFloat()))
 
                     // Printing date
-                    val formattedDate = DateFormattedText(date)
+                    val formattedDate = dateFormattedText(date)
                     labels.add(formattedDate)
                 }
             }
 
+            // Data settings
             val dataSet = LineDataSet(entries, "Balance in €").apply {
                 color = Color.BLUE
                 valueTextColor = Color.WHITE
@@ -104,7 +109,7 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
             chart.legend.textColor = Color.WHITE
             chart.data = LineData(dataSet)
 
-            val marker = CustomMarkerView(chart.context, R.layout.marker_view)
+            val marker = CustomMarkerBalance(chart.context, R.layout.marker_view)
             marker.chartView = chart
             chart.marker = marker
 
@@ -115,7 +120,7 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
     )
 }
 
-class CustomMarkerView(
+class CustomMarkerBalance(
     context: Context,
     layoutResource: Int
 ) : MarkerView(context, layoutResource) {

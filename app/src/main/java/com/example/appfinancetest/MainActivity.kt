@@ -130,7 +130,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
-fun DateFormattedText(date: Double?): String {
+fun dateFormattedText(date: Double?): String {
     if (date == null) return "N/A"
     val excelDateMilliSec = (date - 25569) * 86400 * 1000
     val excelDate = Date(excelDateMilliSec.toLong())

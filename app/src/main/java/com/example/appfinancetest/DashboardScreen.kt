@@ -138,8 +138,8 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                     ) {
                         Text(
                             text = "Plage de dates : ${
-                                DateFormattedText(range.start.roundToInt().toDouble())
-                            } à ${DateFormattedText(range.endInclusive.roundToInt().toDouble())}",
+                                dateFormattedText(range.start.roundToInt().toDouble())
+                            } à ${dateFormattedText(range.endInclusive.roundToInt().toDouble())}",
                             style = MaterialTheme.typography.labelLarge,
                             textAlign = TextAlign.Center
                         )

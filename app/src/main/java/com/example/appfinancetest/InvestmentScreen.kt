@@ -19,8 +19,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -63,8 +60,6 @@ import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -291,7 +286,7 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                                 ) {
                                     val data = when (selectedTabIndex) {
                                         0 -> listOf(
-                                            DateFormattedText(investmentDB.dateBegin),
+                                            dateFormattedText(investmentDB.dateBegin),
                                             when (investmentDB.item) {
                                                 "Bourse - PEA" -> "PEA"
                                                 "Bourse - Compte titre" -> "Compte titre"
@@ -302,7 +297,7 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                                             "%.0f €".format(investmentDB.earned ?: 0.0)
                                         )
                                         1 -> listOf(
-                                            DateFormattedText(investmentDB.dateEnd),
+                                            dateFormattedText(investmentDB.dateEnd),
                                             when (investmentDB.item) {
                                                 "Bourse - PEA" -> "PEA"
                                                 "Bourse - Compte titre" -> "Compte titre"
@@ -430,8 +425,8 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                     ) {
                         Text(
                             text = "Range of dates : ${
-                                DateFormattedText(range.start.roundToInt().toDouble())
-                            } à ${DateFormattedText(range.endInclusive.roundToInt().toDouble())}",
+                                dateFormattedText(range.start.roundToInt().toDouble())
+                            } à ${dateFormattedText(range.endInclusive.roundToInt().toDouble())}",
                             style = MaterialTheme.typography.labelLarge,
                             textAlign = TextAlign.Center
                         )
@@ -474,8 +469,9 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
                         }
                     )
                 }
-                BalanceLineChart(
-                    viewModel = databaseViewModel,
+                InvestmentLineChart(
+                    databaseViewModel = databaseViewModel,
+                    investmentViewModel = investmentViewModel,
                     startDate = range.start.toDouble(),
                     endDate = range.endInclusive.toDouble()
                 )
