@@ -108,7 +108,7 @@ fun MainScreen() {
         }
     ) { innerPadding ->
         when (selectedItem) {
-            0 -> DashboardScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel)
+            0 -> DashboardScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
             1 -> InvestmentScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
             2 -> PatrimonialScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel)
             3 -> DataBaseScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)

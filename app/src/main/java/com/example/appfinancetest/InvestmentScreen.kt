@@ -1,18 +1,15 @@
 package com.example.appfinancetest
 
 import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -27,9 +24,7 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -60,7 +55,6 @@ import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +75,6 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
     val prefs = remember { DataStorage(context) }
 
     // State showing preferences are loaded
-    var showDateRangePicker by remember { mutableStateOf(false) }
     var isPrefsLoaded by remember { mutableStateOf(false) }
     var range by remember { mutableStateOf(minDate..maxDate) }
 
@@ -390,92 +383,9 @@ fun InvestmentScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_
             )
         },
         content = { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .padding(paddingValues) // add padding for top bar space
-            ) {
-                // Display Date Range and controls in Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Date picker button with calendar image
-                    IconButton(
-                        onClick = { showDateRangePicker = true },
-                        modifier = Modifier
-                            .width(50.dp)
-                            .height(50.dp)
-                            .padding(end = 16.dp),
-                    ) {
-                        Icon(
-                            painterResource(id = R.drawable.ic_calendar),
-                            contentDescription = "Choose dates",
-                        )
-                    }
-
-                    // Column for displaying date range and RangeSlider
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Range of dates : ${
-                                dateFormattedText(range.start.roundToInt().toDouble())
-                            } à ${dateFormattedText(range.endInclusive.roundToInt().toDouble())}",
-                            style = MaterialTheme.typography.labelLarge,
-                            textAlign = TextAlign.Center
-                        )
-
-                        // Box around RangeSlider to control its size
-                        Box(
-                            modifier = Modifier
-                                .padding(vertical = 0.dp)
-                                .fillMaxWidth()
-                                .height(20.dp)
-                        ) {
-                            // RangeSlider inside the Box
-                            RangeSlider(
-                                value = range,
-                                onValueChange = { range = it },
-                                valueRange = minDate..maxDate,
-                                steps = ((maxDate - minDate) / 10).toInt(),
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .fillMaxWidth(),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = Color.Blue, // Cursor color
-                                    activeTrackColor = Color.Green, // Active track color
-                                    inactiveTrackColor = Color.Gray.copy(alpha = 0.3f), // Inactive track color
-                                    activeTickColor = Color.Transparent, // Hide active "ticks"
-                                    inactiveTickColor = Color.Transparent // Hide inactive "ticks"
-                                )
-                            )
-                        }
-                    }
-                }
-
-                // Show DateRangePicker only if showDateRangePicker is true
-                if (showDateRangePicker) {
-                    DateRangePickerDialog(
-                        onDismiss = { showDateRangePicker = false },
-                        onDateSelected = { start, end ->
-                            range = start..end
-                            showDateRangePicker = false
-                        }
-                    )
-                }
-                InvestmentLineChart(
-                    databaseViewModel = databaseViewModel,
-                    investmentViewModel = investmentViewModel,
-                    startDate = range.start.toDouble(),
-                    endDate = range.endInclusive.toDouble()
-                )
-            }
+            Text(
+                modifier = Modifier.padding(paddingValues),
+                text = "Removing the investment screen" )
         }
     )
 }

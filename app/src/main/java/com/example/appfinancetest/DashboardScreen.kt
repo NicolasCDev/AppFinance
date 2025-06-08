@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,17 +37,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.combine
 import kotlin.math.roundToInt
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.pager.HorizontalPager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel)  {
+fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel)  {
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
     val validDates = transactions.mapNotNull { it.date }
     if (validDates.isEmpty()) {
-        Text("Aucune donnée disponible.")
+        Text("No data available")
         return
     }
 
@@ -83,7 +86,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
 
     // Doesn't show until prefs are loaded
     if (!isPrefsLoaded) {
-        Text("Chargement de la plage de dates...")
+        Text("Date range loading...")
         return
     }
 
@@ -195,12 +198,19 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 0.dp)  // Padding autour de la Box
+                        .fillMaxWidth()  // Remplir toute la largeur disponible
+                        .height(230.dp)  // Définir une hauteur spécifique pour les graphiques
+                ) {
+                    LineChartPager(
+                        databaseViewModel = databaseViewModel,
+                        investmentViewModel = investmentViewModel,
+                        range = range
+                    )
+                }
 
-                BalanceLineChart(
-                    viewModel = databaseViewModel,
-                    startDate = range.start.toDouble(),
-                    endDate = range.endInclusive.toDouble()
-                )
                 BalancePieChart(
                     viewModel = databaseViewModel,
                     startDate = range.start.toDouble(),
@@ -210,5 +220,3 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
         }
     )
 }
-
-

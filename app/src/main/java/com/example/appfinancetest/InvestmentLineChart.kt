@@ -32,7 +32,7 @@ import com.github.mikephil.charting.listener.OnChartGestureListener
 
 @Composable
 fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
-    val TAG = "InvestmentChart"
+    val tag = "InvestmentLineChart"
 
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
@@ -41,7 +41,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
     val filteredTransactions = transactions.filter {
         it.category == "Investissement" && it.date != null && it.amount != null && it.date in startDate..endDate
     }.also {
-        Log.d(TAG, "Filtered Transactions Count: ${it.size}")
+        Log.d(tag, "Filtered Transactions Count: ${it.size}")
     }
 
     val endedInvestments by produceState<List<InvestmentDB>?>(initialValue = null, investmentViewModel) {
@@ -51,7 +51,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
     val filteredInvestments = endedInvestments?.filter {
         it.dateEnd != null && it.invested != null && it.dateEnd in startDate..endDate
     }?.also {
-        Log.d(TAG, "Filtered Ended Investments Count: ${it.size}")
+        Log.d(tag, "Filtered Ended Investments Count: ${it.size}")
     }
 
     val entriesCrypto = mutableListOf<Entry>()
@@ -71,23 +71,23 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
             when (item) {
                 "Bourse - PEA", "Bourse - Compte titre" -> {
                     entriesStockExchange.add(entry)
-                    Log.d(TAG, "Added to StockExchange: $entry")
+                    Log.d(tag, "Added to StockExchange: $entry")
                 }
                 "Crypto" -> {
                     entriesCrypto.add(entry)
-                    Log.d(TAG, "Added to Crypto: $entry")
+                    Log.d(tag, "Added to Crypto: $entry")
                 }
                 "Crowdfunding" -> {
                     entriesCrowdfunding.add(entry)
-                    Log.d(TAG, "Added to Crowdfunding: $entry")
+                    Log.d(tag, "Added to Crowdfunding: $entry")
                 }
                 "Crowdfunding immobilier" -> {
                     entriesRealEstateCrowdfunding.add(entry)
-                    Log.d(TAG, "Added to RealEstateCrowdfunding: $entry")
+                    Log.d(tag, "Added to RealEstateCrowdfunding: $entry")
                 }
             }
             entriesTotal.add(entry)
-            Log.d(TAG, "Added to Total: $entry")
+            Log.d(tag, "Added to Total: $entry")
         }
     }
 
@@ -102,23 +102,23 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
             when (item) {
                 "Bourse - PEA", "Bourse - Compte titre" -> {
                     entriesStockExchange.add(exitEntry)
-                    Log.d(TAG, "Removed from StockExchange: $exitEntry")
+                    Log.d(tag, "Removed from StockExchange: $exitEntry")
                 }
                 "Crypto" -> {
                     entriesCrypto.add(exitEntry)
-                    Log.d(TAG, "Removed from Crypto: $exitEntry")
+                    Log.d(tag, "Removed from Crypto: $exitEntry")
                 }
                 "Crowdfunding" -> {
                     entriesCrowdfunding.add(exitEntry)
-                    Log.d(TAG, "Removed from Crowdfunding: $exitEntry")
+                    Log.d(tag, "Removed from Crowdfunding: $exitEntry")
                 }
                 "Crowdfunding immobilier" -> {
                     entriesRealEstateCrowdfunding.add(exitEntry)
-                    Log.d(TAG, "Removed from RealEstateCrowdfunding: $exitEntry")
+                    Log.d(tag, "Removed from RealEstateCrowdfunding: $exitEntry")
                 }
             }
             entriesTotal.add(exitEntry)
-            Log.d(TAG, "Removed from Total: $exitEntry")
+            Log.d(tag, "Removed from Total: $exitEntry")
         }
     }
     val allDates = (entriesCrypto + entriesStockExchange + entriesCrowdfunding + entriesRealEstateCrowdfunding + entriesTotal)
@@ -138,7 +138,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
             .height(230.dp)
             .padding(4.dp),
         factory = { context ->
-            Log.d(TAG, "Creating LineChart View")
+            Log.d(tag, "Creating LineChart View")
             LineChart(context).apply {
                 axisRight.isEnabled = false
                 xAxis.position = XAxis.XAxisPosition.BOTTOM
@@ -149,7 +149,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
             chart.description.isEnabled = false
 
             fun makeDataSet(entries: List<Entry>, label: String, color: Int): LineDataSet {
-                Log.d(TAG, "Creating dataset: $label with ${entries.size} entries")
+                Log.d(tag, "Creating dataset: $label with ${entries.size} entries")
                 return LineDataSet(entries, label).apply {
                     this.color = color
                     valueTextColor = Color.WHITE
@@ -168,7 +168,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
                 if (cumulativeTotal.isNotEmpty()) makeDataSet(cumulativeTotal, "Total", Color.RED) else null
             )
 
-            Log.d(TAG, "Total datasets to display: ${dataSets.size}")
+            Log.d(tag, "Total datasets to display: ${dataSets.size}")
             chart.data = LineData(dataSets)
 
             chart.xAxis.valueFormatter = object : ValueFormatter() {
@@ -232,7 +232,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
 
 
             chart.invalidate()
-            Log.d(TAG, "Chart updated and redrawn")
+            Log.d(tag, "Chart updated and redrawn")
         }
     )
 }
