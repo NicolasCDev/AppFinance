@@ -109,8 +109,8 @@ fun MainScreen() {
     ) { innerPadding ->
         when (selectedItem) {
             0 -> DashboardScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
-            1 -> InvestmentScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
-            2 -> PatrimonialScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel)
+            1 -> InvestmentScreen()
+            2 -> PatrimonialScreen()
             3 -> DataBaseScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
             else -> {
                 ErrorScreen(modifier = Modifier.padding(innerPadding))
@@ -120,14 +120,6 @@ fun MainScreen() {
     if (showSettings) {
         SettingsScreen(onDismiss = { showSettings = false })
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
 }
 
 fun dateFormattedText(date: Double?): String {

@@ -1,6 +1,5 @@
 package com.example.appfinancetest
 // Modify linechart pager : When we click / swipe on the graph, I want to move themarker
-// Third level on Pie Chart
 // Hiding markers when user click outside of the chart (investment + balance)
 // Move all the top bar buttons in the Dashboard top bar ->Main activity top bar ?
 //// Import export investmentDB?

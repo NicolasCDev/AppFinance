@@ -23,13 +23,14 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
     }
 
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var selectedItem by remember { mutableStateOf<String?>(null) }
 
     val filteredTransactions = transactions.filter {
         it.date != null && it.amount != null && it.category != null &&
                 it.date in startDate..endDate
     }
 
-    val chartEntries = if (selectedCategory == null) {
+    val chartEntries = if (selectedCategory == null && selectedItem == null) {
         // Global view: group by category
         filteredTransactions
             .groupBy { it.category }
@@ -38,27 +39,25 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
                 PieEntry(total.toFloat(), category)
             }
     } else {
-        // Drill-down: group by label within the selected category
-        val itemTotals = filteredTransactions
-            .filter { it.category == selectedCategory && it.item != null }
-            .groupBy { it.item!! }
-            .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+        if (selectedCategory != null && selectedItem == null) {
+            // Drill-down: group by item within the selected category
+            val itemTotals = filteredTransactions
+                .filter { it.category == selectedCategory && it.item != null }
+                .groupBy { it.item!! }
+                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-        val sortedItems = itemTotals.entries.sortedByDescending { it.value }
-        val top8= sortedItems.take(8)
-        val others = sortedItems.drop(8)
+            val chartEntries = createPieEntries(itemTotals, topN = 8, othersLabel = "Others")
+            chartEntries
+        } else {
+            // Drill-down: group by label within the selected category
+            val labelTotal = filteredTransactions
+                .filter { it.category == selectedCategory && it.item == selectedItem && it.label != null }
+                .groupBy { it.label!! }
+                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-        val chartEntries = mutableListOf<PieEntry>()
-
-        for ((item, total) in top8) {
-            chartEntries.add(PieEntry(total.toFloat(), item))
+            val chartEntries = createPieEntries(labelTotal, topN = 8, othersLabel = "Others")
+            chartEntries
         }
-
-        val othersTotal = others.sumOf { it.value }
-        if (othersTotal > 0) {
-            chartEntries.add(PieEntry(othersTotal.toFloat(), "Others"))
-        }
-        chartEntries
     }
     val customColors = listOf(
         Color.rgb(0,0,255), // Blue
@@ -84,9 +83,14 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
             .padding(0.dp)
     ) {
         Text(
-            text = selectedCategory?.let { "Répartition par : $it" } ?: "Répartition par : Catégories",
+            text = when {
+                selectedCategory == null -> "Catégories"
+                selectedItem == null -> "$selectedCategory"
+                else -> "$selectedCategory : $selectedItem"
+            },
             modifier = Modifier.padding(bottom = 4.dp)
         )
+
 
         Row(
             modifier = Modifier
@@ -105,7 +109,11 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = { selectedCategory = null },
+                        onClick = if (selectedItem != null) {
+                            { selectedItem = null }
+                        } else ({
+                            selectedCategory = null
+                        }),
                         modifier = Modifier
                             .fillMaxSize(), // Prend toute la hauteur et largeur du box
                         contentPadding = PaddingValues(0.dp),
@@ -156,8 +164,15 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
                             e: Entry?,
                             h: com.github.mikephil.charting.highlight.Highlight?
                         ) {
-                            if (selectedCategory == null && e is PieEntry) {
-                                selectedCategory = e.label
+                            if (e is PieEntry) {
+                                when {
+                                    selectedCategory == null -> {
+                                        selectedCategory = e.label
+                                    }
+                                    selectedItem == null -> {
+                                        selectedItem = e.label
+                                    }
+                                }
                             }
                         }
 
@@ -192,27 +207,26 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
                         PieEntry(total.toFloat(), category)
                     }
             } else {
-                // Drill-down: group by label within the selected category
-                val itemTotals = filteredTransactions
-                    .filter { it.category == selectedCategory && it.item != null }
-                    .groupBy { it.item!! }
-                    .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+                if (selectedCategory != null && selectedItem == null) {
+                    // Drill-down: group by item within the selected category
+                    val itemTotals = filteredTransactions
+                        .filter { it.category == selectedCategory && it.item != null }
+                        .groupBy { it.item!! }
+                        .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-                val sortedItems = itemTotals.entries.sortedByDescending { it.value }
-                val top5= sortedItems.take(5)
-                val others = sortedItems.drop(5)
+                    val tableEntries = createPieEntries(itemTotals, topN = 5, othersLabel = "Autres")
+                    tableEntries
+                } else {
+                    // Drill-down: group by label within the selected category
+                    val labelTotals = filteredTransactions
+                        .filter { it.category == selectedCategory && it.item == selectedItem && it.label != null }
+                        .groupBy { it.label!! }
+                        .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-                val tableEntries = mutableListOf<PieEntry>()
-
-                for ((poste, total) in top5) {
-                    tableEntries.add(PieEntry(total.toFloat(), poste))
+                    val tableEntries = createPieEntries(labelTotals, topN = 5, othersLabel = "Autres")
+                    tableEntries
                 }
 
-                val othersTotal = others.sumOf { it.value }
-                if (othersTotal > 0) {
-                    tableEntries.add(PieEntry(othersTotal.toFloat(), "Autres"))
-                }
-                tableEntries
             }
 
             val previousMap: Map<String, Double> = if (selectedCategory == null) {
@@ -258,4 +272,24 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
         }
     }
 
+}
+
+fun createPieEntries(
+    dataMap: Map<String, Double>,
+    topN: Int = 8,
+    othersLabel: String = "Others"
+): List<PieEntry> {
+    val sortedEntries = dataMap.entries.sortedByDescending { it.value }
+    val topEntries = sortedEntries.take(topN)
+    val others = sortedEntries.drop(topN)
+
+    val entries = mutableListOf<PieEntry>()
+    for ((label, total) in topEntries) {
+        entries.add(PieEntry(total.toFloat(), label))
+    }
+    val othersTotal = others.sumOf { it.value }
+    if (othersTotal > 0) {
+        entries.add(PieEntry(othersTotal.toFloat(), othersLabel))
+    }
+    return entries
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,8 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.combine
 import kotlin.math.roundToInt
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +63,11 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
     var showDateRangePicker by remember { mutableStateOf(false) }
     var isPrefsLoaded by remember { mutableStateOf(false) }
     var range by remember { mutableStateOf(minDate..maxDate) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        InvestmentValidationInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showDialog = false })
+    }
 
     // Load preferences
     LaunchedEffect(Unit) {
@@ -103,6 +109,26 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                     )
                 },
                 modifier = Modifier,
+                navigationIcon = {
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
+                        FloatingActionButton(
+                            onClick = {showDialog = true},
+                            modifier = Modifier.size(40.dp),
+                            containerColor = Color.White,
+                            contentColor = Color.Blue,
+                            elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                        ) {
+                            Icon(
+                                painterResource(id = R.drawable.ic_validate_investment),
+                                contentDescription = "Validate Investment",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
             )
         },
         content = { paddingValues ->
