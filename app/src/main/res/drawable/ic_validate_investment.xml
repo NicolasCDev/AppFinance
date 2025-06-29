@@ -2,16 +2,23 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportWidth="100"
+    android:viewportHeight="100">
 
-    <!-- Barres -->
+    <!-- Circle -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M4,14h2v6H4v-6zM8,12h2v8H8v-8zM12,13h2v7h-2v-7zM16,10h2v10h-2V10z" />
+        android:pathData="M50,5 A45,45 0 1,1 49.99,5 Z"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="10"
+        android:fillColor="@android:color/transparent" />
 
-    <!-- Ligne en flèche -->
+    <!-- Validation -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M4,14l4,-4 4,3 6,-5v2h2v-5h-5v2h2l-5,4 -4,-3 -5,5z" />
+        android:pathData="M30,52 L45,65 L70,35"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+
 </vector>

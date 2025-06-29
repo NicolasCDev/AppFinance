@@ -1,12 +1,5 @@
 package com.example.appfinancetest
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,24 +9,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel) {
-    val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     val scope = rememberCoroutineScope()
 
-    var showDialog by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var dateFilter by remember { mutableStateOf("") }
     var categoryFilter by remember { mutableStateOf("") }
@@ -47,42 +35,6 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
     val transactionsToShow = remember { mutableStateListOf<TransactionDB>() }
     val listState = rememberLazyListState()
     var isFirstLoad by remember { mutableStateOf(true) }
-    var selectedFileUri by remember {
-        mutableStateOf(sharedPreferences.getString("selected_file_uri", "") ?: "")
-    }
-
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let {
-            try {
-                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                sharedPreferences.edit().putString("selected_file_uri", uri.toString()).apply()
-                selectedFileUri = uri.toString()
-
-                context.contentResolver.openInputStream(it)?.let { inputStream ->
-                    val file = readExcelFile(inputStream)
-                    (context as? ComponentActivity)?.lifecycleScope?.launch {
-                        addTransaction(file, databaseViewModel)
-                        addInvestments(databaseViewModel, investmentViewModel)
-                        refreshTrigger++
-                        isFirstLoad = true
-                        currentPage = 1
-                    }
-                }
-            } catch (e: SecurityException) {
-                Log.e("FilePicker", "Error : ${e.message}")
-            }
-        }
-    }
-
-    val exportFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    ) { uri: Uri? ->
-        uri?.let {
-            context.contentResolver.openOutputStream(it)?.use { /* TODO: Écriture */ }
-        }
-    }
 
     LaunchedEffect(listState) {
         delay(200)
@@ -113,97 +65,38 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
         }
     }
 
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Choose an option") },
-            text = {
-                Column {
-                    Button(onClick = {
-                        (context as? ComponentActivity)?.lifecycleScope?.launch {
-                            investmentViewModel.deleteAllInvestments()
-                            filePickerLauncher.launch(
-                                arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                            )
-                            showDialog = false
-                        }
-                    }) { Text("Add") }
+    var showValidation by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showImportExport by remember { mutableStateOf(false) }
 
-                    Spacer(modifier = Modifier.padding(10.dp))
-
-                    Button(onClick = {
-                        (context as? ComponentActivity)?.lifecycleScope?.launch {
-                            databaseViewModel.deleteAllTransactions()
-                            investmentViewModel.deleteAllInvestments()
-                            // We launch the filePicker
-                            filePickerLauncher.launch(
-                                arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                            )
-                            showDialog = false
-                        }
-                    }) { Text("Replace") }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                Button(onClick = { showDialog = false }) { Text("Cancel") }
-            }
-        )
+    if (showValidation) {
+        InvestmentValidationInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showValidation = false })
+    }
+    if (showSettings) {
+        SettingsScreen(onDismiss = { showSettings = false })
+    }
+    if (showImportExport) {
+        ImportExportInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showImportExport = false }, onRefresh = {
+            refreshTrigger++
+            isFirstLoad = true
+            currentPage = 1
+        })
     }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "DataBase",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 18.dp)
-                    )
-                },
-                navigationIcon = {
-                    Row(
-                        modifier = Modifier.padding(start = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AssistChip(
-                            onClick = { exportFileLauncher.launch("export.xlsx") },
-                            label = { Text("Export") },
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_export),
-                                    contentDescription = null
-                                )
-                            },
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        FloatingActionButton(
-                            onClick = {
-                                scope.launch {
-                                    showDialog = true
-                                }
-                            },
-                            modifier = Modifier.size(40.dp),
-                            containerColor = Color.White,
-                            contentColor = Color.Blue,
-                            elevation = FloatingActionButtonDefaults.elevation(4.dp)
-                        ) {
-                            Icon(
-                                painterResource(id = R.drawable.ic_add_transac),
-                                contentDescription = "Add",
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
+            TopBar(
+                onValidateClick = { showValidation = true },
+                onSettingsClick = { showSettings = true },
+                onImportExportClick = { showImportExport = true },
+                name = "DataBase"
             )
         },
         content = { paddingValues ->
             Column(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding().coerceAtMost(8.dp))
+                    .padding(paddingValues)
             ) {
                 Text(
                     text = "NBTransactions : ${transactionsToShow.size}",
@@ -218,9 +111,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                         "Category",
                         "Item",
                         "Label",
-                        "Amount",
-                        "Variation",
-                        "Balance"
+                        "Amount"
                     ).forEach {
                         Text(
                             it,
@@ -251,9 +142,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                                     transactionDB.category ?: "N/A",
                                     transactionDB.item?: "N/A",
                                     transactionDB.label ?: "N/A",
-                                    "%.2f €".format(transactionDB.amount ?: 0.0),
-                                    "%.2f €".format(transactionDB.variation ?: 0.0),
-                                    "%.2f €".format(transactionDB.balance ?: 0.0)
+                                    "%.2f €".format(transactionDB.amount ?: 0.0)
                                 )
                                 data.forEach {
                                     Text(

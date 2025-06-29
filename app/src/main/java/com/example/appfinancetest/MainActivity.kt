@@ -65,23 +65,10 @@ fun MainScreen() {
     Log.d("InvestmentDB_ViewModel", "InvestmentDB_ViewModel created")
     val investmentViewModel: InvestmentDB_ViewModel = viewModel()
     var selectedItem by remember { mutableIntStateOf(0) }
-    var showSettings by remember { mutableStateOf(false) }
     val items = listOf("Dashboard", "Investment", "Patrimonial", "DataBase")
     val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine, R.drawable.ic_database)
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                contentAlignment = Alignment.TopEnd
-            ) {
-                IconButton(onClick = { showSettings = true }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Parameters")
-                }
-            }
-        },
         bottomBar = {
             NavigationBar(
                 modifier = Modifier.height(65.dp)
@@ -116,9 +103,6 @@ fun MainScreen() {
                 ErrorScreen(modifier = Modifier.padding(innerPadding))
             }
         }
-    }
-    if (showSettings) {
-        SettingsScreen(onDismiss = { showSettings = false })
     }
 }
 
