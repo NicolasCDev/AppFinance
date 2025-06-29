@@ -3,8 +3,6 @@ package com.example.appfinancetest
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -15,73 +13,76 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.PointerEvent
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.platform.LocalDensity
+
 
 @Composable
 fun LineChartPager(
     databaseViewModel: DataBase_ViewModel,
     investmentViewModel: InvestmentDB_ViewModel,
-    range: ClosedFloatingPointRange<Float>
+    range: ClosedFloatingPointRange<Float>,
+    hideMarkerTrigger: Int = 0,
+    onHideMarkers: (() -> Unit)? = null
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
     val heightDp = 230.dp
     val density = LocalDensity.current
     val heightPx = with(density) { heightDp.toPx() }
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                return if (available.x != 0f) Offset.Zero else available // Autorise uniquement le swipe horizontal
-            }
-        }
-    }
+
     var userScrollEnabled by remember {
         mutableStateOf(true)
     }
+    
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         HorizontalPager(
             state = pagerState,
+            userScrollEnabled = userScrollEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(heightDp)
                 .padding(4.dp)
                 .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDrag = { change, dragAmount ->
-                            Log.d("LineChartPager", "Drag detected: $dragAmount")
-                            Log.d("LineChartPager", "Change: $change")
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.first()
                             val y = change.position.y
-                            Log.d("LineChartPager", "Y: $y")
+                            
                             // Define the zones: top 25%, middle 50%, bottom 25%
                             val topZoneEnd = heightPx * 0.25f
-                            Log.d("LineChartPager", "Top zone end: $topZoneEnd")
                             val bottomZoneStart = heightPx * 0.75f
-                            Log.d("LineChartPager", "Bottom zone start: $bottomZoneStart")
-
-                            // Allow pager swipe only if in top or bottom zone
-                            if (y < topZoneEnd || y > bottomZoneStart) {
-                                Log.d("LineChartPager", "Drag allowed")
-                                // Propagate the drag event to the Pager
-                                //change.consume()
-                            } else {
-                                Log.d("LineChartPager", "Drag not allowed")
-                                // Consume the drag event if in the middle zone to prevent Pager swipe
-                                change.consume()
-                                Log.d("LineChartPager", "Change: $change")
+                            
+                            when (event.type) {
+                                PointerEventType.Press -> {
+                                    Log.d("LineChartPager", "Press at Y: $y")
+                                    // Determine if we're in the middle zone
+                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart
+                                    
+                                    // Disable pager scrolling if in middle zone
+                                    userScrollEnabled = !inMiddleZone
+                                    
+                                    Log.d("LineChartPager", "User scroll enabled: $userScrollEnabled")
+                                    
+                                    // Don't consume the event - let it pass through to the charts
+                                }
+                                PointerEventType.Release -> {
+                                    // Re-enable pager scrolling when touch is released
+                                    userScrollEnabled = true
+                                    Log.d("LineChartPager", "Touch released, pager scroll re-enabled")
+                                    
+                                    // Don't consume the event - let it pass through to the charts
+                                }
+                                // Don't handle Move events at all - let them pass through to charts
                             }
                         }
-                    )
+                    }
                 }
 
         ) { page ->
@@ -89,13 +90,17 @@ fun LineChartPager(
                 0 -> BalanceLineChart(
                     viewModel = databaseViewModel,
                     startDate = range.start.toDouble(),
-                    endDate = range.endInclusive.toDouble()
+                    endDate = range.endInclusive.toDouble(),
+                    hideMarkerTrigger = hideMarkerTrigger,
+                    onHideMarkers = onHideMarkers
                 )
                 1 -> InvestmentLineChart(
                     databaseViewModel = databaseViewModel,
                     investmentViewModel = investmentViewModel,
                     startDate = range.start.toDouble(),
-                    endDate = range.endInclusive.toDouble()
+                    endDate = range.endInclusive.toDouble(),
+                    hideMarkerTrigger = hideMarkerTrigger,
+                    onHideMarkers = onHideMarkers
                 )
             }
         }

@@ -30,7 +30,7 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
     var amountFilter by remember { mutableStateOf("") }
 
     val pageSize = 100
-    val beforeRefresh = 20
+    val beforeRefresh = 40
     var currentPage by remember { mutableIntStateOf(1) }
     val transactionsToShow = remember { mutableStateListOf<TransactionDB>() }
     val listState = rememberLazyListState()

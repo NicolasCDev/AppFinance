@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ai.zencoder.plugin.chat.index">
-    <option name="chatMetadata" value="{&quot;faef7cd8-fca6-4eab-990c-cb16e9d96c9d&quot;:{&quot;id&quot;:&quot;faef7cd8-fca6-4eab-990c-cb16e9d96c9d&quot;,&quot;title&quot;:&quot;Kotlin Upgrade Configuration Update&quot;,&quot;createdAt&quot;:1751177365738,&quot;updatedAt&quot;:1751177399243,&quot;isAgent&quot;:true,&quot;isNameGenerated&quot;:true,&quot;messageCount&quot;:2,&quot;lastMessagePreview&quot;:&quot;I'll help you fix the deprecated `kotlinOptions` in your build.gradle.kts file. Let me first search ...&quot;},&quot;20f0e08b-af71-4ea9-9e15-b5d65a9099f4&quot;:{&quot;id&quot;:&quot;20f0e08b-af71-4ea9-9e15-b5d65a9099f4&quot;,&quot;title&quot;:&quot;DashboardScreen Test Generation&quot;,&quot;createdAt&quot;:1751178192133,&quot;updatedAt&quot;:1751178294424,&quot;isAgent&quot;:true,&quot;isUnitTestsAgent&quot;:true,&quot;isNameGenerated&quot;:true,&quot;messageCount&quot;:2,&quot;lastMessagePreview&quot;:&quot;I'll help you generate tests for the DashboardScreen method. Let me first explore the project struct...&quot;}}" />
-  </component>
-</project>

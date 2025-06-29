@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,11 +35,31 @@ import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
 
 @Composable
-fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
+fun InvestmentLineChart(
+    databaseViewModel: DataBase_ViewModel, 
+    investmentViewModel: InvestmentDB_ViewModel, 
+    startDate: Double = 0.0, 
+    endDate: Double = 2958465.0,
+    hideMarkerTrigger: Int = 0,
+    onHideMarkers: (() -> Unit)? = null
+) {
     val tag = "InvestmentLineChart"
 
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
+    }
+    
+    // Keep reference to chart for external marker hiding
+    var chartRef by remember { mutableStateOf<LineChart?>(null) }
+    
+    // Hide marker when trigger changes
+    LaunchedEffect(hideMarkerTrigger) {
+        if (hideMarkerTrigger > 0) {
+            chartRef?.let {
+                it.highlightValue(null)
+                it.invalidate()
+            }
+        }
     }
 
     val filteredTransactions = transactions.filter {
@@ -143,6 +167,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
                 axisRight.isEnabled = false
                 xAxis.position = XAxis.XAxisPosition.BOTTOM
                 xAxis.granularity = 1f
+                chartRef = this // Store reference for external access
             }
         },
         update = { chart ->
@@ -199,13 +224,12 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
             // Gestion de la sélection/désélection d’un point
             chart.setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                 override fun onValueSelected(e: Entry?, h: Highlight?) {
-                    // Rien à faire ici, marker se montre automatiquement
+                    // Nothing to do here, marker shows automatically
                 }
 
                 override fun onNothingSelected() {
                     // Quand rien n’est sélectionné, on cache le marker
-                    chart.marker?.refreshContent(null, null)
-                    chart.marker = null
+                    chart.highlightValue(null)
                     chart.invalidate()
                 }
             })
@@ -222,6 +246,7 @@ fun InvestmentLineChart(databaseViewModel: DataBase_ViewModel, investmentViewMod
                         if (h == null) {
                             // Pas de point sous le doigt -> on clear la selection -> hide marker
                             chart.highlightValue(null, true) // Trigger onNothingSelected
+                            onHideMarkers?.invoke() // Also trigger external marker hiding
                         }
                     }
                 }

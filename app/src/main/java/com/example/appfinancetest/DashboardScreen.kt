@@ -27,8 +27,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +60,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
     val maxDate = validDates.maxOrNull()?.toFloat() ?: fallbackMax
     var isFirstLoad by remember { mutableStateOf(true) }
     var currentPage by remember { mutableIntStateOf(1) }
+    var hideMarkerTrigger by remember { mutableIntStateOf(0) }
 
     if (showValidation) {
         InvestmentValidationInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showValidation = false })
@@ -95,6 +99,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
         return
     }
     val context = LocalContext.current
+    val density = LocalDensity.current
     val prefs = remember { DataStorage(context) }
 
     // State showing preferences are loaded
@@ -145,6 +150,12 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                     .fillMaxSize()
                     .padding(16.dp)
                     .padding(paddingValues) // add padding for top bar space
+                    .pointerInput(Unit) {
+                        detectTapGestures { _ ->
+                            // Hide markers on any tap - let the charts handle their own interactions
+                            hideMarkerTrigger++
+                        }
+                    }
             ) {
                 if (validDates.isEmpty()) {
                     Text("No data available")
@@ -231,20 +242,22 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
 
                     // Print balance on the top of the LineChart
                     Text(
-                        text = "Solde en fin de période: ${"%.2f".format(lastBalance)} €",
+                        text = "Balance at the end of the period: ${"%.2f".format(lastBalance)} €",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Box(
                         modifier = Modifier
-                            .padding(vertical = 0.dp)  // Padding autour de la Box
-                            .fillMaxWidth()  // Remplir toute la largeur disponible
-                            .height(230.dp)  // Définir une hauteur spécifique pour les graphiques
+                            .padding(vertical = 0.dp)  // Padding around the Box
+                            .fillMaxWidth()  // Fill all the width available
+                            .height(230.dp)  // Define a specific height for graphics
                     ) {
                         LineChartPager(
                             databaseViewModel = databaseViewModel,
                             investmentViewModel = investmentViewModel,
-                            range = range
+                            range = range,
+                            hideMarkerTrigger = hideMarkerTrigger,
+                            onHideMarkers = { hideMarkerTrigger++ }
                         )
                     }
 

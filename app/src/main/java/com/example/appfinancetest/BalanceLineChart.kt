@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -19,12 +23,34 @@ import java.util.*
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
+import android.view.MotionEvent
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
 
 @Composable
-fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, endDate: Double = 2958465.0) {
+fun BalanceLineChart(
+    viewModel: DataBase_ViewModel, 
+    startDate: Double = 0.0, 
+    endDate: Double = 2958465.0,
+    hideMarkerTrigger: Int = 0,
+    onHideMarkers: (() -> Unit)? = null
+) {
     // Getting transactions from database
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
+    }
+    
+    // Keep reference to chart for external marker hiding
+    var chartRef by remember { mutableStateOf<LineChart?>(null) }
+    
+    // Hide marker when trigger changes
+    LaunchedEffect(hideMarkerTrigger) {
+        if (hideMarkerTrigger > 0) {
+            chartRef?.let {
+                it.highlightValue(null)
+                it.invalidate()
+            }
+        }
     }
 
     AndroidView(
@@ -37,6 +63,7 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
                 axisRight.isEnabled = false
                 xAxis.position = XAxis.XAxisPosition.BOTTOM
                 xAxis.granularity = 1f
+                chartRef = this // Store reference for external access
             }
         },
         update = { chart ->
@@ -112,6 +139,40 @@ fun BalanceLineChart(viewModel: DataBase_ViewModel, startDate: Double = 0.0, end
             val marker = CustomMarkerBalance(chart.context, R.layout.marker_view)
             marker.chartView = chart
             chart.marker = marker
+
+            // Handle marker visibility when clicking outside points
+            chart.setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+                override fun onValueSelected(e: Entry?, h: Highlight?) {
+                    // Nothing to do here, marker shows automatically
+                }
+
+                override fun onNothingSelected() {
+                    // When nothing is selected, hide the marker
+                    chart.highlightValue(null)
+                    chart.invalidate()
+                }
+            })
+
+            // Intercept clicks on the chart to detect clicks outside points
+            chart.onChartGestureListener = object : OnChartGestureListener {
+                override fun onChartGestureStart(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {}
+                override fun onChartGestureEnd(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {}
+                override fun onChartLongPressed(me: MotionEvent?) {}
+                override fun onChartDoubleTapped(me: MotionEvent?) {}
+                override fun onChartSingleTapped(me: MotionEvent?) {
+                    me?.let {
+                        val h = chart.getHighlightByTouchPoint(it.x, it.y)
+                        if (h == null) {
+                            // No point under finger -> clear selection -> hide marker
+                            chart.highlightValue(null, true) // Trigger onNothingSelected
+                            onHideMarkers?.invoke() // Also trigger external marker hiding
+                        }
+                    }
+                }
+                override fun onChartFling(me1: MotionEvent?, me2: MotionEvent?, velocityX: Float, velocityY: Float) {}
+                override fun onChartScale(me: MotionEvent?, scaleX: Float, scaleY: Float) {}
+                override fun onChartTranslate(me: MotionEvent?, dX: Float, dY: Float) {}
+            }
 
             chart.invalidate()
         }
