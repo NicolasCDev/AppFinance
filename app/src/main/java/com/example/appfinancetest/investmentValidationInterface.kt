@@ -199,7 +199,7 @@ fun InvestmentValidationInterface (
                             )
                         }
 
-                        1 -> listOf("End", "Item", "Label", "Invested", "Earned", "Validated").forEach {
+                        1 -> listOf("Ended", "Item", "Label", "Invested", "Earned", "Validated").forEach {
                             Text(
                                 it,
                                 modifier = Modifier.weight(1f),

@@ -1,0 +1,615 @@
+{
+    "checksum": "f5f51c719b33f1081570f6a172979881f33432f5005e67ba758b1dbc1559c6b0",
+    "data": {
+    "id": "4b208606-01e1-43b3-8d9f-8c9447fa57af",
+    "createdAt": 1751181821864,
+    "updatedAt": 1751181835164,
+    "title": "Kotlin Unresolved Reference Explained",
+    "messages": [
+        {
+            "id": "938bf80c-2ecb-4519-b00a-69e8ee616ecc",
+            "role": "user",
+            "content": [
+                {
+                    "type": "command",
+                    "commandName": "explain"
+                },
+                {
+                    "type": "codeSnippet",
+                    "text": "import androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.ui.geometry.Offset\nimport androidx.compose.ui.input.pointer.awaitPointerEventScope\nimport androidx.compose.ui.input.pointer.PointerEventType\nimport kotlin.math.abs\nimport androidx.compose.ui.input.nestedscroll.NestedScrollConnection",
+                    "language": "kotlin"
+                },
+                {
+                    "type": "text",
+                    "text": "Unresolved reference 'awaitPointerEventScope'."
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                    "fsPath": "C:/Users/nicol/AndroidStudioProjects/AppFinanceTest/app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                    "content": "package com.example.appfinancetest\n\nimport android.util.Log\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.gestures.awaitEachGesture\nimport androidx.compose.foundation.gestures.awaitFirstDown\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.pager.HorizontalPager\nimport androidx.compose.foundation.pager.rememberPagerState\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.unit.dp\nimport androidx.compose.ui.Alignment\nimport kotlinx.coroutines.launch\nimport androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.ui.geometry.Offset\nimport androidx.compose.ui.input.pointer.awaitPointerEventScope\nimport androidx.compose.ui.input.pointer.PointerEventType\nimport kotlin.math.abs\nimport androidx.compose.ui.input.nestedscroll.NestedScrollConnection\nimport androidx.compose.ui.input.nestedscroll.NestedScrollSource\nimport androidx.compose.ui.input.nestedscroll.nestedScroll\nimport androidx.compose.ui.input.pointer.PointerEvent\nimport androidx.compose.ui.input.pointer.PointerEventPass\nimport androidx.compose.ui.input.pointer.consumePositionChange\nimport androidx.compose.ui.platform.LocalDensity\n\n@Composable\nfun LineChartPager(\n    databaseViewModel: DataBase_ViewModel,\n    investmentViewModel: InvestmentDB_ViewModel,\n    range: ClosedFloatingPointRange<Float>\n) {\n    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })\n    val coroutineScope = rememberCoroutineScope()\n    val heightDp = 230.dp\n    val density = LocalDensity.current\n    val heightPx = with(density) { heightDp.toPx() }\n    val nestedScrollConnection = remember {\n        object : NestedScrollConnection {\n            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {\n                return if (available.x != 0f) Offset.Zero else available // Autorise uniquement le swipe horizontal\n            }\n        }\n    }\n    var userScrollEnabled by remember {\n        mutableStateOf(true)\n    }\n    Column(\n        modifier = Modifier.fillMaxSize(),\n        horizontalAlignment = Alignment.CenterHorizontally\n    ) {\n        HorizontalPager(\n            state = pagerState,\n            userScrollEnabled = userScrollEnabled,\n            modifier = Modifier\n                .fillMaxWidth()\n                .height(heightDp)\n                .padding(4.dp)\n                .pointerInput(Unit) {\n                    awaitPointerEventScope {\n                        while (true) {\n                            val event = awaitPointerEvent()\n                            val change = event.changes.first()\n                            val y = change.position.y\n                            \n                            // Define the zones: top 25%, middle 50%, bottom 25%\n                            val topZoneEnd = heightPx * 0.25f\n                            val bottomZoneStart = heightPx * 0.75f\n                            \n                            when (event.type) {\n                                PointerEventType.Press -> {\n                                    Log.d(\"LineChartPager\", \"Press at Y: $y\")\n                                    // Determine if we're in the middle zone\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Disable pager scrolling if in middle zone\n                                    userScrollEnabled = !inMiddleZone\n                                    \n                                    Log.d(\"LineChartPager\", \"User scroll enabled: $userScrollEnabled\")\n                                }\n                                PointerEventType.Move -> {\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Only consume horizontal movement in middle zone\n                                    if (inMiddleZone) {\n                                        val dragX = change.position.x - change.previousPosition.x\n                                        val dragY = change.position.y - change.previousPosition.y\n                                        \n                                        // If horizontal movement is more significant than vertical,\n                                        // consume it to prevent pager swipe\n                                        if (abs(dragX) > abs(dragY) && abs(dragX) > 10f) {\n                                            change.consume()\n                                            Log.d(\"LineChartPager\", \"Consuming horizontal drag in middle zone\")\n                                        }\n                                        // Let vertical or small movements pass through for chart interaction\n                                    }\n                                }\n                                PointerEventType.Release -> {\n                                    // Re-enable pager scrolling when touch is released\n                                    userScrollEnabled = true\n                                    Log.d(\"LineChartPager\", \"Touch released, pager scroll re-enabled\")\n                                }\n                            }\n                        }\n                    }\n                }\n\n        ) { page ->\n            when (page) {\n                0 -> BalanceLineChart(\n                    viewModel = databaseViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n                1 -> InvestmentLineChart(\n                    databaseViewModel = databaseViewModel,\n                    investmentViewModel = investmentViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n            }\n        }\n\n        Row(\n            horizontalArrangement = Arrangement.Center,\n            modifier = Modifier\n                .fillMaxWidth()\n                .padding(16.dp)\n        ) {\n            repeat(2) { index ->\n                val selected = index == pagerState.currentPage\n                Box(\n                    modifier = Modifier\n                        .size(if (selected) 12.dp else 8.dp)\n                        .padding(4.dp)\n                        .background(\n                            color = if (selected)\n                                MaterialTheme.colorScheme.primary\n                            else\n                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),\n                            shape = MaterialTheme.shapes.small\n                        )\n                        .clickable {\n                            coroutineScope.launch {\n                                pagerState.scrollToPage(index)\n                            }\n                        }\n                )\n            }\n        }\n    }\n}\n\n\n",
+                    "language": "kotlin"
+                },
+                "codebaseEnabled": true,
+                "ragFiles": [
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ImportExport.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExport.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/TransactionDao_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\TransactionDao_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/InvestmentDao_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\InvestmentDao_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/AppDatabase_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\AppDatabase_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/InvestmentDatabase_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\InvestmentDatabase_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ui/theme/Color.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ui\\theme\\Color.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ErrorScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ErrorScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/PatrimonialScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\PatrimonialScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/InvestmentScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ui/theme/Type.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ui\\theme\\Type.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "build.gradle.kts",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\build.gradle.kts",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/BalanceLineChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\BalanceLineChart.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ui/theme/Theme.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ui\\theme\\Theme.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/InvestmentLineChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentLineChart.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/BalancePieChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\BalancePieChart.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DataBaseScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DataBaseScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/TopBar.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\TopBar.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DateRangePickerDialog.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DateRangePickerDialog.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/SettingsScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\SettingsScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app\\build.gradle.kts",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build.gradle.kts",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\MainActivity.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\MainActivity.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "build.gradle.kts",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\build.gradle.kts",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentLineChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentLineChart.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "gradle\\libs.versions.toml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\gradle\\libs.versions.toml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_launcher_background.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_launcher_background.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_launcher_foreground.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_launcher_foreground.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_import_export.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_import_export.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_validate_investment.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_validate_investment.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\FilterUtils.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\FilterUtils.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\0_TO DO.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\0_TO DO.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExport.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExport.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\ErrorScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ErrorScreen.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExportInterface.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExportInterface.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DashboardScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DashboardScreen.kt",
+                        "sources": [
+                            "opened_tab"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DataBaseScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DataBaseScreen.kt",
+                        "sources": [
+                            "opened_tab"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "sources": [
+                            "opened_tab"
+                        ]
+                    }
+                ],
+                "rerankedFiles": [
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt"
+                    }
+                ],
+                "usedFilePaths": [
+                    {
+                        "path": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "C:/Users/nicol/AndroidStudioProjects/AppFinanceTest/app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                        "content": "package com.example.appfinancetest\n\nimport android.util.Log\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.gestures.awaitEachGesture\nimport androidx.compose.foundation.gestures.awaitFirstDown\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.pager.HorizontalPager\nimport androidx.compose.foundation.pager.rememberPagerState\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.unit.dp\nimport androidx.compose.ui.Alignment\nimport kotlinx.coroutines.launch\nimport androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.ui.geometry.Offset\nimport androidx.compose.ui.input.pointer.awaitPointerEventScope\nimport androidx.compose.ui.input.pointer.PointerEventType\nimport kotlin.math.abs\nimport androidx.compose.ui.input.nestedscroll.NestedScrollConnection\nimport androidx.compose.ui.input.nestedscroll.NestedScrollSource\nimport androidx.compose.ui.input.nestedscroll.nestedScroll\nimport androidx.compose.ui.input.pointer.PointerEvent\nimport androidx.compose.ui.input.pointer.PointerEventPass\nimport androidx.compose.ui.input.pointer.consumePositionChange\nimport androidx.compose.ui.platform.LocalDensity\n\n@Composable\nfun LineChartPager(\n    databaseViewModel: DataBase_ViewModel,\n    investmentViewModel: InvestmentDB_ViewModel,\n    range: ClosedFloatingPointRange<Float>\n) {\n    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })\n    val coroutineScope = rememberCoroutineScope()\n    val heightDp = 230.dp\n    val density = LocalDensity.current\n    val heightPx = with(density) { heightDp.toPx() }\n    val nestedScrollConnection = remember {\n        object : NestedScrollConnection {\n            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {\n                return if (available.x != 0f) Offset.Zero else available // Autorise uniquement le swipe horizontal\n            }\n        }\n    }\n    var userScrollEnabled by remember {\n        mutableStateOf(true)\n    }\n    Column(\n        modifier = Modifier.fillMaxSize(),\n        horizontalAlignment = Alignment.CenterHorizontally\n    ) {\n        HorizontalPager(\n            state = pagerState,\n            userScrollEnabled = userScrollEnabled,\n            modifier = Modifier\n                .fillMaxWidth()\n                .height(heightDp)\n                .padding(4.dp)\n                .pointerInput(Unit) {\n                    awaitPointerEventScope {\n                        while (true) {\n                            val event = awaitPointerEvent()\n                            val change = event.changes.first()\n                            val y = change.position.y\n                            \n                            // Define the zones: top 25%, middle 50%, bottom 25%\n                            val topZoneEnd = heightPx * 0.25f\n                            val bottomZoneStart = heightPx * 0.75f\n                            \n                            when (event.type) {\n                                PointerEventType.Press -> {\n                                    Log.d(\"LineChartPager\", \"Press at Y: $y\")\n                                    // Determine if we're in the middle zone\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Disable pager scrolling if in middle zone\n                                    userScrollEnabled = !inMiddleZone\n                                    \n                                    Log.d(\"LineChartPager\", \"User scroll enabled: $userScrollEnabled\")\n                                }\n                                PointerEventType.Move -> {\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Only consume horizontal movement in middle zone\n                                    if (inMiddleZone) {\n                                        val dragX = change.position.x - change.previousPosition.x\n                                        val dragY = change.position.y - change.previousPosition.y\n                                        \n                                        // If horizontal movement is more significant than vertical,\n                                        // consume it to prevent pager swipe\n                                        if (abs(dragX) > abs(dragY) && abs(dragX) > 10f) {\n                                            change.consume()\n                                            Log.d(\"LineChartPager\", \"Consuming horizontal drag in middle zone\")\n                                        }\n                                        // Let vertical or small movements pass through for chart interaction\n                                    }\n                                }\n                                PointerEventType.Release -> {\n                                    // Re-enable pager scrolling when touch is released\n                                    userScrollEnabled = true\n                                    Log.d(\"LineChartPager\", \"Touch released, pager scroll re-enabled\")\n                                }\n                            }\n                        }\n                    }\n                }\n\n        ) { page ->\n            when (page) {\n                0 -> BalanceLineChart(\n                    viewModel = databaseViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n                1 -> InvestmentLineChart(\n                    databaseViewModel = databaseViewModel,\n                    investmentViewModel = investmentViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n            }\n        }\n\n        Row(\n            horizontalArrangement = Arrangement.Center,\n            modifier = Modifier\n                .fillMaxWidth()\n                .padding(16.dp)\n        ) {\n            repeat(2) { index ->\n                val selected = index == pagerState.currentPage\n                Box(\n                    modifier = Modifier\n                        .size(if (selected) 12.dp else 8.dp)\n                        .padding(4.dp)\n                        .background(\n                            color = if (selected)\n                                MaterialTheme.colorScheme.primary\n                            else\n                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),\n                            shape = MaterialTheme.shapes.small\n                        )\n                        .clickable {\n                            coroutineScope.launch {\n                                pagerState.scrollToPage(index)\n                            }\n                        }\n                )\n            }\n        }\n    }\n}\n\n\n",
+                        "language": "kotlin"
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt"
+                    }
+                ]
+            },
+            "createdAt": 1751181821865,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "command",
+                                "attrs": {
+                                    "label": "explain"
+                                },
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "/explain"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "codeBlock",
+                                "attrs": {
+                                    "language": "kotlin"
+                                },
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "import androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.ui.geometry.Offset\nimport androidx.compose.ui.input.pointer.awaitPointerEventScope\nimport androidx.compose.ui.input.pointer.PointerEventType\nimport kotlin.math.abs\nimport androidx.compose.ui.input.nestedscroll.NestedScrollConnection"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "text",
+                                "text": "Unresolved reference 'awaitPointerEventScope'."
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "b3b11f4d-0703-4c42-b18c-64dcab58d586",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "The terminal message \"Unresolved reference 'awaitPointerEventScope'\" indicates that the Kotlin compiler cannot find the definition for `awaitPointerEventScope`. This error typically occurs due to one of the following reasons:\n\n1. **Missing Import**: The function `awaitPointerEventScope` might not be imported correctly. However, in your code, you have already imported `awaitPointerEventScope` from `androidx.compose.ui.input.pointer`.\n\n2. **Incorrect Dependency Version**: The function might not be available in the version of the Compose library you are using. Ensure that your project is using a version of Jetpack Compose that includes `awaitPointerEventScope`. This function is part of the pointer input handling in Jetpack Compose, and it might have been introduced or modified in a specific version.\n\n3. **Typographical Error**: Double-check the spelling of the function name and the import statement to ensure there are no typos.\n\n4. **IDE Sync Issues**: Sometimes, the IDE might not be in sync with the Gradle build files. Try syncing your project with Gradle files or rebuilding the project to see if the issue resolves.\n\n### Steps to Resolve:\n\n- **Check Dependencies**: Verify that your `build.gradle` file includes the correct version of Jetpack Compose. You might need to update to a newer version if `awaitPointerEventScope` is not available in your current version.\n\n- **Sync and Rebuild**: In Android Studio, use the \"Sync Project with Gradle Files\" option and then rebuild the project to ensure all dependencies are correctly resolved.\n\n- **Consult Documentation**: Refer to the official Jetpack Compose documentation to confirm the availability and correct usage of `awaitPointerEventScope`.\n\nBy addressing these potential issues, you should be able to resolve the \"Unresolved reference\" error and ensure that your code compiles successfully."
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                    "fsPath": "C:/Users/nicol/AndroidStudioProjects/AppFinanceTest/app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                    "content": "package com.example.appfinancetest\n\nimport android.util.Log\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.gestures.awaitEachGesture\nimport androidx.compose.foundation.gestures.awaitFirstDown\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.pager.HorizontalPager\nimport androidx.compose.foundation.pager.rememberPagerState\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.unit.dp\nimport androidx.compose.ui.Alignment\nimport kotlinx.coroutines.launch\nimport androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.ui.geometry.Offset\nimport androidx.compose.ui.input.pointer.awaitPointerEventScope\nimport androidx.compose.ui.input.pointer.PointerEventType\nimport kotlin.math.abs\nimport androidx.compose.ui.input.nestedscroll.NestedScrollConnection\nimport androidx.compose.ui.input.nestedscroll.NestedScrollSource\nimport androidx.compose.ui.input.nestedscroll.nestedScroll\nimport androidx.compose.ui.input.pointer.PointerEvent\nimport androidx.compose.ui.input.pointer.PointerEventPass\nimport androidx.compose.ui.input.pointer.consumePositionChange\nimport androidx.compose.ui.platform.LocalDensity\n\n@Composable\nfun LineChartPager(\n    databaseViewModel: DataBase_ViewModel,\n    investmentViewModel: InvestmentDB_ViewModel,\n    range: ClosedFloatingPointRange<Float>\n) {\n    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })\n    val coroutineScope = rememberCoroutineScope()\n    val heightDp = 230.dp\n    val density = LocalDensity.current\n    val heightPx = with(density) { heightDp.toPx() }\n    val nestedScrollConnection = remember {\n        object : NestedScrollConnection {\n            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {\n                return if (available.x != 0f) Offset.Zero else available // Autorise uniquement le swipe horizontal\n            }\n        }\n    }\n    var userScrollEnabled by remember {\n        mutableStateOf(true)\n    }\n    Column(\n        modifier = Modifier.fillMaxSize(),\n        horizontalAlignment = Alignment.CenterHorizontally\n    ) {\n        HorizontalPager(\n            state = pagerState,\n            userScrollEnabled = userScrollEnabled,\n            modifier = Modifier\n                .fillMaxWidth()\n                .height(heightDp)\n                .padding(4.dp)\n                .pointerInput(Unit) {\n                    awaitPointerEventScope {\n                        while (true) {\n                            val event = awaitPointerEvent()\n                            val change = event.changes.first()\n                            val y = change.position.y\n                            \n                            // Define the zones: top 25%, middle 50%, bottom 25%\n                            val topZoneEnd = heightPx * 0.25f\n                            val bottomZoneStart = heightPx * 0.75f\n                            \n                            when (event.type) {\n                                PointerEventType.Press -> {\n                                    Log.d(\"LineChartPager\", \"Press at Y: $y\")\n                                    // Determine if we're in the middle zone\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Disable pager scrolling if in middle zone\n                                    userScrollEnabled = !inMiddleZone\n                                    \n                                    Log.d(\"LineChartPager\", \"User scroll enabled: $userScrollEnabled\")\n                                }\n                                PointerEventType.Move -> {\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Only consume horizontal movement in middle zone\n                                    if (inMiddleZone) {\n                                        val dragX = change.position.x - change.previousPosition.x\n                                        val dragY = change.position.y - change.previousPosition.y\n                                        \n                                        // If horizontal movement is more significant than vertical,\n                                        // consume it to prevent pager swipe\n                                        if (abs(dragX) > abs(dragY) && abs(dragX) > 10f) {\n                                            change.consume()\n                                            Log.d(\"LineChartPager\", \"Consuming horizontal drag in middle zone\")\n                                        }\n                                        // Let vertical or small movements pass through for chart interaction\n                                    }\n                                }\n                                PointerEventType.Release -> {\n                                    // Re-enable pager scrolling when touch is released\n                                    userScrollEnabled = true\n                                    Log.d(\"LineChartPager\", \"Touch released, pager scroll re-enabled\")\n                                }\n                            }\n                        }\n                    }\n                }\n\n        ) { page ->\n            when (page) {\n                0 -> BalanceLineChart(\n                    viewModel = databaseViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n                1 -> InvestmentLineChart(\n                    databaseViewModel = databaseViewModel,\n                    investmentViewModel = investmentViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n            }\n        }\n\n        Row(\n            horizontalArrangement = Arrangement.Center,\n            modifier = Modifier\n                .fillMaxWidth()\n                .padding(16.dp)\n        ) {\n            repeat(2) { index ->\n                val selected = index == pagerState.currentPage\n                Box(\n                    modifier = Modifier\n                        .size(if (selected) 12.dp else 8.dp)\n                        .padding(4.dp)\n                        .background(\n                            color = if (selected)\n                                MaterialTheme.colorScheme.primary\n                            else\n                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),\n                            shape = MaterialTheme.shapes.small\n                        )\n                        .clickable {\n                            coroutineScope.launch {\n                                pagerState.scrollToPage(index)\n                            }\n                        }\n                )\n            }\n        }\n    }\n}\n\n\n",
+                    "language": "kotlin"
+                },
+                "codebaseEnabled": true,
+                "ragFiles": [
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ImportExport.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExport.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/TransactionDao_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\TransactionDao_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/InvestmentDao_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\InvestmentDao_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/AppDatabase_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\AppDatabase_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/build/generated/ksp/debug/kotlin/com/example/appfinancetest/InvestmentDatabase_Impl.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build\\generated\\ksp\\debug\\kotlin\\com\\example\\appfinancetest\\InvestmentDatabase_Impl.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ui/theme/Color.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ui\\theme\\Color.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ErrorScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ErrorScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/PatrimonialScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\PatrimonialScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/InvestmentScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ui/theme/Type.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ui\\theme\\Type.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "build.gradle.kts",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\build.gradle.kts",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/BalanceLineChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\BalanceLineChart.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/ui/theme/Theme.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ui\\theme\\Theme.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/InvestmentLineChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentLineChart.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/BalancePieChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\BalancePieChart.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DataBaseScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DataBaseScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/TopBar.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\TopBar.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DateRangePickerDialog.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DateRangePickerDialog.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/SettingsScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\SettingsScreen.kt",
+                        "sources": [
+                            "keyword_search"
+                        ]
+                    },
+                    {
+                        "path": "app\\build.gradle.kts",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\build.gradle.kts",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\MainActivity.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\MainActivity.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "build.gradle.kts",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\build.gradle.kts",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentLineChart.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\InvestmentLineChart.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "gradle\\libs.versions.toml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\gradle\\libs.versions.toml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_launcher_background.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_launcher_background.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_launcher_foreground.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_launcher_foreground.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_import_export.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_import_export.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\res\\drawable\\ic_validate_investment.xml",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\res\\drawable\\ic_validate_investment.xml",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\FilterUtils.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\FilterUtils.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\0_TO DO.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\0_TO DO.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExport.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExport.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\ErrorScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ErrorScreen.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExportInterface.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\ImportExportInterface.kt",
+                        "sources": []
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DashboardScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DashboardScreen.kt",
+                        "sources": [
+                            "opened_tab"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/DataBaseScreen.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\DataBaseScreen.kt",
+                        "sources": [
+                            "opened_tab"
+                        ]
+                    },
+                    {
+                        "path": "app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                        "fsPath": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "sources": [
+                            "opened_tab"
+                        ]
+                    }
+                ],
+                "rerankedFiles": [
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt"
+                    }
+                ],
+                "usedFilePaths": [
+                    {
+                        "path": "C:\\Users\\nicol\\AndroidStudioProjects\\AppFinanceTest\\app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "C:/Users/nicol/AndroidStudioProjects/AppFinanceTest/app/src/main/java/com/example/appfinancetest/LineChartPager.kt",
+                        "content": "package com.example.appfinancetest\n\nimport android.util.Log\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.gestures.awaitEachGesture\nimport androidx.compose.foundation.gestures.awaitFirstDown\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.pager.HorizontalPager\nimport androidx.compose.foundation.pager.rememberPagerState\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.unit.dp\nimport androidx.compose.ui.Alignment\nimport kotlinx.coroutines.launch\nimport androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport androidx.compose.ui.geometry.Offset\nimport androidx.compose.ui.input.pointer.awaitPointerEventScope\nimport androidx.compose.ui.input.pointer.PointerEventType\nimport kotlin.math.abs\nimport androidx.compose.ui.input.nestedscroll.NestedScrollConnection\nimport androidx.compose.ui.input.nestedscroll.NestedScrollSource\nimport androidx.compose.ui.input.nestedscroll.nestedScroll\nimport androidx.compose.ui.input.pointer.PointerEvent\nimport androidx.compose.ui.input.pointer.PointerEventPass\nimport androidx.compose.ui.input.pointer.consumePositionChange\nimport androidx.compose.ui.platform.LocalDensity\n\n@Composable\nfun LineChartPager(\n    databaseViewModel: DataBase_ViewModel,\n    investmentViewModel: InvestmentDB_ViewModel,\n    range: ClosedFloatingPointRange<Float>\n) {\n    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })\n    val coroutineScope = rememberCoroutineScope()\n    val heightDp = 230.dp\n    val density = LocalDensity.current\n    val heightPx = with(density) { heightDp.toPx() }\n    val nestedScrollConnection = remember {\n        object : NestedScrollConnection {\n            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {\n                return if (available.x != 0f) Offset.Zero else available // Autorise uniquement le swipe horizontal\n            }\n        }\n    }\n    var userScrollEnabled by remember {\n        mutableStateOf(true)\n    }\n    Column(\n        modifier = Modifier.fillMaxSize(),\n        horizontalAlignment = Alignment.CenterHorizontally\n    ) {\n        HorizontalPager(\n            state = pagerState,\n            userScrollEnabled = userScrollEnabled,\n            modifier = Modifier\n                .fillMaxWidth()\n                .height(heightDp)\n                .padding(4.dp)\n                .pointerInput(Unit) {\n                    awaitPointerEventScope {\n                        while (true) {\n                            val event = awaitPointerEvent()\n                            val change = event.changes.first()\n                            val y = change.position.y\n                            \n                            // Define the zones: top 25%, middle 50%, bottom 25%\n                            val topZoneEnd = heightPx * 0.25f\n                            val bottomZoneStart = heightPx * 0.75f\n                            \n                            when (event.type) {\n                                PointerEventType.Press -> {\n                                    Log.d(\"LineChartPager\", \"Press at Y: $y\")\n                                    // Determine if we're in the middle zone\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Disable pager scrolling if in middle zone\n                                    userScrollEnabled = !inMiddleZone\n                                    \n                                    Log.d(\"LineChartPager\", \"User scroll enabled: $userScrollEnabled\")\n                                }\n                                PointerEventType.Move -> {\n                                    val inMiddleZone = y >= topZoneEnd && y <= bottomZoneStart\n                                    \n                                    // Only consume horizontal movement in middle zone\n                                    if (inMiddleZone) {\n                                        val dragX = change.position.x - change.previousPosition.x\n                                        val dragY = change.position.y - change.previousPosition.y\n                                        \n                                        // If horizontal movement is more significant than vertical,\n                                        // consume it to prevent pager swipe\n                                        if (abs(dragX) > abs(dragY) && abs(dragX) > 10f) {\n                                            change.consume()\n                                            Log.d(\"LineChartPager\", \"Consuming horizontal drag in middle zone\")\n                                        }\n                                        // Let vertical or small movements pass through for chart interaction\n                                    }\n                                }\n                                PointerEventType.Release -> {\n                                    // Re-enable pager scrolling when touch is released\n                                    userScrollEnabled = true\n                                    Log.d(\"LineChartPager\", \"Touch released, pager scroll re-enabled\")\n                                }\n                            }\n                        }\n                    }\n                }\n\n        ) { page ->\n            when (page) {\n                0 -> BalanceLineChart(\n                    viewModel = databaseViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n                1 -> InvestmentLineChart(\n                    databaseViewModel = databaseViewModel,\n                    investmentViewModel = investmentViewModel,\n                    startDate = range.start.toDouble(),\n                    endDate = range.endInclusive.toDouble()\n                )\n            }\n        }\n\n        Row(\n            horizontalArrangement = Arrangement.Center,\n            modifier = Modifier\n                .fillMaxWidth()\n                .padding(16.dp)\n        ) {\n            repeat(2) { index ->\n                val selected = index == pagerState.currentPage\n                Box(\n                    modifier = Modifier\n                        .size(if (selected) 12.dp else 8.dp)\n                        .padding(4.dp)\n                        .background(\n                            color = if (selected)\n                                MaterialTheme.colorScheme.primary\n                            else\n                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),\n                            shape = MaterialTheme.shapes.small\n                        )\n                        .clickable {\n                            coroutineScope.launch {\n                                pagerState.scrollToPage(index)\n                            }\n                        }\n                )\n            }\n        }\n    }\n}\n\n\n",
+                        "language": "kotlin"
+                    },
+                    {
+                        "path": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt",
+                        "fsPath": "app\\src\\main\\java\\com\\example\\appfinancetest\\LineChartPager.kt"
+                    }
+                ]
+            },
+            "createdAt": 1751181835164,
+            "isInternal": false
+        }
+    ],
+    "isAgent": false,
+    "isNameGenerated": true,
+    "isCustomAgent": false
+}
+}

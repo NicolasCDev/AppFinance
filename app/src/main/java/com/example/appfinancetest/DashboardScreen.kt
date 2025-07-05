@@ -225,7 +225,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
 
                     // Show DateRangePicker only if showDateRangePicker is true
                     if (showDateRangePicker) {
-                        DateRangePickerDialog(
+                        LegacyMaterialDateRangePicker(
                             onDismiss = { showDateRangePicker = false },
                             onDateSelected = { start, end ->
                                 range = start..end
