@@ -1,3 +1,83 @@
 <resources>
     <string name="app_name">AppFinanceTest</string>
+    <string name="dashboard_title">Menu principal</string>
+    <string name="net_worth">PATRIMOINE NET</string>
+    <string name="recent_transactions">Dernières transactions</string>
+    <string name="no_transactions">Aucune transaction à afficher</string>
+    <string name="balance_as_of">Solde au %s</string>
+    <string name="no_label">Sans libellé</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="app_language">Langue de l\'application</string>
+    <string name="database_title">Base de données</string>
+    <string name="choose_file">Choisir un fichier</string>
+    <string name="no_file_selected">Aucun fichier sélectionné</string>
+    <string name="file_selected">Fichier : \n %s</string>
+    <string name="close">Fermer</string>
+
+    <!-- Investment Screen -->
+    <string name="investments_title">Investissements</string>
+    <string name="no_investments_found">Aucun investissement à afficher</string>
+    <string name="investment_current">En cours</string>
+    <string name="investment_closed">Clôturés</string>
+    <string name="capital_gain_realized">Plus-value réalisée</string>
+    <string name="invested">Investi</string>
+    <string name="earned">Gagné</string>
+    <string name="capital_gain">Plus-value</string>
+    <string name="annual_profitability">Rentabilité annuelle</string>
+    <string name="no_investment">Aucun investissement</string>
+    <string name="annual">annuel</string>
+
+    <!-- Patrimonial Screen -->
+    <string name="patrimonial_title">Patrimoine</string>
+    <string name="net_worth_simple">Valeur nette</string>
+    <string name="estate_evolution">Évolution du patrimoine</string>
+    <string name="breakdown_by_category">Répartition par catégorie</string>
+    <string name="category">Catégories</string>
+
+    <!-- Date Range Options -->
+    <string name="range_last_day">Dernier jour</string>
+    <string name="range_last_week">Dernière semaine</string>
+    <string name="range_last_month">Dernier mois</string>
+    <string name="range_last_6_months">6 derniers mois</string>
+    <string name="range_last_year">Dernière année</string>
+    <string name="range_last_5_years">5 dernières années</string>
+    <string name="range_all_time">Tout</string>
+
+    <!-- Filters -->
+    <string name="filter_title">Filtres des transactions</string>
+    <string name="filter_after">Après le</string>
+    <string name="filter_before">Avant le</string>
+    <string name="date_placeholder">JJ/MM/AA</string>
+    <string name="filter_category">Catégorie</string>
+    <string name="filter_item">Objet</string>
+    <string name="filter_label">Libellé</string>
+    <string name="filter_amount_min">Montant minimum</string>
+    <string name="filter_amount_max">Montant maximum</string>
+    <string name="filter_delete_all">Tout supprimer</string>
+    <string name="filter_apply">Appliquer</string>
+    <string name="filter_all">Tout</string>
+
+    <!-- Investment Management -->
+    <string name="investment_management_title">Gestion des investissements</string>
+    <string name="beginning">Début</string>
+    <string name="end">Fin</string>
+    <string name="edit_closing_date">Modifier la date de clôture</string>
+
+    <!-- Import Export -->
+    <string name="data_management_title">Données</string>
+    <string name="processing">Traitement en cours…</string>
+    <string name="add_transactions">Ajouter des transactions</string>
+    <string name="add_transactions_desc">Fusionne un fichier Excel avec vos données actuelles.</string>
+    <string name="replace_database">Remplacer la base</string>
+    <string name="replace_database_desc">Écrase toutes vos données locales par le contenu du fichier.</string>
+    <string name="export_excel">Exporter en Excel</string>
+    <string name="export_excel_desc">Sauvegarde l\'intégralité de vos transactions sur votre appareil.</string>
+
+    <!-- Settings -->
+    <string name="parameters_title">Paramètres</string>
+    <string name="language">Langue de l\'application</string>
+    <string name="database">Base de données</string>
+
+    <!-- DateRangePicker -->
+    <string name="cancel">Annuler</string>
 </resources>

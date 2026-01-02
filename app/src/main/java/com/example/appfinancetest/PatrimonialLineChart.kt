@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import java.util.*
@@ -26,7 +27,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun PatrimonialLineChart(
-    viewModel: DataBase_ViewModel,
+    viewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDB_ViewModel,
     startDate: Double,
     endDate: Double,
@@ -44,16 +45,14 @@ fun PatrimonialLineChart(
 
     // Cache the calculations
     var fullHistory by remember { mutableStateOf<List<Entry>>(emptyList()) }
-    var cumulativeCrypto by remember { mutableStateOf<List<Entry>>(emptyList()) }
-    var cumulativeStockExchange by remember { mutableStateOf<List<Entry>>(emptyList()) }
-    var cumulativeCrowdfunding by remember { mutableStateOf<List<Entry>>(emptyList()) }
-    var cumulativeRealEstateCrowdfunding by remember { mutableStateOf<List<Entry>>(emptyList()) }
+    var dynamicInvestmentSeries by remember { mutableStateOf<Map<String, List<Entry>>>(emptyMap()) }
     
     var isCalculating by remember { mutableStateOf(false) }
 
     LaunchedEffect(transactions, endedInvestments, refreshTrigger) {
         if (transactions.isEmpty()) {
             fullHistory = emptyList()
+            dynamicInvestmentSeries = emptyMap()
             return@LaunchedEffect
         }
         
@@ -61,7 +60,7 @@ fun PatrimonialLineChart(
         withContext(Dispatchers.Default) {
             val uniqueDates = transactions.mapNotNull { it.date }.distinct().sorted()
             
-            // 1. Patrimoine Global (Sampled for performance)
+            // 1. Estate (Sampled for performance)
             val sampledDates = if (uniqueDates.size > 200) {
                 val step = uniqueDates.size / 200
                 uniqueDates.filterIndexed { index, _ -> index % step == 0 || index == uniqueDates.size - 1 }
@@ -69,56 +68,43 @@ fun PatrimonialLineChart(
                 uniqueDates
             }
 
-            val entriesPatrimoine = mutableListOf<Entry>()
+            val entriesEstate = mutableListOf<Entry>()
             sampledDates.forEach { date ->
                 val worth = viewModel.getNetWorthAtDateStatic(date)
                 val millis = ((date - 25569) * 86400 * 1000).toLong()
-                entriesPatrimoine.add(Entry(millis.toFloat(), worth.toFloat()))
+                entriesEstate.add(Entry(millis.toFloat(), worth.toFloat()))
             }
-            fullHistory = entriesPatrimoine
+            fullHistory = entriesEstate
 
-            // 2. Investment breakdown
-            // We need all relevant dates (Transactions + Ends of investments) for accurate cumulative
+            // 2. Dynamic Investment breakdown
             val allDatesForCumulative = (uniqueDates.map { ((it - 25569) * 86400 * 1000).toFloat() } + 
                                         (endedInvestments?.mapNotNull { it.dateEnd }?.map { ((it - 25569) * 86400 * 1000).toFloat() } ?: emptyList()))
                                         .toSortedSet().toList()
             
-            val entriesCrypto = mutableListOf<Entry>()
-            val entriesStockExchange = mutableListOf<Entry>()
-            val entriesCrowdfunding = mutableListOf<Entry>()
-            val entriesRealEstateCrowdfunding = mutableListOf<Entry>()
+            val itemEntries = mutableMapOf<String, MutableList<Entry>>()
 
+            // Group transactions by item
             transactions.filter { it.category == "Investissement" }.forEach { t ->
+                val item = t.item ?: "Other"
                 val date = t.date ?: return@forEach
                 val amount = t.amount ?: return@forEach
                 val millis = ((date - 25569) * 86400 * 1000).toFloat()
-                val entry = Entry(millis, amount.toFloat())
-                when (t.item) {
-                    "Crypto" -> entriesCrypto.add(entry)
-                    "Bourse - PEA", "Bourse - Compte titre" -> entriesStockExchange.add(entry)
-                    "Crowdfunding" -> entriesCrowdfunding.add(entry)
-                    "Crowdfunding immobilier" -> entriesRealEstateCrowdfunding.add(entry)
-                }
+                itemEntries.getOrPut(item) { mutableListOf() }.add(Entry(millis, amount.toFloat()))
             }
 
+            // Subtract ended investments by item
             endedInvestments?.forEach { i ->
+                val item = i.item ?: "Other"
                 val dateEnd = i.dateEnd ?: return@forEach
                 val invested = i.invested ?: return@forEach
                 val millis = ((dateEnd - 25569) * 86400 * 1000).toFloat()
-                // Subtract invested amount at the end date
-                val exitEntry = Entry(millis, -invested.toFloat())
-                when (i.item) {
-                    "Crypto" -> entriesCrypto.add(exitEntry)
-                    "Bourse - PEA", "Bourse - Compte titre" -> entriesStockExchange.add(exitEntry)
-                    "Crowdfunding" -> entriesCrowdfunding.add(exitEntry)
-                    "Crowdfunding immobilier" -> entriesRealEstateCrowdfunding.add(exitEntry)
-                }
+                itemEntries.getOrPut(item) { mutableListOf() }.add(Entry(millis, -invested.toFloat()))
             }
 
-            cumulativeCrypto = makeCumulative(entriesCrypto, allDatesForCumulative)
-            cumulativeStockExchange = makeCumulative(entriesStockExchange, allDatesForCumulative)
-            cumulativeCrowdfunding = makeCumulative(entriesCrowdfunding, allDatesForCumulative)
-            cumulativeRealEstateCrowdfunding = makeCumulative(entriesRealEstateCrowdfunding, allDatesForCumulative)
+            // Calculate cumulative for each discovered item
+            dynamicInvestmentSeries = itemEntries.mapValues { (_, entries) ->
+                makeCumulative(entries, allDatesForCumulative)
+            }
         }
         isCalculating = false
     }
@@ -137,7 +123,7 @@ fun PatrimonialLineChart(
     AndroidView(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .height(350.dp) // Slightly increased height to accommodate multi-line legend
             .padding(4.dp),
         factory = { context ->
             LineChart(context).apply {
@@ -148,7 +134,16 @@ fun PatrimonialLineChart(
                 description.isEnabled = false
                 xAxis.textColor = Color.WHITE
                 axisLeft.textColor = Color.WHITE
-                legend.textColor = Color.WHITE
+                
+                // Configure Legend: centered and multi-line
+                legend.apply {
+                    textColor = Color.WHITE
+                    horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                    verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                    orientation = Legend.LegendOrientation.HORIZONTAL
+                    setDrawInside(false)
+                    isWordWrapEnabled = true
+                }
                 
                 xAxis.valueFormatter = object : ValueFormatter() {
                     private val dateFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
@@ -157,9 +152,14 @@ fun PatrimonialLineChart(
                     }
                 }
                 
+                // Format Y-axis as "XXK €"
                 axisLeft.valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        return "%.0f €".format(value)
+                        return if (Math.abs(value) >= 1000) {
+                            "%.1fK €".format(value / 1000f).replace(".0K", "K")
+                        } else {
+                            "%.0f €".format(value)
+                        }
                     }
                 }
                 
@@ -190,7 +190,7 @@ fun PatrimonialLineChart(
         update = { chart ->
             val filterLambda = { entry: Entry ->
                 val excelDate = (entry.x / (86400 * 1000.0)) + 25569
-                excelDate >= startDate && excelDate <= endDate
+                excelDate in startDate..endDate
             }
 
             fun createDataSet(entries: List<Entry>, label: String, color: Int, isMain: Boolean = false): LineDataSet? {
@@ -205,20 +205,21 @@ fun PatrimonialLineChart(
                     setDrawCircleHole(false)
                     valueTextColor = Color.WHITE
                     setDrawValues(false)
-                    setDrawFilled(false) // Désactivation du fond rempli
+                    setDrawFilled(false)
                 }
             }
 
             val dataSets = mutableListOf<ILineDataSet>()
             
-            // Principal
-            createDataSet(fullHistory, "Patrimoine Global (€)", Color.GREEN, true)?.let { dataSets.add(it) }
+            // Main Estate Curve
+            createDataSet(fullHistory, "Global estate (€)", Color.GREEN, true)?.let { dataSets.add(it) }
             
-            // Détails Investissements (Plus fin)
-            createDataSet(cumulativeStockExchange, "Bourse", Color.BLUE)?.let { dataSets.add(it) }
-            createDataSet(cumulativeCrypto, "Crypto", Color.YELLOW)?.let { dataSets.add(it) }
-            createDataSet(cumulativeCrowdfunding, "Crowdfunding", Color.MAGENTA)?.let { dataSets.add(it) }
-            createDataSet(cumulativeRealEstateCrowdfunding, "Immobilier", Color.CYAN)?.let { dataSets.add(it) }
+            // Dynamic Investment Series
+            val colors = listOf(Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.RED, Color.LTGRAY, Color.GRAY)
+            dynamicInvestmentSeries.entries.forEachIndexed { index, entry ->
+                val color = colors[index % colors.size]
+                createDataSet(entry.value, entry.key, color)?.let { dataSets.add(it) }
+            }
 
             if (dataSets.isNotEmpty()) {
                 chart.data = LineData(dataSets)

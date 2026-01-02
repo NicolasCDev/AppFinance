@@ -14,13 +14,12 @@ import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.platform.LocalDensity
 
 
 @Composable
 fun LineChartPager(
-    databaseViewModel: DataBase_ViewModel,
+    databaseViewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDB_ViewModel,
     range: ClosedFloatingPointRange<Float>,
     hideMarkerTrigger: Int = 0,

@@ -9,19 +9,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
-enum class DateRangeOption(val title: String) {
-    LAST_DAY("Dernier jour"),
-    LAST_WEEK("Dernière semaine"),
-    LAST_MONTH("Dernier mois"),
-    LAST_6_MONTHS("6 derniers mois"),
-    LAST_YEAR("Dernière année"),
-    LAST_5_YEARS("5 dernières années"),
-    ALL_TIME("Tout l'historique")
+enum class DateRangeOption(val resId: Int) {
+    LAST_DAY(R.string.range_last_day),
+    LAST_WEEK(R.string.range_last_week),
+    LAST_MONTH(R.string.range_last_month),
+    LAST_6_MONTHS(R.string.range_last_6_months),
+    LAST_YEAR(R.string.range_last_year),
+    LAST_5_YEARS(R.string.range_last_5_years),
+    ALL_TIME(R.string.range_all_time)
 }
 
 @Composable
@@ -66,7 +66,7 @@ fun DateRangeSelector(
             }
 
             Text(
-                text = selectedOption.title,
+                text = stringResource(id = selectedOption.resId),
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleMedium,

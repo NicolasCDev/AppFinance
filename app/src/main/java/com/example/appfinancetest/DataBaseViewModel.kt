@@ -6,13 +6,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.switchMap
-import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class DataBase_ViewModel(application: Application) : AndroidViewModel(application) {
+class DataBaseViewModel(application: Application) : AndroidViewModel(application) {
     private val database = Room.databaseBuilder(
         application.applicationContext,
         AppDatabase::class.java,

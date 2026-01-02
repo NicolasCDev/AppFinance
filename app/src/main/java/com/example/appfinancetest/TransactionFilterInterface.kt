@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -38,7 +39,7 @@ fun TransactionFilterInterface(
     onClearAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // Utilisation de TextFieldValue pour gérer correctement la position du curseur lors du formatage
+    // Use of TextFieldValue in order to manage the cursor position when formating
     var dateMinState by remember { mutableStateOf(TextFieldValue(dateMinFilter, TextRange(dateMinFilter.length))) }
     var dateMaxState by remember { mutableStateOf(TextFieldValue(dateMaxFilter, TextRange(dateMaxFilter.length))) }
 
@@ -66,9 +67,9 @@ fun TransactionFilterInterface(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Filtrer les transactions", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(id = R.string.filter_title), style = MaterialTheme.typography.titleLarge)
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Fermer")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.close))
                     }
                 }
 
@@ -80,7 +81,7 @@ fun TransactionFilterInterface(
                         onValueChange = { newValue ->
                             val formatted = formatDateInput(newValue.text, dateMinState.text)
                             var newSelection = newValue.selection
-                            // Si on a ajouté un slash automatiquement, on décale le curseur
+                            // If we added a "/" --> we move right the cursor
                             if (formatted.length > newValue.text.length) {
                                 val diff = formatted.length - newValue.text.length
                                 newSelection = TextRange(newSelection.end + diff)
@@ -88,9 +89,9 @@ fun TransactionFilterInterface(
                             dateMinState = newValue.copy(text = formatted, selection = newSelection)
                             onDateMinFilterChange(formatted)
                         },
-                        label = { Text("Après le") },
+                        label = { Text(stringResource(id = R.string.filter_after)) },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("dd/MM/yy") },
+                        placeholder = { Text(stringResource(id = R.string.date_placeholder)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     OutlinedTextField(
@@ -105,29 +106,29 @@ fun TransactionFilterInterface(
                             dateMaxState = newValue.copy(text = formatted, selection = newSelection)
                             onDateMaxFilterChange(formatted)
                         },
-                        label = { Text("Avant le") },
+                        label = { Text(stringResource(id = R.string.filter_before)) },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("dd/MM/yy") },
+                        placeholder = { Text(stringResource(id = R.string.date_placeholder)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 }
 
                 FilterDropdown(
-                    label = "Catégorie",
+                    label = stringResource(id = R.string.filter_category),
                     selectedOption = categoryFilter,
                     options = categories,
                     onOptionSelected = onCategoryFilterChange
                 )
 
                 FilterDropdown(
-                    label = "Item",
+                    label = stringResource(id = R.string.filter_item),
                     selectedOption = itemFilter,
                     options = items,
                     onOptionSelected = onItemFilterChange
                 )
 
                 FilterDropdown(
-                    label = "Libellé",
+                    label = stringResource(id = R.string.filter_label),
                     selectedOption = labelFilter,
                     options = labels,
                     onOptionSelected = onLabelFilterChange
@@ -137,14 +138,14 @@ fun TransactionFilterInterface(
                     OutlinedTextField(
                         value = amountMinFilter,
                         onValueChange = onAmountMinFilterChange,
-                        label = { Text("Montant Min") },
+                        label = { Text(stringResource(id = R.string.filter_amount_min)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                     )
                     OutlinedTextField(
                         value = amountMaxFilter,
                         onValueChange = onAmountMaxFilterChange,
-                        label = { Text("Montant Max") },
+                        label = { Text(stringResource(id = R.string.filter_amount_max)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                     )
@@ -162,12 +163,12 @@ fun TransactionFilterInterface(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("Tout effacer")
+                        Text(stringResource(id = R.string.filter_delete_all))
                     }
                     Button(
                         onClick = onDismiss
                     ) {
-                        Text("Appliquer")
+                        Text(stringResource(id = R.string.filter_apply))
                     }
                 }
             }
@@ -176,7 +177,7 @@ fun TransactionFilterInterface(
 }
 
 private fun formatDateInput(input: String, previousValue: String): String {
-    // Si on supprime, on ne reformate pas pour permettre la correction
+    // If we delete, we don't reformat in order to allow correction
     if (input.length < previousValue.length) return input
     
     val clean = input.replace("/", "")
@@ -184,7 +185,7 @@ private fun formatDateInput(input: String, previousValue: String): String {
     
     for (i in clean.indices) {
         sb.append(clean[i])
-        // Insérer le slash après le 2ème et le 4ème caractère
+        // Adding "/" after 2nd and 4th character
         if (i == 1 || i == 3) {
             sb.append("/")
         }
@@ -202,6 +203,7 @@ fun FilterDropdown(
     onOptionSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val allLabel = stringResource(id = R.string.filter_all)
     
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         ExposedDropdownMenuBox(
@@ -210,7 +212,7 @@ fun FilterDropdown(
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = if (selectedOption.isEmpty()) "Toutes" else selectedOption,
+                value = selectedOption.ifEmpty { allLabel },
                 onValueChange = { },
                 readOnly = true,
                 label = { Text(label) },
@@ -227,7 +229,7 @@ fun FilterDropdown(
                     onDismissRequest = { expanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Toutes") },
+                        text = { Text(allLabel) },
                         onClick = {
                             onOptionSelected("")
                             expanded = false

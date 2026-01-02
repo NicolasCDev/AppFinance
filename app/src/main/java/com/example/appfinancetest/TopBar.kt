@@ -11,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,7 +39,7 @@ fun TopBar (
         navigationIcon = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
+                modifier = Modifier.padding(start = 4.dp)
             ) {
                 IconButton(
                     onClick = onValidateClick,
@@ -67,7 +68,7 @@ fun TopBar (
         actions = {
             IconButton(
                 onClick = onSettingsClick,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(40.dp).padding(end = 4.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
@@ -77,6 +78,9 @@ fun TopBar (
                 )
             }
         },
-        modifier = Modifier.padding(top = 10.dp),
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.Transparent,
+            titleContentColor = Color.White
+        )
     )
 }

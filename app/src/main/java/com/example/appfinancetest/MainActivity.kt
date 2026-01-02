@@ -1,11 +1,11 @@
 package com.example.appfinancetest
 
 import android.os.Bundle
-import android.util.Log
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -20,29 +20,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.example.appfinancetest.ui.theme.AppFinanceTestTheme
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.height
-
-import androidx.core.view.WindowCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
 
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Hide system bars through immersive mode
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        window.insetsController?.apply {
-            hide(WindowInsets.Type.systemBars())
-            systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+        // Enable modern edge-to-edge display
         enableEdgeToEdge()
+        
         setContent {
             AppFinanceTestTheme {
                 MainScreen()
@@ -53,19 +42,23 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 fun MainScreen() {
-    Log.d("DataBase_ViewModel", "DataBase_ViewModel created")
-    val databaseViewModel: DataBase_ViewModel = viewModel()
-    Log.d("InvestmentDB_ViewModel", "InvestmentDB_ViewModel created")
+    val databaseViewModel: DataBaseViewModel = viewModel()
     val investmentViewModel: InvestmentDB_ViewModel = viewModel()
+    val creditViewModel: CreditDB_ViewModel = viewModel()
     var selectedItem by remember { mutableIntStateOf(0) }
-    val items = listOf("Dashboard", "Investment", "Patrimonial")
+    
+    // Use translated strings for the navigation bar
+    val items = listOf(
+        stringResource(id = R.string.dashboard_title),
+        stringResource(id = R.string.investments_title),
+        stringResource(id = R.string.patrimonial_title)
+    )
     val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine)
+    
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(
-                modifier = Modifier.height(65.dp)
-            ) {
+            NavigationBar {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         icon = {
@@ -76,32 +69,42 @@ fun MainScreen() {
                         },
                         label = { Text(item) },
                         selected = selectedItem == index,
-                        onClick = { selectedItem = index },
-                        modifier = if(index == 0){
-                             Modifier.weight(1f)
-                        }else{
-                            Modifier
-                        }
+                        onClick = { selectedItem = index }
                     )
                 }
             }
-        }
+        },
+        // IMPORTANT: Set to 0 to avoid double inset padding at the top/bottom
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
-        when (selectedItem) {
-            0 -> DashboardScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
-            1 -> InvestmentScreen()
-            2 -> PatrimonialScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
-            else -> {
-                ErrorScreen(modifier = Modifier.padding(innerPadding))
+        // Only apply the bottom padding from the NavigationBar
+        val screenModifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+        
+        Box(modifier = Modifier.fillMaxSize()) {
+            when (selectedItem) {
+                0 -> DashboardScreen(
+                    modifier = screenModifier, 
+                    databaseViewModel = databaseViewModel, 
+                    investmentViewModel = investmentViewModel,
+                    creditViewModel = creditViewModel
+                )
+                1 -> InvestmentScreen(
+                    modifier = screenModifier, 
+                    databaseViewModel = databaseViewModel, 
+                    investmentViewModel = investmentViewModel,
+                    creditViewModel = creditViewModel
+                )
+                2 -> PatrimonialScreen(
+                    modifier = screenModifier, 
+                    databaseViewModel = databaseViewModel, 
+                    investmentViewModel = investmentViewModel, 
+                    creditViewModel = creditViewModel
+                )
+                else -> {
+                    // ErrorScreen() // Assumed to exist or replaced with a simple text
+                    Text("Error")
+                }
             }
         }
     }
-}
-
-fun dateFormattedText(date: Double?): String {
-    if (date == null) return "N/A"
-    val excelDateMilliSec = (date - 25569) * 86400 * 1000
-    val excelDate = Date(excelDateMilliSec.toLong())
-    val dateFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
-    return dateFormat.format(excelDate)
 }

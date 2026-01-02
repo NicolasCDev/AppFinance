@@ -36,9 +36,9 @@ import com.github.mikephil.charting.listener.OnChartGestureListener
 
 @Composable
 fun InvestmentLineChart(
-    databaseViewModel: DataBase_ViewModel, 
-    investmentViewModel: InvestmentDB_ViewModel, 
-    startDate: Double = 0.0, 
+    databaseViewModel: DataBaseViewModel,
+    investmentViewModel: InvestmentDB_ViewModel,
+    startDate: Double = 0.0,
     endDate: Double = 2958465.0,
     hideMarkerTrigger: Int = 0,
     onHideMarkers: (() -> Unit)? = null

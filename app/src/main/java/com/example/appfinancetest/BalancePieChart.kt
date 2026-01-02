@@ -10,6 +10,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -19,7 +20,7 @@ import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.*
 
 @Composable
-fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: Double) {
+fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Double) {
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
@@ -46,14 +47,14 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
                 .groupBy { it.item!! }
                 .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-            createPieEntries(itemTotals, topN = 8, othersLabel = "Autres")
+            createPieEntries(itemTotals, topN = 8, othersLabel = "Others")
         } else {
             val labelTotal = filteredTransactions
                 .filter { it.category == selectedCategory && it.item == selectedItem && it.label != null }
                 .groupBy { it.label!! }
                 .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
 
-            createPieEntries(labelTotal, topN = 8, othersLabel = "Autres")
+            createPieEntries(labelTotal, topN = 8, othersLabel = "Others")
         }
     }
 
@@ -72,7 +73,7 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
     ) {
         Text(
             text = when {
-                selectedCategory == null -> "Catégories"
+                selectedCategory == null -> stringResource(id = R.string.category)
                 selectedItem == null -> "$selectedCategory"
                 else -> "$selectedCategory : $selectedItem"
             },
@@ -105,7 +106,7 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
             AndroidView(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(), // Ajouté pour forcer la hauteur
+                    .fillMaxHeight(),
                 factory = { context ->
                     PieChart(context).apply {
                         description.isEnabled = false
@@ -115,7 +116,7 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
                         setEntryLabelTextSize(12f)
                         legend.isEnabled = false
                         setHoleColor(Color.TRANSPARENT)
-                        minOffset = 0f // Utilise tout l'espace sans légende
+                        minOffset = 0f // Use all the space without legend
                     }
                 },
                 update = { chart ->
@@ -196,7 +197,7 @@ fun BalancePieChart(viewModel: DataBase_ViewModel, startDate: Double, endDate: D
     }
 }
 
-fun createPieEntries(dataMap: Map<String, Double>, topN: Int = 8, othersLabel: String = "Autres"): List<PieEntry> {
+fun createPieEntries(dataMap: Map<String, Double>, topN: Int = 8, othersLabel: String = "Others"): List<PieEntry> {
     val sortedEntries = dataMap.entries.sortedByDescending { it.value }
     val topEntries = sortedEntries.take(topN)
     val others = sortedEntries.drop(topN)

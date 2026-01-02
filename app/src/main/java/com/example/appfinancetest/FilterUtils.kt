@@ -35,16 +35,16 @@ fun filterTransactions(
     } else null
 
     return transactions.filter {
-        // Filtre Chronologique (Comparaison de Double)
+        // Chronological Filter (double comparison)
         (dateMin == null || (it.date ?: 0.0) >= dateMin) &&
         (dateMax == null || (it.date ?: 0.0) <= dateMax) &&
         
-        // Filtres textuels (Conservation de l'existant)
+        // Text filters
         (categoryQuery.isBlank() || it.category?.contains(categoryQuery, ignoreCase = true) == true) &&
         (itemQuery.isBlank() || it.item?.contains(itemQuery, ignoreCase = true) == true) &&
         (labelQuery.isBlank() || it.label?.contains(labelQuery, ignoreCase = true) == true) &&
         
-        // Filtres de montants
+        // Amount filters
         (minAmount == null || (it.amount ?: 0.0) >= minAmount) &&
         (maxAmount == null || (it.amount ?: 0.0) <= maxAmount)
     }

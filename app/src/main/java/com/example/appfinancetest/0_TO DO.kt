@@ -6,10 +6,7 @@ package com.example.appfinancetest
 
  Return actions have to be bound on phone return button
 
-// Different languages
 // Add a credit ?
 // Manage colors
-
-// Les investissements cloturés ne partent pas de patrimonial screen ?
 
  */

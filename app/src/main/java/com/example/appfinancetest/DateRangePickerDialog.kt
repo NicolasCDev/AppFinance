@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,12 +32,12 @@ fun DateRangePickerDialog(
                     onDismiss()
                 }
             ) {
-                Text("Valider")
+                Text(stringResource(id = R.string.filter_apply))
             }
         },
         dismissButton = {
             Button(onClick = onDismiss) {
-                Text("Annuler")
+                Text(stringResource(id = R.string.cancel))
             }
         }
     ) {

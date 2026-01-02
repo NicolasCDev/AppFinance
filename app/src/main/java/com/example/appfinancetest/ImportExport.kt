@@ -1,12 +1,9 @@
 package com.example.appfinancetest
 
 import android.util.Log
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -30,11 +27,11 @@ fun readExcelFile(inputStream: InputStream): List<Transaction> {
             } else {
                 ""
             }
-            val date = row.getCell(1).numericCellValue.toDouble()
+            val date = row.getCell(1).numericCellValue
             val category = row.getCell(2).stringCellValue.toString()
             val item = row.getCell(3).stringCellValue.toString()
             val label = row.getCell(4).stringCellValue.toString()
-            val amount = row.getCell(5).numericCellValue.toDouble()
+            val amount = row.getCell(5).numericCellValue
             val variation = when (category) {
                 "Investissement", "Charge" -> -amount
                 "Revenus", "Gain investissement" -> amount
@@ -87,7 +84,7 @@ fun writeExcelFile(outputStream: OutputStream, transactions: List<Transaction>) 
     workbook.close()
 }
 
-suspend fun addTransaction(listTransactions: List<Transaction>, databaseViewModel: DataBase_ViewModel) {
+suspend fun addTransaction(listTransactions: List<Transaction>, databaseViewModel: DataBaseViewModel) {
     Log.d("Import/Export", "Adding transactions")
     coroutineScope {
         val insertJobs = listTransactions.map { transaction ->
@@ -114,7 +111,7 @@ suspend fun addTransaction(listTransactions: List<Transaction>, databaseViewMode
     }
 }
 
-suspend fun calculateRunningBalance(databaseViewModel: DataBase_ViewModel) {
+suspend fun calculateRunningBalance(databaseViewModel: DataBaseViewModel) {
     Log.d("Import/Export", "Calculating running balance")
     // Gather every transactions order by date
     val existingTransactions = databaseViewModel.getTransactionsSortedByDateASC()
@@ -126,7 +123,7 @@ suspend fun calculateRunningBalance(databaseViewModel: DataBase_ViewModel) {
     }
 }
 
-suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel) {
+suspend fun addInvestments(databaseViewModel: DataBaseViewModel, investmentViewModel: InvestmentDB_ViewModel) {
     Log.d("Import/Export", "Adding investments")
     val investmentList = databaseViewModel.getInvestmentTransactions()
     Log.d("Import/Export", "Investment transaction list size: ${investmentList.size}")
@@ -178,7 +175,7 @@ suspend fun addInvestments(databaseViewModel: DataBase_ViewModel, investmentView
     }
 }
 
-suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String?, onValidated: () -> Unit) {
+suspend fun validateInvestments(databaseViewModel: DataBaseViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String?, onValidated: () -> Unit) {
     Log.d("Import/Export", "Validating investments: $idInvest")
     if (idInvest == null) return
     val investmentTransactions = databaseViewModel.getInvestmentTransactionsByID(idInvest)
@@ -235,7 +232,7 @@ suspend fun validateInvestments(databaseViewModel: DataBase_ViewModel, investmen
     }
 }
 
-suspend fun invalidateInvestments(databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String?, onValidated: () -> Unit) {
+suspend fun invalidateInvestments(databaseViewModel: DataBaseViewModel, investmentViewModel: InvestmentDB_ViewModel, idInvest: String?, onValidated: () -> Unit) {
     Log.d("Import/Export", "Invalidating investments: $idInvest")
     if (idInvest == null) return
     val investmentTransactions = databaseViewModel.getInvestmentTransactionsByID(idInvest)

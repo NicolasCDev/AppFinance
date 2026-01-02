@@ -120,11 +120,12 @@ interface TransactionDao {
     suspend fun getNetWorthAtDateStatic(date: Double): Double
 }
 
-@Database(entities = [TransactionDB::class, InvestmentDB::class], version = 2, exportSchema = false)
+@Database(entities = [TransactionDB::class, InvestmentDB::class, CreditDB::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun investmentDao(): InvestmentDao
+    abstract fun creditDao(): CreditDao
 }
 
 class Converters {

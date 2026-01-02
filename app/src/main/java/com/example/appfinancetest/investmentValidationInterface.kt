@@ -1,44 +1,40 @@
 package com.example.appfinancetest
 
-import android.util.Log
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import java.text.SimpleDateFormat
+import java.util.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun InvestmentValidationInterface(
-    databaseViewModel: DataBase_ViewModel,
+    databaseViewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDB_ViewModel,
     onDismiss: () -> Unit,
     onRefresh: () -> Unit = {}
 ) {
-    val tabTitles = listOf("En cours", "Clôturés")
+    val tabTitles = listOf(
+        stringResource(id = R.string.investment_current),
+        stringResource(id = R.string.investment_closed)
+    )
     val pageSize = 100
     var isFirstLoad by remember { mutableStateOf(true) }
     val beforeRefresh = 20
@@ -116,12 +112,12 @@ fun InvestmentValidationInterface(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Gestion Investissements",
+                        stringResource(id = R.string.investment_management_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     IconButton(onClick = { onDismiss() }) {
-                        Icon(Icons.Default.Close, contentDescription = "Fermer")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.close))
                     }
                 }
 
@@ -151,7 +147,7 @@ fun InvestmentValidationInterface(
                     if (currentList.isEmpty()) {
                         item {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Aucun investissement trouvé", color = Color.Gray)
+                                Text(stringResource(id = R.string.no_investments_found), color = Color.Gray)
                             }
                         }
                     } else {
@@ -218,7 +214,7 @@ fun InvestmentItemCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = investment.label ?: "Sans libellé",
+                        text = investment.label ?: stringResource(id = R.string.no_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -241,11 +237,11 @@ fun InvestmentItemCard(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    InfoLabel("Début", dateFormattedText(investment.dateBegin))
+                    InfoLabel(stringResource(id = R.string.beginning), dateFormattedText(investment.dateBegin))
                     if (!isOngoing) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { showDatePicker = true }) {
-                            InfoLabel("Fin", dateFormattedText(investment.dateEnd))
+                            InfoLabel(stringResource(id = R.string.end), dateFormattedText(investment.dateEnd))
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Modifier",
@@ -256,8 +252,8 @@ fun InvestmentItemCard(
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    InfoLabel("Investi", "%.2f €".format(investment.invested ?: 0.0), true)
-                    InfoLabel("Gagné", "%.2f €".format(investment.earned ?: 0.0), true)
+                    InfoLabel(stringResource(id = R.string.invested), "%.2f €".format(investment.invested ?: 0.0), true)
+                    InfoLabel(stringResource(id = R.string.earned), "%.2f €".format(investment.earned ?: 0.0), true)
                 }
             }
         }
@@ -301,31 +297,33 @@ fun DatePickerDialog(
             modifier = Modifier.padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Modifier la date de clôture", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(id = R.string.edit_closing_date), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(16.dp))
+                
                 OutlinedTextField(
                     value = dateString,
                     onValueChange = { dateString = it },
-                    label = { Text("Date (dd/MM/yy)") },
-                    placeholder = { Text("01/01/24") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    label = { Text(stringResource(id = R.string.date_placeholder)) },
+                    modifier = Modifier.fillMaxWidth()
                 )
+                
                 Spacer(modifier = Modifier.height(16.dp))
+                
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Annuler") }
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(id = R.string.close))
+                    }
                     Button(onClick = {
-                        val sdf = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
                         try {
+                            val sdf = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
                             val date = sdf.parse(dateString)
                             if (date != null) {
-                                val excelDate = (date.time / (1000.0 * 86400.0)) + 25569
+                                val excelDate = (date.time / (1000 * 86400.0)) + 25569
                                 onDateSelected(excelDate)
                             }
-                        } catch (e: Exception) {
-                            // Format invalide
-                        }
+                        } catch (e: Exception) { }
                     }) {
-                        Text("Confirmer")
+                        Text(stringResource(id = R.string.filter_apply))
                     }
                 }
             }

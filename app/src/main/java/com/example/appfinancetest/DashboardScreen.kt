@@ -2,9 +2,10 @@ package com.example.appfinancetest
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,8 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,18 +39,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel)  {
+fun DashboardScreen(
+    modifier: Modifier = Modifier, 
+    databaseViewModel: DataBaseViewModel, 
+    investmentViewModel: InvestmentDB_ViewModel,
+    creditViewModel: CreditDB_ViewModel
+)  {
 
     val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
@@ -184,11 +190,17 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
         SettingsScreen(onDismiss = { showSettings = false })
     }
     if (showImportExport) {
-        ImportExportInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showImportExport = false }, onRefresh = {
-            refreshTrigger++
-            currentPage = 1
-            isFirstLoadPaged = true
-        })
+        ImportExportInterface(
+            databaseViewModel = databaseViewModel, 
+            investmentViewModel = investmentViewModel, 
+            creditViewModel = creditViewModel,
+            onDismiss = { showImportExport = false }, 
+            onRefresh = {
+                refreshTrigger++
+                currentPage = 1
+                isFirstLoadPaged = true
+            }
+        )
     }
     if (showFilter) {
         TransactionFilterInterface(
@@ -241,9 +253,10 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                 onValidateClick = { showValidation = true },
                 onSettingsClick = { showSettings = true },
                 onImportExportClick = { showImportExport = true },
-                name = "Dashboard"
+                name = stringResource(id = R.string.dashboard_title)
             )
         },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         content = { paddingValues ->
             Column(
                 modifier = Modifier
@@ -256,29 +269,38 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                         }
                     }
             ) {
-                Column(modifier = Modifier.padding(top = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text = "Patrimoine Global",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        text = stringResource(id = R.string.net_worth),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                     Text(
                         text = "${"%.2f".format(netWorth ?: 0.0)} €",
-                        fontSize = 32.sp,
+                        fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 8.dp)
+                        color = if ((netWorth ?: 0.0) >= 0) Color.Green else Color.Red,
+                        modifier = Modifier.padding(top = 4.dp),
+                        textAlign = TextAlign.Center
                     )
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(top = 4.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        EvolutionItem("6 mois", evo6m)
-                        EvolutionItem("1 an", evo1y)
-                        EvolutionItem("5 ans", evo5y)
+                        EvolutionItem("6M", evo6m)
+                        Spacer(modifier = Modifier.padding(horizontal = 12.dp))
+                        EvolutionItem("1Y", evo1y)
+                        Spacer(modifier = Modifier.padding(horizontal = 12.dp))
+                        EvolutionItem("5Y", evo5y)
                     }
 
                     if (transactions.isNotEmpty()) {
@@ -286,31 +308,39 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                         val lastBalance = lastTransaction?.balance ?: 0.0
                         val lastDate = lastTransaction?.date ?: 0.0
 
-                        Text(
-                            text = "Balance au ${dateFormattedText(lastDate)}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                        Text(
-                            text = "${"%.2f".format(lastBalance)} €",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.balance_as_of, dateFormattedText(lastDate)),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${"%.2f".format(lastBalance)} €",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
                     }
                 }
 
                 HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Dernières Transactions",
+                        text = stringResource(id = R.string.recent_transactions),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -321,7 +351,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                             IconButton(onClick = clearFilters) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = "Effacer les filtres",
+                                    contentDescription = "Delete filters",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -329,27 +359,44 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
                         
                         IconButton(onClick = { showFilter = true }) {
                             Icon(
-                                imageVector = Icons.Default.List,
-                                contentDescription = "Filtrer",
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = "Filter",
                                 tint = if (isFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
                 }
 
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (transactionsPaged.isEmpty() && isFiltersLoaded && !isFirstLoadPaged) {
-                        item {
-                            Text(
-                                "Aucune transaction à afficher",
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
+                if (transactions.isEmpty() && isFiltersLoaded && !isFirstLoadPaged) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(top = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        Text(
+                            stringResource(id = R.string.no_transactions),
+                            textAlign = TextAlign.Center,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 24.dp)
+                        )
+                        
+                        ImportActionCard(
+                            databaseViewModel = databaseViewModel,
+                            investmentViewModel = investmentViewModel,
+                            onRefresh = {
+                                refreshTrigger++
+                                currentPage = 1
+                            }
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         items(transactionsPaged) { transaction ->
                             TransactionRow(transaction)
                             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
@@ -363,7 +410,7 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
 
 @Composable
 fun EvolutionItem(label: String, evolution: Double?) {
-    Column {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         Text(
             text = if (evolution == null) "N/A" else (if (evolution >= 0) "+" else "") + "%.1f%%".format(evolution),
@@ -388,7 +435,7 @@ fun TransactionRow(transaction: TransactionDB) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = transaction.label ?: "Sans libellé",
+                text = transaction.label ?: stringResource(id = R.string.no_label),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1
@@ -399,7 +446,8 @@ fun TransactionRow(transaction: TransactionDB) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        val isNegative = transaction.category == "Charge" || transaction.category == "Investissement"
+        val isNegative =
+            (transaction.category == "Charge") || transaction.category == "Investissement"
         Text(
             text = "${if (isNegative) "-" else "+"}${"%.2f".format(transaction.amount ?: 0.0)} €",
             style = MaterialTheme.typography.bodyLarge,

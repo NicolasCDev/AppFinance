@@ -1,12 +1,19 @@
 package com.example.appfinancetest
 
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,9 +28,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.combine
@@ -32,8 +42,9 @@ import kotlinx.coroutines.flow.first
 @Composable
 fun PatrimonialScreen(
     modifier: Modifier = Modifier,
-    databaseViewModel: DataBase_ViewModel,
-    investmentViewModel: InvestmentDB_ViewModel
+    databaseViewModel: DataBaseViewModel,
+    investmentViewModel: InvestmentDB_ViewModel,
+    creditViewModel: CreditDB_ViewModel
 ) {
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var hideMarkerTrigger by remember { mutableIntStateOf(0) }
@@ -46,6 +57,7 @@ fun PatrimonialScreen(
     var showValidation by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
+    var showCreditScreen by remember { mutableStateOf(false) }
 
     if (showValidation) {
         InvestmentValidationInterface(
@@ -62,11 +74,18 @@ fun PatrimonialScreen(
         ImportExportInterface(
             databaseViewModel = databaseViewModel,
             investmentViewModel = investmentViewModel,
+            creditViewModel = creditViewModel,
             onDismiss = { showImportExport = false },
             onRefresh = {
                 refreshTrigger++
                 databaseViewModel.refreshNetWorth()
             }
+        )
+    }
+    if (showCreditScreen) {
+        CreditScreen(
+            creditViewModel = creditViewModel,
+            onDismiss = { showCreditScreen = false }
         )
     }
 
@@ -126,9 +145,10 @@ fun PatrimonialScreen(
                 onValidateClick = { showValidation = true },
                 onSettingsClick = { showSettings = true },
                 onImportExportClick = { showImportExport = true },
-                name = "Patrimoine"
+                name = stringResource(id = R.string.patrimonial_title)
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -142,67 +162,98 @@ fun PatrimonialScreen(
                     })
                 }
         ) {
-            Text(
-                text = "Patrimoine Global",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "${"%.2f".format(netWorth ?: 0.0)} €",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(id = R.string.net_worth_simple),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${"%.2f".format(netWorth ?: 0.0)} €",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if ((netWorth ?: 0.0) >= 0) Color.Green else Color.Red
+                )
+            }
 
             if (isPrefsLoaded) {
-                // Utilisation du composant partagé DateRangeSelector
-                DateRangeSelector(
-                    selectedOption = selectedOption,
-                    onOptionChange = { option ->
-                        selectedOption = option
-                        range = calculateRangeFromOption(option, minDate)
-                    },
-                    onCalendarClick = { showDateRangePicker = true }
-                )
+                if (transactions.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        Text(
+                            stringResource(id = R.string.no_transactions),
+                            textAlign = TextAlign.Center,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 24.dp)
+                        )
+                        
+                        ImportActionCard(
+                            databaseViewModel = databaseViewModel,
+                            investmentViewModel = investmentViewModel,
+                            onRefresh = {
+                                refreshTrigger++
+                                databaseViewModel.refreshNetWorth()
+                            }
+                        )
+                    }
+                } else {
+                    // Use of DateRangeSelector
+                    DateRangeSelector(
+                        selectedOption = selectedOption,
+                        onOptionChange = { option ->
+                            selectedOption = option
+                            range = calculateRangeFromOption(option, minDate)
+                        },
+                        onCalendarClick = { showDateRangePicker = true }
+                    )
 
-                if (showDateRangePicker) {
-                    LegacyMaterialDateRangePicker(
-                        onDismiss = { showDateRangePicker = false },
-                        onDateSelected = { start, end ->
-                            range = start..end
-                            showDateRangePicker = false
-                        }
+                    if (showDateRangePicker) {
+                        LegacyMaterialDateRangePicker(
+                            onDismiss = { showDateRangePicker = false },
+                            onDateSelected = { start, end ->
+                                range = start..end
+                                showDateRangePicker = false
+                            }
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(id = R.string.estate_evolution),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    )
+                    
+                    PatrimonialLineChart(
+                        viewModel = databaseViewModel,
+                        investmentViewModel = investmentViewModel,
+                        startDate = range.start.toDouble(),
+                        endDate = range.endInclusive.toDouble(),
+                        refreshTrigger = refreshTrigger,
+                        hideMarkerTrigger = hideMarkerTrigger,
+                        onHideMarkers = { hideMarkerTrigger++ }
+                    )
+
+                    Text(
+                        text = stringResource(id = R.string.breakdown_by_category),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+                    )
+
+                    BalancePieChart(
+                        viewModel = databaseViewModel,
+                        startDate = range.start.toDouble(),
+                        endDate = range.endInclusive.toDouble()
                     )
                 }
-
-                Text(
-                    text = "Évolution du patrimoine",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                )
-                
-                PatrimonialLineChart(
-                    viewModel = databaseViewModel,
-                    investmentViewModel = investmentViewModel,
-                    startDate = range.start.toDouble(),
-                    endDate = range.endInclusive.toDouble(),
-                    refreshTrigger = refreshTrigger,
-                    hideMarkerTrigger = hideMarkerTrigger,
-                    onHideMarkers = { hideMarkerTrigger++ }
-                )
-
-                Text(
-                    text = "Répartition par catégorie",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
-                )
-
-                BalancePieChart(
-                    viewModel = databaseViewModel,
-                    startDate = range.start.toDouble(),
-                    endDate = range.endInclusive.toDouble()
-                )
             }
         }
     }

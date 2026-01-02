@@ -1,25 +1,15 @@
 package com.example.appfinancetest
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel) {
+fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBaseViewModel, investmentViewModel: InvestmentDB_ViewModel) {
     val scope = rememberCoroutineScope()
 
     var refreshTrigger by remember { mutableIntStateOf(0) }
@@ -59,13 +49,13 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
     if (showSettings) {
         SettingsScreen(onDismiss = { showSettings = false })
     }
-    if (showImportExport) {
-        ImportExportInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showImportExport = false }, onRefresh = {
-            refreshTrigger++
-            isFirstLoad = true
-            currentPage = 1
-        })
-    }
+//    if (showImportExport) {
+//        ImportExportInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showImportExport = false }, onRefresh = {
+//            refreshTrigger++
+//            isFirstLoad = true
+//            currentPage = 1
+//        })
+//    }
 
     Scaffold(
         topBar = {

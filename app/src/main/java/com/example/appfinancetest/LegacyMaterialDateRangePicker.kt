@@ -11,19 +11,19 @@ import java.util.*
 @Composable
 fun LegacyMaterialDateRangePicker(
     onDismiss: () -> Unit,
-    onDateSelected: (Float, Float) -> Unit // 🔧 Ajout affichage formaté
+    onDateSelected: (Float, Float) -> Unit // 🔧 Adding formatted display
 ) {
     val context = LocalContext.current
     val activity = context as FragmentActivity
 
     val picker = remember {
         MaterialDatePicker.Builder.dateRangePicker()
-            .setTitleText("Sélectionnez une plage de dates")
+            .setTitleText("Select a date range")
             .setTheme(R.style.DateRangePickerTheme)
             .build()
     }
 
-    // Affiche le picker dès que le composable est lancé
+    // Print the picker when the composable is launched
     LaunchedEffect(Unit) {
         picker.show(activity.supportFragmentManager, "DATE_PICKER")
     }

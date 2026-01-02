@@ -1,0 +1,84 @@
+<resources>
+    <string name="app_name">AppFinanceTest</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="net_worth">NET WORTH</string>
+    <string name="recent_transactions">Recent transactions</string>
+    <string name="no_transactions">No transactions to display</string>
+    <string name="balance_as_of">Balance as of %s</string>
+    <string name="no_label">No label</string>
+    <string name="settings_title">Settings</string>
+    <string name="app_language">App Language</string>
+    <string name="database_title">Database</string>
+    <string name="choose_file">Choose file</string>
+    <string name="no_file_selected">No file selected</string>
+    <string name="file_selected">File: \n %s</string>
+    <string name="close">Close</string>
+
+    <!-- Investment Screen -->
+    <string name="investments_title">Investments</string>
+    <string name="no_investments_found">No investment to display</string>
+    <string name="investment_current">Current</string>
+    <string name="investment_closed">Closed</string>
+    <string name="capital_gain_realized">Capital gain realized</string>
+    <string name="invested">Invested</string>
+    <string name="earned">Earned</string>
+    <string name="capital_gain">Capital gain</string>
+    <string name="annual_profitability">Annual profitability</string>
+    <string name="no_investment">No investment</string>
+    <string name="annual">annual</string>
+
+    <!-- Patrimonial Screen -->
+    <string name="patrimonial_title">Estate</string>
+    <string name="net_worth_simple">Net worth</string>
+    <string name="estate_evolution">Estate evolution</string>
+    <string name="breakdown_by_category">Breakdown by category</string>
+    <string name="category">Categories</string>
+
+    <!-- Date Range Options -->
+    <string name="range_last_day">Last day</string>
+    <string name="range_last_week">Last week</string>
+    <string name="range_last_month">Last month</string>
+    <string name="range_last_6_months">Last 6 months</string>
+    <string name="range_last_year">Last year</string>
+    <string name="range_last_5_years">Last 5 years</string>
+    <string name="range_all_time">All time</string>
+
+    <!-- Filters -->
+    <string name="filter_title">Transaction filters</string>
+    <string name="filter_after">After</string>
+    <string name="filter_before">Before</string>
+    <string name="date_placeholder">MM/DD/YY</string>
+    <string name="filter_category">Category</string>
+    <string name="filter_item">Item</string>
+    <string name="filter_label">Label</string>
+    <string name="filter_amount_min">Minimum amount</string>
+    <string name="filter_amount_max">Maximum amount</string>
+    <string name="filter_delete_all">Delete all</string>
+    <string name="filter_apply">Apply</string>
+    <string name="filter_all">All</string>
+
+    <!-- Investment Management -->
+    <string name="investment_management_title">Investment management</string>
+    <string name="beginning">Beginning</string>
+    <string name="end">End</string>
+    <string name="edit_closing_date">Edit the closing date</string>
+
+    <!-- Import Export -->
+    <string name="data_management_title">Data</string>
+    <string name="processing">Processing…</string>
+    <string name="add_transactions">Add transactions</string>
+    <string name="add_transactions_desc">Merges an Excel file with your current data.</string>
+    <string name="replace_database">Replace the database</string>
+    <string name="replace_database_desc">Overwrites all your local data with the contents of the file.</string>
+    <string name="export_excel">Export as Excel</string>
+    <string name="export_excel_desc">Saves all your transactions on your device.</string>
+
+    <!-- Settings -->
+    <string name="parameters_title">Parameters</string>
+    <string name="language">Application language</string>
+    <string name="database">Database</string>
+
+    <!-- DateRangePicker -->
+    <string name="cancel">Cancel</string>
+
+</resources>

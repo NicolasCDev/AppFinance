@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.icu.text.SimpleDateFormat
@@ -29,8 +30,8 @@ import com.github.mikephil.charting.listener.OnChartGestureListener
 
 @Composable
 fun BalanceLineChart(
-    viewModel: DataBase_ViewModel, 
-    startDate: Double = 0.0, 
+    viewModel: DataBaseViewModel,
+    startDate: Double = 0.0,
     endDate: Double = 2958465.0,
     hideMarkerTrigger: Int = 0,
     onHideMarkers: (() -> Unit)? = null
@@ -181,6 +182,7 @@ fun BalanceLineChart(
     )
 }
 
+@SuppressLint("ViewConstructor")
 class CustomMarkerBalance(
     context: Context,
     layoutResource: Int
@@ -190,6 +192,7 @@ class CustomMarkerBalance(
     private val tvValue: TextView = findViewById(R.id.marker_value)
     private val dateFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
 
+    @SuppressLint("SetTextI18n")
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
         e?.let {
             // Conversion milliseconds to date
