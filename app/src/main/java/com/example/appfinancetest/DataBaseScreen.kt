@@ -49,22 +49,6 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
         }
     }
 
-    LaunchedEffect(currentPage, refreshTrigger) {
-        scope.launch {
-            val offset = (currentPage - 1) * pageSize
-            val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
-            val filtered = filterTransactions(
-                newTransactions,
-                dateFilter, categoryFilter, itemFilter, labelFilter, amountFilter
-            )
-            if (isFirstLoad) {
-                transactionsToShow.clear()
-                isFirstLoad = false
-            }
-            transactionsToShow.addAll(filtered)
-        }
-    }
-
     var showValidation by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
@@ -98,64 +82,6 @@ fun DataBaseScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_Vi
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                Text(
-                    text = "NBTransactions : ${transactionsToShow.size}",
-                    modifier = Modifier
-                        .padding(bottom = 8.dp),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    listOf(
-                        "Date",
-                        "Category",
-                        "Item",
-                        "Label",
-                        "Amount"
-                    ).forEach {
-                        Text(
-                            it,
-                            modifier = Modifier.weight(1f),
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                LazyColumn(state = listState) {
-                    if (transactionsToShow.isEmpty()) {
-                        item {
-                            Text(
-                                "No transaction to print",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
-                        items(transactionsToShow) { transactionDB ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                val data = listOf(
-                                    dateFormattedText(transactionDB.date),
-                                    transactionDB.category ?: "N/A",
-                                    transactionDB.item?: "N/A",
-                                    transactionDB.label ?: "N/A",
-                                    "%.2f €".format(transactionDB.amount ?: 0.0)
-                                )
-                                data.forEach {
-                                    Text(
-                                        it,
-                                        modifier = Modifier.weight(1f),
-                                        fontSize = 11.sp,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     )

@@ -9,7 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -20,17 +19,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.material.icons.Icons
 import androidx.compose.ui.res.painterResource
 import com.example.appfinancetest.ui.theme.AppFinanceTestTheme
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.material.icons.filled.Settings
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -65,8 +58,8 @@ fun MainScreen() {
     Log.d("InvestmentDB_ViewModel", "InvestmentDB_ViewModel created")
     val investmentViewModel: InvestmentDB_ViewModel = viewModel()
     var selectedItem by remember { mutableIntStateOf(0) }
-    val items = listOf("Dashboard", "Investment", "Patrimonial", "DataBase")
-    val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine, R.drawable.ic_database)
+    val items = listOf("Dashboard", "Investment", "Patrimonial")
+    val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine)
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -97,8 +90,7 @@ fun MainScreen() {
         when (selectedItem) {
             0 -> DashboardScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
             1 -> InvestmentScreen()
-            2 -> PatrimonialScreen()
-            3 -> DataBaseScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
+            2 -> PatrimonialScreen(modifier = Modifier.padding(innerPadding), databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel)
             else -> {
                 ErrorScreen(modifier = Modifier.padding(innerPadding))
             }

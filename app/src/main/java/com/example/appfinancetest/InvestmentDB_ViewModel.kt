@@ -8,15 +8,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class InvestmentDB_ViewModel (application: Application) : AndroidViewModel(application) {
-    private val investmentDB = Room.databaseBuilder(
+    private val database = Room.databaseBuilder(
         application.applicationContext,
-        InvestmentDatabase::class.java,
-        "InvestmentDB"
+        AppDatabase::class.java,
+        "FinanceDB"
     )
         .fallbackToDestructiveMigration(false)
         .build()
 
-    private val dbDAO = investmentDB.investmentDao()
+    private val dbDAO = database.investmentDao()
+
     suspend fun getInvestment(): List<InvestmentDB> {
         return withContext(Dispatchers.IO) {
             dbDAO.getAll()

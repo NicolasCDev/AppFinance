@@ -1,69 +1,184 @@
 package com.example.appfinancetest
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RangeSlider
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
-import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_ViewModel, investmentViewModel: InvestmentDB_ViewModel)  {
 
+    val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
     val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel, refreshTrigger) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
+    val netWorth by databaseViewModel.netWorth.observeAsState(0.0)
+
     var showValidation by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
+    var showFilter by remember { mutableStateOf(false) }
 
-    val validDates = transactions.mapNotNull { it.date }
-    val fallbackMin = 0f
-    val fallbackMax = 100f
-    val minDate = validDates.minOrNull()?.toFloat() ?: fallbackMin
-    val maxDate = validDates.maxOrNull()?.toFloat() ?: fallbackMax
-    var isFirstLoad by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val prefs = remember { DataStorage(context) }
+    var isFiltersLoaded by remember { mutableStateOf(false) }
+
+    // Filters states
+    var dateMinFilter by remember { mutableStateOf("") }
+    var dateMaxFilter by remember { mutableStateOf("") }
+    var categoryFilter by remember { mutableStateOf("") }
+    var itemFilter by remember { mutableStateOf("") }
+    var labelFilter by remember { mutableStateOf("") }
+    var amountMinFilter by remember { mutableStateOf("") }
+    var amountMaxFilter by remember { mutableStateOf("") }
+
+    // Load filters ONCE at startup
+    LaunchedEffect(Unit) {
+        try {
+            dateMinFilter = prefs.dashboardDateMinFilterFlow.first() ?: ""
+            dateMaxFilter = prefs.dashboardDateMaxFilterFlow.first() ?: ""
+            categoryFilter = prefs.dashboardCategoryFilterFlow.first() ?: ""
+            itemFilter = prefs.dashboardItemFilterFlow.first() ?: ""
+            labelFilter = prefs.dashboardLabelFilterFlow.first() ?: ""
+            amountMinFilter = prefs.dashboardAmountMinFilterFlow.first() ?: ""
+            amountMaxFilter = prefs.dashboardAmountMaxFilterFlow.first() ?: ""
+        } catch (e: Exception) { }
+        isFiltersLoaded = true
+    }
+
+    // Save filters when they change
+    LaunchedEffect(dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter, isFiltersLoaded) {
+        if (isFiltersLoaded) {
+            prefs.saveDashboardDateMinFilter(dateMinFilter)
+            prefs.saveDashboardDateMaxFilter(dateMaxFilter)
+            prefs.saveDashboardCategoryFilter(categoryFilter)
+            prefs.saveDashboardItemFilter(itemFilter)
+            prefs.saveDashboardLabelFilter(labelFilter)
+            prefs.saveDashboardAmountMinFilter(amountMinFilter)
+            prefs.saveDashboardAmountMaxFilter(amountMaxFilter)
+        }
+    }
+
+    // Pagination for transactions list
+    val pageSize = 50
+    val beforeRefresh = 15
     var currentPage by remember { mutableIntStateOf(1) }
-    var hideMarkerTrigger by remember { mutableIntStateOf(0) }
+    val transactionsPaged = remember { mutableStateListOf<TransactionDB>() }
+    val listState = rememberLazyListState()
+    var isFirstLoadPaged by remember { mutableStateOf(true) }
+
+    val clearFilters = {
+        dateMinFilter = ""
+        dateMaxFilter = ""
+        categoryFilter = ""
+        itemFilter = ""
+        labelFilter = ""
+        amountMinFilter = ""
+        amountMaxFilter = ""
+        currentPage = 1
+    }
+
+    // Dynamic dropdown options based on current selections
+    val categoriesList = remember(transactions) {
+        transactions.mapNotNull { it.category }.distinct().filter { it.isNotBlank() }.sorted()
+    }
+    
+    val itemsList = remember(transactions, categoryFilter) {
+        transactions.filter { categoryFilter.isBlank() || it.category?.contains(categoryFilter, ignoreCase = true) == true }
+            .mapNotNull { it.item }.distinct().filter { it.isNotBlank() }.sorted()
+    }
+    
+    val labelsList = remember(transactions, categoryFilter, itemFilter) {
+        transactions.filter {
+            (categoryFilter.isBlank() || it.category?.contains(categoryFilter, ignoreCase = true) == true) &&
+            (itemFilter.isBlank() || it.item?.contains(itemFilter, ignoreCase = true) == true)
+        }.mapNotNull { it.label }.distinct().filter { it.isNotBlank() }.sorted()
+    }
+
+    LaunchedEffect(listState) {
+        delay(200)
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        }.collect { lastVisibleItemIndex ->
+            if (lastVisibleItemIndex != null &&
+                lastVisibleItemIndex >= transactionsPaged.size - beforeRefresh &&
+                transactionsPaged.size >= pageSize * (currentPage - 1)
+            ) {
+                currentPage += 1
+            }
+        }
+    }
+
+    LaunchedEffect(currentPage, refreshTrigger, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter, isFiltersLoaded) {
+        if (!isFiltersLoaded) return@LaunchedEffect
+        
+        scope.launch {
+            val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || labelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
+            
+            if (isFilterActive) {
+                val allTransactions = databaseViewModel.getTransactionsSortedByDateDESC()
+                val filtered = filterTransactions(allTransactions, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter)
+                transactionsPaged.clear()
+                transactionsPaged.addAll(filtered)
+            } else {
+                val offset = (currentPage - 1) * pageSize
+                val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
+                if (currentPage == 1) {
+                    transactionsPaged.clear()
+                    isFirstLoadPaged = false
+                }
+                transactionsPaged.addAll(newTransactions)
+            }
+        }
+    }
 
     if (showValidation) {
-        InvestmentValidationInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showValidation = false })
+        InvestmentValidationInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showValidation = false }, onRefresh = { refreshTrigger++ })
     }
     if (showSettings) {
         SettingsScreen(onDismiss = { showSettings = false })
@@ -71,71 +186,56 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
     if (showImportExport) {
         ImportExportInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showImportExport = false }, onRefresh = {
             refreshTrigger++
-            isFirstLoad = true
             currentPage = 1
+            isFirstLoadPaged = true
         })
     }
-    if (validDates.isEmpty()) {
-        Scaffold(
-            topBar = {
-                TopBar(
-                    onValidateClick = { showValidation = true },
-                    onSettingsClick = { showSettings = true },
-                    onImportExportClick = { showImportExport = true },
-                    name = "Dashboard"
-                )
-            },
-            content = { paddingValues ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .padding(paddingValues) // add padding for top bar space
-                ) {
-                    Text("No data available")
-                }
-            }
+    if (showFilter) {
+        TransactionFilterInterface(
+            dateMinFilter = dateMinFilter,
+            onDateMinFilterChange = { dateMinFilter = it; currentPage = 1 },
+            dateMaxFilter = dateMaxFilter,
+            onDateMaxFilterChange = { dateMaxFilter = it; currentPage = 1 },
+            categoryFilter = categoryFilter,
+            onCategoryFilterChange = { categoryFilter = it; currentPage = 1 },
+            categories = categoriesList,
+            itemFilter = itemFilter,
+            onItemFilterChange = { itemFilter = it; currentPage = 1 },
+            items = itemsList,
+            labelFilter = labelFilter,
+            onLabelFilterChange = { labelFilter = it; currentPage = 1 },
+            labels = labelsList,
+            amountMinFilter = amountMinFilter,
+            onAmountMinFilterChange = { amountMinFilter = it; currentPage = 1 },
+            amountMaxFilter = amountMaxFilter,
+            onAmountMaxFilterChange = { amountMaxFilter = it; currentPage = 1 },
+            onClearAll = clearFilters,
+            onDismiss = { showFilter = false }
         )
-        return
-    }
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val prefs = remember { DataStorage(context) }
-
-    // State showing preferences are loaded
-    var showDateRangePicker by remember { mutableStateOf(false) }
-    var isPrefsLoaded by remember { mutableStateOf(false) }
-    var range by remember { mutableStateOf(minDate..maxDate) }
-
-    // Load preferences
-    LaunchedEffect(Unit) {
-        prefs.startDateFlow.combine(prefs.endDateFlow) { start, end -> start to end }
-            .collect { (savedStart, savedEnd) ->
-                if (savedStart != null && savedEnd != null) {
-                    range = savedStart..savedEnd
-                } else {
-                    range = minDate..maxDate
-                }
-                isPrefsLoaded = true
-            }
     }
 
-    // Only saving if preferences are loaded
-    LaunchedEffect(range, isPrefsLoaded) {
-        if (isPrefsLoaded) {
-            prefs.saveStartDate(range.start)
-            prefs.saveEndDate(range.endInclusive)
+    // Evolutions states
+    var evo6m by remember { mutableStateOf<Double?>(null) }
+    var evo1y by remember { mutableStateOf<Double?>(null) }
+    var evo5y by remember { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(netWorth, transactions) {
+        if (transactions.isNotEmpty()) {
+            val today = (System.currentTimeMillis() / (1000 * 86400.0)) + 25569
+            val currentNW = databaseViewModel.getNetWorthAtDateStatic(today)
+            
+            val nw6m = databaseViewModel.getNetWorthAtDateStatic(today - 182)
+            val nw1y = databaseViewModel.getNetWorthAtDateStatic(today - 365)
+            val nw5y = databaseViewModel.getNetWorthAtDateStatic(today - 1825)
+
+            evo6m = if (nw6m != 0.0) ((currentNW - nw6m) / nw6m * 100) else null
+            evo1y = if (nw1y != 0.0) ((currentNW - nw1y) / nw1y * 100) else null
+            evo5y = if (nw5y != 0.0) ((currentNW - nw5y) / nw5y * 100) else null
         }
     }
 
-    // Doesn't show until prefs are loaded
-    if (!isPrefsLoaded) {
-        Text("Date range loading...")
-        return
-    }
-
-    // Scaffold to contain TopAppBar and the body content
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopBar(
                 onValidateClick = { showValidation = true },
@@ -148,126 +248,164 @@ fun DashboardScreen(modifier: Modifier = Modifier, databaseViewModel: DataBase_V
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
-                    .padding(paddingValues) // add padding for top bar space
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
                     .pointerInput(Unit) {
                         detectTapGestures { _ ->
-                            // Hide markers on any tap - let the charts handle their own interactions
-                            hideMarkerTrigger++
+                            // Interaction standard
                         }
                     }
             ) {
-                if (validDates.isEmpty()) {
-                    Text("No data available")
-                } else {
-                    // Display Date Range and controls in Row
+                Column(modifier = Modifier.padding(top = 16.dp)) {
+                    Text(
+                        text = "Patrimoine Global",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${"%.2f".format(netWorth ?: 0.0)} €",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(top = 8.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Date picker button with calendar image
-                        IconButton(
-                            onClick = { showDateRangePicker = true },
-                            modifier = Modifier
-                                .width(50.dp)
-                                .height(50.dp)
-                                .padding(end = 16.dp),
-                        ) {
-                            Icon(
-                                painterResource(id = R.drawable.ic_calendar),
-                                contentDescription = "Choose dates",
-                            )
-                        }
+                        EvolutionItem("6 mois", evo6m)
+                        EvolutionItem("1 an", evo1y)
+                        EvolutionItem("5 ans", evo5y)
+                    }
 
-                        // Column for displaying date range and RangeSlider
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Plage de dates : ${
-                                    dateFormattedText(range.start.roundToInt().toDouble())
-                                } à ${dateFormattedText(range.endInclusive.roundToInt().toDouble())}",
-                                style = MaterialTheme.typography.labelLarge,
-                                textAlign = TextAlign.Center
-                            )
+                    if (transactions.isNotEmpty()) {
+                        val lastTransaction = transactions.lastOrNull()
+                        val lastBalance = lastTransaction?.balance ?: 0.0
+                        val lastDate = lastTransaction?.date ?: 0.0
 
-                            // Box around RangeSlider to control its size
-                            Box(
-                                modifier = Modifier
-                                    .padding(vertical = 0.dp)  // Padding autour de la Box
-                                    .fillMaxWidth()  // Remplir toute la largeur disponible
-                                    .height(20.dp)  // Définir une hauteur spécifique pour le RangeSlider
-                            ) {
-                                // RangeSlider inside the Box
-                                RangeSlider(
-                                    value = range,
-                                    onValueChange = { range = it },
-                                    valueRange = minDate..maxDate,
-                                    steps = ((maxDate - minDate) / 10).toInt(),
-                                    modifier = Modifier
-                                        .align(Alignment.Center) // Aligner le RangeSlider au centre de la Box
-                                        .fillMaxWidth(), // Rendre le RangeSlider aussi large que la Box
-                                    colors = SliderDefaults.colors(
-                                        thumbColor = Color.Blue, // Couleur du curseur
-                                        activeTrackColor = Color.Green, // Couleur de la piste active
-                                        inactiveTrackColor = Color.Gray.copy(alpha = 0.3f), // Couleur de la piste inactive
-                                        activeTickColor = Color.Transparent, // Masquer les "ticks" actifs
-                                        inactiveTickColor = Color.Transparent // Masquer les "ticks" inactifs
-                                    )
+                        Text(
+                            text = "Balance au ${dateFormattedText(lastDate)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        Text(
+                            text = "${"%.2f".format(lastBalance)} €",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                        )
+                    }
+                }
+
+                HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Dernières Transactions",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row {
+                        val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || labelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
+                        
+                        if (isFilterActive) {
+                            IconButton(onClick = clearFilters) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Effacer les filtres",
+                                    tint = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
+                        
+                        IconButton(onClick = { showFilter = true }) {
+                            Icon(
+                                imageVector = Icons.Default.List,
+                                contentDescription = "Filtrer",
+                                tint = if (isFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
+                }
 
-                    // Show DateRangePicker only if showDateRangePicker is true
-                    if (showDateRangePicker) {
-                        LegacyMaterialDateRangePicker(
-                            onDismiss = { showDateRangePicker = false },
-                            onDateSelected = { start, end ->
-                                range = start..end
-                                showDateRangePicker = false
-                            }
-                        )
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (transactionsPaged.isEmpty() && isFiltersLoaded && !isFirstLoadPaged) {
+                        item {
+                            Text(
+                                "Aucune transaction à afficher",
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        items(transactionsPaged) { transaction ->
+                            TransactionRow(transaction)
+                            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                        }
                     }
-                    val lastTransaction = transactions.filter {
-                        it.date != null && it.date in range.start..range.endInclusive
-                    }.maxByOrNull { it.date ?: Double.MIN_VALUE }
-
-                    // Print balance of last transaction if it exists
-                    val lastBalance = lastTransaction?.balance ?: 0.0
-
-                    // Print balance on the top of the LineChart
-                    Text(
-                        text = "Balance at the end of the period: ${"%.2f".format(lastBalance)} €",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Box(
-                        modifier = Modifier
-                            .padding(vertical = 0.dp)  // Padding around the Box
-                            .fillMaxWidth()  // Fill all the width available
-                            .height(230.dp)  // Define a specific height for graphics
-                    ) {
-                        LineChartPager(
-                            databaseViewModel = databaseViewModel,
-                            investmentViewModel = investmentViewModel,
-                            range = range,
-                            hideMarkerTrigger = hideMarkerTrigger,
-                            onHideMarkers = { hideMarkerTrigger++ }
-                        )
-                    }
-
-                    BalancePieChart(
-                        viewModel = databaseViewModel,
-                        startDate = range.start.toDouble(),
-                        endDate = range.endInclusive.toDouble()
-                    )
                 }
             }
         }
     )
+}
+
+@Composable
+fun EvolutionItem(label: String, evolution: Double?) {
+    Column {
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text(
+            text = if (evolution == null) "N/A" else (if (evolution >= 0) "+" else "") + "%.1f%%".format(evolution),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = when {
+                evolution == null -> MaterialTheme.colorScheme.onSurface
+                evolution >= 0 -> Color.Green
+                else -> Color.Red
+            }
+        )
+    }
+}
+
+@Composable
+fun TransactionRow(transaction: TransactionDB) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = transaction.label ?: "Sans libellé",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+            Text(
+                text = "${dateFormattedText(transaction.date)} • ${transaction.category} • ${transaction.item}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        val isNegative = transaction.category == "Charge" || transaction.category == "Investissement"
+        Text(
+            text = "${if (isNegative) "-" else "+"}${"%.2f".format(transaction.amount ?: 0.0)} €",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (isNegative) Color.Red else Color.Green,
+            textAlign = TextAlign.End
+        )
+    }
 }
