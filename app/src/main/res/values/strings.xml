@@ -72,6 +72,30 @@
     <string name="replace_database_desc">Écrase toutes vos données locales par le contenu du fichier.</string>
     <string name="export_excel">Exporter en Excel</string>
     <string name="export_excel_desc">Sauvegarde l\'intégralité de vos transactions sur votre appareil.</string>
+    <string name="manage_credits">Gérer les Crédits</string>
+    <string name="manage_credits_desc">Ajouter ou modifier vos crédits en cours.</string>
+
+    <!-- Credit Screen -->
+    <string name="credits_title">Mes Crédits</string>
+    <string name="add_credit_button">Ajouter</string>
+    <string name="no_credits_found">Aucun crédit à afficher</string>
+    <string name="credit_begin">Début : %s</string>
+    <string name="credit_id_invest_label">ID Invest : %s</string>
+    <string name="edit_action">Éditer</string>
+    <string name="delete_action">Supprimer</string>
+    <string name="total_borrowed">Total Emprunté</string>
+    <string name="reimbursed_amount">Déjà Remboursé</string>
+    <string name="remaining_to_pay">Reste à Payer</string>
+    <string name="monthly_payment">Mensualité</string>
+    <string name="interest_rate">Taux</string>
+    <string name="add_credit_dialog_title">Ajouter un crédit</string>
+    <string name="edit_credit_dialog_title">Modifier le crédit</string>
+    <string name="credit_name_label">Nom du crédit</string>
+    <string name="id_invest_placeholder">ID Investissement (Commence par \'C\')</string>
+    <string name="save_button">Enregistrer</string>
+
+    <!-- Date Picker -->
+    <string name="choose_date">Choisir une date</string>
 
     <!-- Settings -->
     <string name="parameters_title">Paramètres</string>

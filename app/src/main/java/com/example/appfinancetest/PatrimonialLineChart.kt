@@ -24,18 +24,19 @@ import com.github.mikephil.charting.listener.OnChartGestureListener
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 @Composable
 fun PatrimonialLineChart(
     viewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDB_ViewModel,
+    investmentViewModel: InvestmentDBViewModel,
     startDate: Double,
     endDate: Double,
     refreshTrigger: Int = 0,
     hideMarkerTrigger: Int = 0,
     onHideMarkers: (() -> Unit)? = null
 ) {
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel, refreshTrigger) {
+    val transactions by produceState(initialValue = emptyList(), viewModel, refreshTrigger) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
     
@@ -155,7 +156,7 @@ fun PatrimonialLineChart(
                 // Format Y-axis as "XXK €"
                 axisLeft.valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        return if (Math.abs(value) >= 1000) {
+                        return if (abs(value) >= 1000) {
                             "%.1fK €".format(value / 1000f).replace(".0K", "K")
                         } else {
                             "%.0f €".format(value)

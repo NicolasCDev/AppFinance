@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -17,15 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun CreditScreen(
-    creditViewModel: CreditDB_ViewModel,
+    creditViewModel: CreditDBViewModel,
     onDismiss: () -> Unit
 ) {
     var credits by remember { mutableStateOf<List<CreditDB>>(emptyList()) }
@@ -42,7 +44,7 @@ fun CreditScreen(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f),
+                .fillMaxHeight(0.95f),
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 8.dp
         ) {
@@ -53,20 +55,29 @@ fun CreditScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Mes Crédits",
+                        text = stringResource(id = R.string.credits_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Button(
                         onClick = { 
                             isAddDialog = true
-                            showAddEditDialog = CreditDB(label = "", dateBegin = 0.0, totalAmount = 0.0, monthlyPayment = 0.0, interestRate = 0.0, idInvest = "")
+                            showAddEditDialog = CreditDB(
+                                label = "", 
+                                dateBegin = 0.0, 
+                                totalAmount = 0.0, 
+                                reimbursedAmount = 0.0,
+                                remainingAmount = 0.0,
+                                monthlyPayment = 0.0, 
+                                interestRate = 0.0, 
+                                idInvest = ""
+                            )
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("Ajouter")
+                        Text(stringResource(id = R.string.add_credit_button))
                     }
                 }
 
@@ -79,7 +90,7 @@ fun CreditScreen(
                     if (credits.isEmpty()) {
                         item {
                             Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("Aucun crédit enregistré", color = Color.Gray)
+                                Text(stringResource(id = R.string.no_credits_found), color = Color.Gray)
                             }
                         }
                     } else {
@@ -106,7 +117,7 @@ fun CreditScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                 ) {
-                    Text("Fermer")
+                    Text(stringResource(id = R.string.close))
                 }
             }
         }
@@ -151,18 +162,18 @@ fun CreditItemCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = credit.label ?: "Sans nom",
+                        text = credit.label ?: stringResource(id = R.string.no_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Début : ${dateFormattedText(credit.dateBegin ?: 0.0)}",
+                        text = stringResource(id = R.string.credit_begin, dateFormattedText(credit.dateBegin ?: 0.0)),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
                     if (!credit.idInvest.isNullOrBlank()) {
                         Text(
-                            text = "ID Invest : ${credit.idInvest}",
+                            text = stringResource(id = R.string.credit_id_invest_label, credit.idInvest),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -170,10 +181,10 @@ fun CreditItemCard(
                 }
                 Row {
                     IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editer", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit_action), tint = MaterialTheme.colorScheme.primary)
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Supprimer", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.delete_action), tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -182,22 +193,39 @@ fun CreditItemCard(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    LabelValueSmall(label = "Total", value = "%.2f €".format(credit.totalAmount ?: 0.0))
-                    LabelValueSmall(label = "Mensualité", value = "%.2f €".format(credit.monthlyPayment ?: 0.0))
+                    LabelValueSmall(label = stringResource(id = R.string.total_borrowed), value = "%.2f €".format(credit.totalAmount ?: 0.0))
+                    LabelValueSmall(label = stringResource(id = R.string.reimbursed_amount), value = "%.2f €".format(credit.reimbursedAmount ?: 0.0))
+                    LabelValueSmall(label = stringResource(id = R.string.remaining_to_pay), value = "%.2f €".format(credit.remainingAmount ?: 0.0), color = MaterialTheme.colorScheme.error)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    LabelValueSmall(label = "Taux", value = "%.2f %%".format(credit.interestRate ?: 0.0))
+                    LabelValueSmall(label = stringResource(id = R.string.monthly_payment), value = "%.2f €".format(credit.monthlyPayment ?: 0.0))
+                    LabelValueSmall(label = stringResource(id = R.string.interest_rate), value = "%.2f %%".format(credit.interestRate ?: 0.0))
                 }
             }
+            
+            val progress = remember(credit.totalAmount, credit.reimbursedAmount) {
+                val total = credit.totalAmount ?: 1.0
+                val reimbursed = credit.reimbursedAmount ?: 0.0
+                if (total > 0) (reimbursed / total).toFloat().coerceIn(0f, 1f) else 0f
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
         }
     }
 }
 
 @Composable
-fun LabelValueSmall(label: String, value: String) {
+fun LabelValueSmall(label: String, value: String, color: Color = Color.Unspecified) {
     Row {
         Text("$label : ", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
+        Text(value, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = color)
     }
 }
 
@@ -209,11 +237,23 @@ fun CreditAddEditDialog(
     onSave: (CreditDB) -> Unit
 ) {
     var label by remember { mutableStateOf(credit.label ?: "") }
-    var totalAmount by remember { mutableStateOf(credit.totalAmount?.toString() ?: "") }
-    var monthlyPayment by remember { mutableStateOf(credit.monthlyPayment?.toString() ?: "") }
-    var interestRate by remember { mutableStateOf(credit.interestRate?.toString() ?: "") }
+    var totalAmount by remember { mutableStateOf(if (isAdd) "" else credit.totalAmount?.toString() ?: "") }
+    var reimbursedAmount by remember { mutableStateOf(if (isAdd) "" else credit.reimbursedAmount?.toString() ?: "") }
+    var remainingAmount by remember { mutableStateOf(if (isAdd) "" else credit.remainingAmount?.toString() ?: "") }
+    var monthlyPayment by remember { mutableStateOf(if (isAdd) "" else credit.monthlyPayment?.toString() ?: "") }
+    var interestRate by remember { mutableStateOf(if (isAdd) "" else credit.interestRate?.toString() ?: "") }
     var idInvest by remember { mutableStateOf(credit.idInvest ?: "") }
-    var dateBegin by remember { mutableStateOf(credit.dateBegin ?: 0.0) }
+    
+    // Default to current date if none provided
+    var dateBegin by remember {
+        mutableDoubleStateOf(
+            if (credit.dateBegin == null || credit.dateBegin == 0.0) {
+                (System.currentTimeMillis() / 86400000.0) + 25569.0
+            } else {
+                credit.dateBegin
+            }
+        ) 
+    }
     
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -222,9 +262,14 @@ fun CreditAddEditDialog(
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 8.dp
         ) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()), 
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text(
-                    text = if (isAdd) "Ajouter un crédit" else "Modifier le crédit",
+                    text = if (isAdd) stringResource(id = R.string.add_credit_dialog_title) else stringResource(id = R.string.edit_credit_dialog_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -232,36 +277,67 @@ fun CreditAddEditDialog(
                 OutlinedTextField(
                     value = label,
                     onValueChange = { label = it },
-                    label = { Text("Nom du crédit") },
+                    label = { Text(stringResource(id = R.string.credit_name_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
                 OutlinedTextField(
                     value = idInvest,
                     onValueChange = { idInvest = it },
-                    label = { Text("ID Investissement") },
+                    label = { Text(stringResource(id = R.string.id_invest_placeholder)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value = totalAmount,
-                    onValueChange = { totalAmount = it },
-                    label = { Text("Somme totale") },
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { 
+                        totalAmount = it
+                        // Auto-calculate remaining if total changed
+                        val t = it.toDoubleOrNull() ?: 0.0
+                        val r = reimbursedAmount.toDoubleOrNull() ?: 0.0
+                        remainingAmount = (t - r).toString()
+                    },
+                    label = { Text(stringResource(id = R.string.total_borrowed)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+
+                OutlinedTextField(
+                    value = reimbursedAmount,
+                    onValueChange = { 
+                        reimbursedAmount = it
+                        // Auto-calculate remaining if reimbursed changed
+                        val t = totalAmount.toDoubleOrNull() ?: 0.0
+                        val r = it.toDoubleOrNull() ?: 0.0
+                        remainingAmount = (t - r).toString()
+                    },
+                    label = { Text(stringResource(id = R.string.reimbursed_amount)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+
+                OutlinedTextField(
+                    value = remainingAmount,
+                    onValueChange = { remainingAmount = it },
+                    label = { Text(stringResource(id = R.string.remaining_to_pay)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 OutlinedTextField(
                     value = monthlyPayment,
                     onValueChange = { monthlyPayment = it },
-                    label = { Text("Mensualité") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text(stringResource(id = R.string.monthly_payment)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 OutlinedTextField(
                     value = interestRate,
                     onValueChange = { interestRate = it },
-                    label = { Text("Taux d'intérêt (%)") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text(stringResource(id = R.string.interest_rate)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 Row(
@@ -274,7 +350,7 @@ fun CreditAddEditDialog(
                     Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Début : ${dateFormattedText(dateBegin)}",
+                        text = stringResource(id = R.string.credit_begin, dateFormattedText(dateBegin)),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -284,19 +360,21 @@ fun CreditAddEditDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Annuler") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
                         onSave(credit.copy(
                             label = label,
                             totalAmount = totalAmount.toDoubleOrNull() ?: 0.0,
+                            reimbursedAmount = reimbursedAmount.toDoubleOrNull() ?: 0.0,
+                            remainingAmount = remainingAmount.toDoubleOrNull() ?: 0.0,
                             monthlyPayment = monthlyPayment.toDoubleOrNull() ?: 0.0,
                             interestRate = interestRate.toDoubleOrNull() ?: 0.0,
                             dateBegin = dateBegin,
                             idInvest = idInvest
                         ))
                     }) {
-                        Text("Enregistrer")
+                        Text(stringResource(id = R.string.save_button))
                     }
                 }
             }
@@ -304,11 +382,11 @@ fun CreditAddEditDialog(
     }
 
     if (showDatePicker) {
-        // Intégration du DatePicker existant dans votre projet
-        LegacyMaterialDateRangePicker(
+        WheelDatePickerDialog(
+            initialDate = dateBegin,
             onDismiss = { showDatePicker = false },
-            onDateSelected = { start, _ ->
-                dateBegin = start.toDouble()
+            onDateSelected = { date ->
+                dateBegin = date
                 showDatePicker = false
             }
         )

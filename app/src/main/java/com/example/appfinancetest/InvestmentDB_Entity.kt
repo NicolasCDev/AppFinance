@@ -1,6 +1,5 @@
 package com.example.appfinancetest
 
-import androidx.lifecycle.LiveData
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -10,7 +9,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
-import androidx.room.TypeConverter
 
 @Entity
 data class InvestmentDB (

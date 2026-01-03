@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun InvestmentValidationInterface(
     databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDB_ViewModel,
+    investmentViewModel: InvestmentDBViewModel,
     onDismiss: () -> Unit,
     onRefresh: () -> Unit = {}
 ) {
@@ -47,7 +47,7 @@ fun InvestmentValidationInterface(
     var currentPageOngoing by remember { mutableIntStateOf(1) }
     var currentPageFinished by remember { mutableIntStateOf(1) }
 
-    var currentPage = when (selectedTabIndex) {
+    val currentPage = when (selectedTabIndex) {
         0 -> currentPageOngoing
         1 -> currentPageFinished
         else -> 0

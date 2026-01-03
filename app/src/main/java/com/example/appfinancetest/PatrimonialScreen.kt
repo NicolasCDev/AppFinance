@@ -4,16 +4,12 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -43,14 +39,14 @@ import kotlinx.coroutines.flow.first
 fun PatrimonialScreen(
     modifier: Modifier = Modifier,
     databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDB_ViewModel,
-    creditViewModel: CreditDB_ViewModel
+    investmentViewModel: InvestmentDBViewModel,
+    creditViewModel: CreditDBViewModel
 ) {
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var hideMarkerTrigger by remember { mutableIntStateOf(0) }
     val netWorth by databaseViewModel.netWorth.observeAsState(0.0)
     
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel, refreshTrigger) {
+    val transactions by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
@@ -90,7 +86,7 @@ fun PatrimonialScreen(
     }
 
     val validDates = transactions.mapNotNull { it.date }
-    val minDate = validDates.minOrNull()?.toDouble() ?: 0.0
+    val minDate = validDates.minOrNull()?: 0.0
     val todayExcel = (System.currentTimeMillis() / (1000 * 86400.0)) + 25569
 
     val context = LocalContext.current
@@ -199,6 +195,7 @@ fun PatrimonialScreen(
                         ImportActionCard(
                             databaseViewModel = databaseViewModel,
                             investmentViewModel = investmentViewModel,
+                            creditViewModel = creditViewModel,
                             onRefresh = {
                                 refreshTrigger++
                                 databaseViewModel.refreshNetWorth()

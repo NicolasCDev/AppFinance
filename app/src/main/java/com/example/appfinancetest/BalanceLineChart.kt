@@ -37,7 +37,7 @@ fun BalanceLineChart(
     onHideMarkers: (() -> Unit)? = null
 ) {
     // Getting transactions from database
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), viewModel) {
+    val transactions by produceState(initialValue = emptyList(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
     

@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -23,13 +22,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 @Composable
 fun ImportActionCard(
     databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDB_ViewModel,
+    investmentViewModel: InvestmentDBViewModel? = null,
+    creditViewModel: CreditDBViewModel? = null,
     title: String = stringResource(id = R.string.add_transactions),
     description: String = stringResource(id = R.string.add_transactions_desc),
     icon: ImageVector = Icons.Default.Add,
@@ -41,6 +42,7 @@ fun ImportActionCard(
     modifier: Modifier = Modifier.fillMaxWidth(0.9f)
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val sharedPreferences = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -48,28 +50,43 @@ fun ImportActionCard(
     ) { uri: Uri? ->
         uri?.let {
             onProcessingChange(true)
-            try {
-                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                sharedPreferences.edit { putString("selected_file_uri", uri.toString()) }
+            lifecycleOwner.lifecycleScope.launch {
+                try {
+                    context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    sharedPreferences.edit { putString("selected_file_uri", uri.toString()) }
 
-                context.contentResolver.openInputStream(it)?.let { inputStream ->
-                    val transactionsData = readExcelFile(inputStream)
-                    (context as? ComponentActivity)?.lifecycleScope?.launch {
+                    context.contentResolver.openInputStream(it)?.use { inputStream ->
+                        // Reading transactions
+                        val transactionsData = readExcelFile(inputStream)
+                        
                         if (replacing) {
                             databaseViewModel.deleteAllTransactions()
+                            investmentViewModel?.deleteAllInvestments()
+                            creditViewModel?.deleteAllCredits()
                         }
-                        investmentViewModel.deleteAllInvestments()
+                        
+                        // Adding transactions in database
                         addTransaction(transactionsData, databaseViewModel)
-                        addInvestments(databaseViewModel, investmentViewModel)
+                        
+                        // Adding investments from transactions
+                        if (investmentViewModel != null) {
+                            addInvestments(databaseViewModel, investmentViewModel)
+                        }
+
+                        // Adding credits from transactions
+                        if (creditViewModel != null) {
+                            addCredits(databaseViewModel, creditViewModel)
+                        }
+                        
                         onRefresh()
                         databaseViewModel.refreshNetWorth()
                         onProcessingChange(false)
                         onDismiss?.invoke()
                     }
+                } catch (e: Exception) {
+                    Log.e("FilePicker", "Error : ${e.message}")
+                    onProcessingChange(false)
                 }
-            } catch (e: Exception) {
-                Log.e("FilePicker", "Error : ${e.message}")
-                onProcessingChange(false)
             }
         }
     }

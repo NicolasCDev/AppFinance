@@ -5,8 +5,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.google.android.material.datepicker.MaterialDatePicker
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun LegacyMaterialDateRangePicker(
@@ -29,9 +27,6 @@ fun LegacyMaterialDateRangePicker(
     }
 
     DisposableEffect(Unit) {
-        val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-        val timeZone = TimeZone.getDefault()
-        val zoneOffset = timeZone.getOffset(Date().time) * -1
 
         picker.addOnPositiveButtonClickListener { selection ->
             if (selection != null) {

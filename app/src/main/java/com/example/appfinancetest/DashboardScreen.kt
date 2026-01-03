@@ -51,15 +51,15 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    modifier: Modifier = Modifier, 
-    databaseViewModel: DataBaseViewModel, 
-    investmentViewModel: InvestmentDB_ViewModel,
-    creditViewModel: CreditDB_ViewModel
+    modifier: Modifier = Modifier,
+    databaseViewModel: DataBaseViewModel,
+    investmentViewModel: InvestmentDBViewModel,
+    creditViewModel: CreditDBViewModel
 )  {
 
     val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel, refreshTrigger) {
+    val transactions by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
@@ -386,6 +386,7 @@ fun DashboardScreen(
                         ImportActionCard(
                             databaseViewModel = databaseViewModel,
                             investmentViewModel = investmentViewModel,
+                            creditViewModel = creditViewModel,
                             onRefresh = {
                                 refreshTrigger++
                                 currentPage = 1

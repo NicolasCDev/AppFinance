@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,7 +10,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +29,8 @@ import androidx.compose.ui.window.Dialog
 fun InvestmentScreen(
     modifier: Modifier = Modifier,
     databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDB_ViewModel,
-    creditViewModel: CreditDB_ViewModel
+    investmentViewModel: InvestmentDBViewModel,
+    creditViewModel: CreditDBViewModel
 ) {
     val scrollState = rememberScrollState()
     var refreshTrigger by remember { mutableIntStateOf(0) }
@@ -39,7 +43,7 @@ fun InvestmentScreen(
     var selectedCategoryForDetail by remember { mutableStateOf<String?>(null) }
 
     // Collecting every investment with refreshTrigger
-    val allInvestments by produceState<List<InvestmentDB>>(initialValue = emptyList(), investmentViewModel, refreshTrigger) {
+    val allInvestments by produceState(initialValue = emptyList(), investmentViewModel, refreshTrigger) {
         value = investmentViewModel.getInvestment()
     }
 
@@ -77,6 +81,9 @@ fun InvestmentScreen(
         InvestmentDetailDialog(
             category = category,
             investments = allInvestments.filter { it.item == category },
+            databaseViewModel = databaseViewModel,
+            investmentViewModel = investmentViewModel,
+            onRefresh = { refreshTrigger++ },
             onDismiss = { selectedCategoryForDetail = null }
         )
     }
@@ -119,6 +126,7 @@ fun InvestmentScreen(
                     ImportActionCard(
                         databaseViewModel = databaseViewModel,
                         investmentViewModel = investmentViewModel,
+                        creditViewModel = creditViewModel,
                         onRefresh = { refreshTrigger++ }
                     )
                 }
@@ -220,10 +228,14 @@ fun InvestmentCategoryCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvestmentDetailDialog(
     category: String,
     investments: List<InvestmentDB>,
+    databaseViewModel: DataBaseViewModel,
+    investmentViewModel: InvestmentDBViewModel,
+    onRefresh: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -291,8 +303,63 @@ fun InvestmentDetailDialog(
                             }
                         }
                     } else {
-                        items(filteredInvestments) { investment ->
-                            PositionItemCard(investment)
+                        // FIX: Key is modified to include selectedTabIndex to prevent state reuse between tabs
+                        items(filteredInvestments, key = { "${it.id}_$selectedTabIndex" }) { investment ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.StartToEnd && selectedTabIndex == 0) true
+                                    else value == SwipeToDismissBoxValue.EndToStart && selectedTabIndex == 1
+                                }
+                            )
+
+                            // Effect to handle the actual database update after the swipe is confirmed
+                            LaunchedEffect(dismissState.currentValue) {
+                                if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd && selectedTabIndex == 0) {
+                                    validateInvestments(databaseViewModel, investmentViewModel, investment.idInvest) {
+                                        databaseViewModel.refreshNetWorth()
+                                        onRefresh()
+                                    }
+                                } else if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart && selectedTabIndex == 1) {
+                                    invalidateInvestments(databaseViewModel, investmentViewModel, investment.idInvest) {
+                                        databaseViewModel.refreshNetWorth()
+                                        onRefresh()
+                                    }
+                                }
+                            }
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {
+                                    val isDismissingToEnd = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+                                    val isDismissingToStart = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+                                    
+                                    val color = if (isDismissingToEnd) Color(0xFF4CAF50) 
+                                               else if (isDismissingToStart) Color.Gray 
+                                               else Color.Transparent
+                                               
+                                    val alignment = if (isDismissingToEnd) Alignment.CenterStart 
+                                                   else if (isDismissingToStart) Alignment.CenterEnd 
+                                                   else Alignment.Center
+                                                   
+                                    val icon = if (isDismissingToEnd) Icons.Default.Done 
+                                              else if (isDismissingToStart) Icons.Default.Refresh 
+                                              else null
+
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(color, RoundedCornerShape(12.dp))
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = alignment
+                                    ) {
+                                        icon?.let { Icon(it, contentDescription = null, tint = Color.White) }
+                                    }
+                                },
+                                enableDismissFromStartToEnd = selectedTabIndex == 0,
+                                enableDismissFromEndToStart = selectedTabIndex == 1
+                            ) {
+                                PositionItemCard(investment)
+                            }
                         }
                     }
                 }

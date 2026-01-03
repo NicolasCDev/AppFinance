@@ -1,13 +1,12 @@
 package com.example.appfinancetest
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class InvestmentDB_ViewModel (application: Application) : AndroidViewModel(application) {
+class InvestmentDBViewModel (application: Application) : AndroidViewModel(application) {
     private val database = Room.databaseBuilder(
         application.applicationContext,
         AppDatabase::class.java,
@@ -30,7 +29,6 @@ class InvestmentDB_ViewModel (application: Application) : AndroidViewModel(appli
     }
     suspend fun deleteAllInvestments() {
         withContext(Dispatchers.IO) {
-            Log.d("InvestmentDB_ViewModel", "Deleted every investment")
             dbDAO.deleteAll()
         }
     }

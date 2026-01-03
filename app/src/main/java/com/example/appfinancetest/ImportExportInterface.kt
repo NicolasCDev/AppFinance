@@ -1,9 +1,7 @@
 package com.example.appfinancetest
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -19,33 +17,36 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 @Composable
 fun ImportExportInterface(
     databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDB_ViewModel,
-    creditViewModel: CreditDB_ViewModel,
+    investmentViewModel: InvestmentDBViewModel,
+    creditViewModel: CreditDBViewModel,
     onDismiss: () -> Unit,
     onRefresh: () -> Unit
 ) {
     var isProcessing by remember { mutableStateOf(false) }
     var showCreditScreen by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     
     val exportFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     ) { uri: Uri? ->
         uri?.let {
             isProcessing = true
-            (context as? ComponentActivity)?.lifecycleScope?.launch {
+            lifecycleOwner.lifecycleScope.launch {
                 try {
                     val allTransactionsRaw = databaseViewModel.getTransactionsSortedByDateASC()
                     val transactions = allTransactionsRaw.map { t ->
@@ -108,62 +109,75 @@ fun ImportExportInterface(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (isProcessing) {
-                    CircularProgressIndicator(modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(id = R.string.processing), color = Color.Gray)
-                } else {
-                    ImportActionCard(
-                        databaseViewModel = databaseViewModel,
-                        investmentViewModel = investmentViewModel,
-                        title = stringResource(id = R.string.add_transactions),
-                        description = stringResource(id = R.string.add_transactions_desc),
-                        icon = Icons.Default.Add,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        onProcessingChange = { isProcessing = it },
-                        onRefresh = onRefresh,
-                        onDismiss = onDismiss,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                Box(contentAlignment = Alignment.Center) {
+                    Column(
+                        modifier = Modifier
+                            .graphicsLayer(alpha = if (isProcessing) 0.4f else 1f)
+                            .then(if (isProcessing) Modifier.pointerInput(Unit) {} else Modifier),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        ImportActionCard(
+                            databaseViewModel = databaseViewModel,
+                            investmentViewModel = investmentViewModel,
+                            creditViewModel = creditViewModel,
+                            title = stringResource(id = R.string.add_transactions),
+                            description = stringResource(id = R.string.add_transactions_desc),
+                            icon = Icons.Default.Add,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            onProcessingChange = { isProcessing = it },
+                            onRefresh = onRefresh,
+                            onDismiss = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    ImportActionCard(
-                        databaseViewModel = databaseViewModel,
-                        investmentViewModel = investmentViewModel,
-                        title = stringResource(id = R.string.replace_database),
-                        description = stringResource(id = R.string.replace_database_desc),
-                        icon = Icons.Default.Refresh,
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        replacing = true,
-                        onProcessingChange = { isProcessing = it },
-                        onRefresh = onRefresh,
-                        onDismiss = onDismiss,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        ImportActionCard(
+                            databaseViewModel = databaseViewModel,
+                            investmentViewModel = investmentViewModel,
+                            creditViewModel = creditViewModel,
+                            title = stringResource(id = R.string.replace_database),
+                            description = stringResource(id = R.string.replace_database_desc),
+                            icon = Icons.Default.Refresh,
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            replacing = true,
+                            onProcessingChange = { isProcessing = it },
+                            onRefresh = onRefresh,
+                            onDismiss = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    GenericActionCard(
-                        title = "Gérer les Crédits",
-                        description = "Ajouter ou modifier vos crédits en cours.",
-                        icon = Icons.Default.CreditCard,
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        onClick = { showCreditScreen = true },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        GenericActionCard(
+                            title = stringResource(id = R.string.manage_credits),
+                            description = stringResource(id = R.string.manage_credits_desc),
+                            icon = Icons.Default.CreditCard,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            onClick = { showCreditScreen = true },
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    GenericActionCard(
-                        title = stringResource(id = R.string.export_excel),
-                        description = stringResource(id = R.string.export_excel_desc),
-                        icon = Icons.Default.Share,
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        onClick = {
-                            exportFileLauncher.launch("finance_export.xlsx")
+                        GenericActionCard(
+                            title = stringResource(id = R.string.export_excel),
+                            description = stringResource(id = R.string.export_excel_desc),
+                            icon = Icons.Default.Share,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            onClick = {
+                                exportFileLauncher.launch("finance_export.xlsx")
+                            }
+                        )
+                    }
+
+                    if (isProcessing) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(stringResource(id = R.string.processing), color = Color.Gray)
                         }
-                    )
+                    }
                 }
             }
         }

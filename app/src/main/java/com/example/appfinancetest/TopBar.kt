@@ -42,17 +42,6 @@ fun TopBar (
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 IconButton(
-                    onClick = onValidateClick,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_validate_investment),
-                        contentDescription = "Validate Investment",
-                        modifier = Modifier.size(24.dp),
-                        tint = Color.White
-                    )
-                }
-                IconButton(
                     onClick = onImportExportClick,
                     modifier = Modifier.size(40.dp)
                 ) {

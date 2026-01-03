@@ -6,7 +6,7 @@ import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class CreditDB_ViewModel(application: Application) : AndroidViewModel(application) {
+class CreditDBViewModel(application: Application) : AndroidViewModel(application) {
     private val database = Room.databaseBuilder(
         application.applicationContext,
         AppDatabase::class.java,

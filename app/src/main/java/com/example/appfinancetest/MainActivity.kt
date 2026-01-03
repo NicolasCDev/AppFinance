@@ -43,8 +43,8 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun MainScreen() {
     val databaseViewModel: DataBaseViewModel = viewModel()
-    val investmentViewModel: InvestmentDB_ViewModel = viewModel()
-    val creditViewModel: CreditDB_ViewModel = viewModel()
+    val investmentViewModel: InvestmentDBViewModel = viewModel()
+    val creditViewModel: CreditDBViewModel = viewModel()
     var selectedItem by remember { mutableIntStateOf(0) }
     
     // Use translated strings for the navigation bar

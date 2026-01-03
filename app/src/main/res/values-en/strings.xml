@@ -72,6 +72,30 @@
     <string name="replace_database_desc">Overwrites all your local data with the contents of the file.</string>
     <string name="export_excel">Export as Excel</string>
     <string name="export_excel_desc">Saves all your transactions on your device.</string>
+    <string name="manage_credits">Manage Credits</string>
+    <string name="manage_credits_desc">Add or edit current credits.</string>
+
+    <!-- Credit Screen -->
+    <string name="credits_title">My Credits</string>
+    <string name="add_credit_button">Add</string>
+    <string name="no_credits_found">No credit to print</string>
+    <string name="credit_begin">Start date : %s</string>
+    <string name="credit_id_invest_label">ID Invest : %s</string>
+    <string name="edit_action">Edit</string>
+    <string name="delete_action">Delete</string>
+    <string name="total_borrowed">Total Borrowed</string>
+    <string name="reimbursed_amount">Already Refunded</string>
+    <string name="remaining_to_pay">Balance Due</string>
+    <string name="monthly_payment">Installment</string>
+    <string name="interest_rate">Rate</string>
+    <string name="add_credit_dialog_title">Add a credit</string>
+    <string name="edit_credit_dialog_title">Edit the credit</string>
+    <string name="credit_name_label">Credit name</string>
+    <string name="id_invest_placeholder">ID Investment (Start with \'C\')</string>
+    <string name="save_button">Save</string>
+
+    <!-- Date Picker -->
+    <string name="choose_date">Choose a date</string>
 
     <!-- Settings -->
     <string name="parameters_title">Parameters</string>

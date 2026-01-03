@@ -15,6 +15,8 @@ data class CreditDB (
     @ColumnInfo(name = "label") val label: String?,
     @ColumnInfo(name = "dateBegin") val dateBegin: Double?,
     @ColumnInfo(name = "totalAmount") val totalAmount: Double?,
+    @ColumnInfo(name = "reimbursedAmount") val reimbursedAmount: Double?,
+    @ColumnInfo(name = "remainingAmount") val remainingAmount: Double?,
     @ColumnInfo(name = "monthlyPayment") val monthlyPayment: Double?,
     @ColumnInfo(name = "interestRate") val interestRate: Double?,
     @ColumnInfo(name = "idInvest") val idInvest: String?

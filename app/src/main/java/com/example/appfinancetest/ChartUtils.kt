@@ -24,6 +24,11 @@ fun dateFormattedText(date: Double?): String {
     if (date == null) return "N/A"
     val excelDateMilliSec = (date - 25569) * 86400 * 1000
     val excelDate = Date(excelDateMilliSec.toLong())
-    val dateFormat = SimpleDateFormat("MM/dd/yy", Locale.getDefault())
+    
+    // Use Locale.getDefault() with a localized pattern or DateFormat
+    val locale = Locale.getDefault()
+    val pattern = if (locale.language == Locale.FRENCH.language) "dd/MM/yy" else "MM/dd/yy"
+    val dateFormat = SimpleDateFormat(pattern, locale)
+    
     return dateFormat.format(excelDate)
 }

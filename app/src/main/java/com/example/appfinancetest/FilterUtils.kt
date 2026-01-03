@@ -16,7 +16,9 @@ fun filterTransactions(
     val minAmount = amountMinQuery.toDoubleOrNull()
     val maxAmount = amountMaxQuery.toDoubleOrNull()
 
-    val sdf = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+    val locale = Locale.getDefault()
+    val pattern = if (locale.language == "en") "MM/dd/yy" else "dd/MM/yy"
+    val sdf = SimpleDateFormat(pattern, locale)
     
     // Conversion de la date min (Après le...)
     val dateMin = if (dateMinQuery.length == 8) {

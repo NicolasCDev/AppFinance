@@ -6,6 +6,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
@@ -31,7 +32,7 @@ interface TransactionDao {
     @Query("SELECT * FROM TransactionDB")
     fun getAll(): LiveData<List<TransactionDB>>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg transactions: TransactionDB)
 
     @Query("DELETE FROM TransactionDB")
@@ -76,19 +77,19 @@ interface TransactionDao {
             SELECT SUM(profit) FROM (
                 SELECT 
                     t.idInvest,
-                    -- Calcul de la somme (Gains - Investissements) pour cet idInvest jusqu'à :date
                     SUM(CASE WHEN t.category = 'Gain investissement' THEN t.amount ELSE 0 END) -
                     SUM(CASE WHEN t.category = 'Investissement' THEN t.amount ELSE 0 END) AS profit,
-                    -- Vérification si l'investissement est clôturé (dateEnd non nulle)
                     MAX(CASE WHEN i.dateEnd IS NOT NULL THEN 1 ELSE 0 END) as isClosed
                 FROM TransactionDB t
                 LEFT JOIN InvestmentDB i ON t.idInvest = i.idInvest
                 WHERE t.date <= :date AND t.idInvest IS NOT NULL AND t.idInvest != ''
                 GROUP BY t.idInvest
             ) 
-            -- Condition : Clôturé OU (Non-clôturé ET profit > 0)
             WHERE isClosed = 1 OR profit > 0
         ), 0)
+        -
+        -- 4. Soustraction des Crédits restants (uniquement ceux commencés avant :date)
+        COALESCE((SELECT SUM(remainingAmount) FROM CreditDB WHERE dateBegin <= :date), 0)
         )
     """)
     fun getNetWorthAtDate(date: Double): LiveData<Double?>
@@ -115,6 +116,9 @@ interface TransactionDao {
             ) 
             WHERE isClosed = 1 OR profit > 0
         ), 0)
+        -
+        -- 4. Soustraction des Crédits restants (uniquement ceux commencés avant :date)
+        COALESCE((SELECT SUM(remainingAmount) FROM CreditDB WHERE dateBegin <= :date), 0)
         )
     """)
     suspend fun getNetWorthAtDateStatic(date: Double): Double

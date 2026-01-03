@@ -1,7 +1,6 @@
 package com.example.appfinancetest
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class DataBaseViewModel(application: Application) : AndroidViewModel(application) {
+
     private val database = Room.databaseBuilder(
         application.applicationContext,
         AppDatabase::class.java,
@@ -69,13 +69,17 @@ class DataBaseViewModel(application: Application) : AndroidViewModel(application
     }
     suspend fun deleteAllTransactions() {
         withContext(Dispatchers.IO) {
-            Log.d("DataBase_ViewModel", "Deleting every transactions")
             dbDAO.deleteAll()
         }
     }
     suspend fun updateBalance(transactionId: Int, newBalance: Double) {
         withContext(Dispatchers.IO) {
             dbDAO.updateBalance(transactionId, newBalance)
+        }
+    }
+    suspend fun updateAllBalances(updates: List<Pair<Int, Double>>) {
+        updates.forEach { (id, bal) ->
+            updateBalance(id, bal)
         }
     }
     suspend fun getPagedTransactions(limit: Int, offset: Int): List<TransactionDB> {
