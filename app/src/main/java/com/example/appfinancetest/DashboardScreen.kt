@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
@@ -65,7 +66,6 @@ fun DashboardScreen(
 
     val netWorth by databaseViewModel.netWorth.observeAsState(0.0)
 
-    var showValidation by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
@@ -73,6 +73,8 @@ fun DashboardScreen(
     val context = LocalContext.current
     val prefs = remember { DataStorage(context) }
     var isFiltersLoaded by remember { mutableStateOf(false) }
+
+    val isVisibilityOff by prefs.isVisibilityOffFlow.collectAsState(initial = false)
 
     // Filters states
     var dateMinFilter by remember { mutableStateOf("") }
@@ -183,9 +185,6 @@ fun DashboardScreen(
         }
     }
 
-    if (showValidation) {
-        InvestmentValidationInterface(databaseViewModel = databaseViewModel, investmentViewModel = investmentViewModel, onDismiss = { showValidation = false }, onRefresh = { refreshTrigger++ })
-    }
     if (showSettings) {
         SettingsScreen(onDismiss = { showSettings = false })
     }
@@ -250,9 +249,12 @@ fun DashboardScreen(
         modifier = modifier,
         topBar = {
             TopBar(
-                onValidateClick = { showValidation = true },
                 onSettingsClick = { showSettings = true },
                 onImportExportClick = { showImportExport = true },
+                onVisibilityClick = { 
+                    scope.launch { prefs.saveVisibilityState(!isVisibilityOff) }
+                },
+                isVisibilityOff = isVisibilityOff,
                 name = stringResource(id = R.string.dashboard_title)
             )
         },
@@ -282,7 +284,7 @@ fun DashboardScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "${"%.2f".format(netWorth ?: 0.0)} €",
+                        text = if (isVisibilityOff) "**** €" else "${"%.2f".format(netWorth ?: 0.0)} €",
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
                         color = if ((netWorth ?: 0.0) >= 0) Color.Green else Color.Red,
@@ -321,7 +323,7 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "${"%.2f".format(lastBalance)} €",
+                                text = if (isVisibilityOff) "**** €" else "${"%.2f".format(lastBalance)} €",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.secondary
@@ -399,7 +401,7 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         items(transactionsPaged) { transaction ->
-                            TransactionRow(transaction)
+                            TransactionRow(transaction, isVisibilityOff)
                             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
@@ -427,7 +429,7 @@ fun EvolutionItem(label: String, evolution: Double?) {
 }
 
 @Composable
-fun TransactionRow(transaction: TransactionDB) {
+fun TransactionRow(transaction: TransactionDB, isVisibilityOff: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -448,9 +450,9 @@ fun TransactionRow(transaction: TransactionDB) {
             )
         }
         val isNegative =
-            (transaction.category == "Charge") || transaction.category == "Investissement"
+            transaction.category == "Charge" || transaction.category == "Investissement"
         Text(
-            text = "${if (isNegative) "-" else "+"}${"%.2f".format(transaction.amount ?: 0.0)} €",
+            text = if (isVisibilityOff) "*** €" else "${if (isNegative) "-" else "+"}${"%.2f".format(transaction.amount ?: 0.0)} €",
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
             color = if (isNegative) Color.Red else Color.Green,

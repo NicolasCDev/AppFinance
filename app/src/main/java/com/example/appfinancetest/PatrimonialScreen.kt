@@ -15,12 +15,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Composable
 fun PatrimonialScreen(
@@ -42,6 +45,7 @@ fun PatrimonialScreen(
     investmentViewModel: InvestmentDBViewModel,
     creditViewModel: CreditDBViewModel
 ) {
+    val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var hideMarkerTrigger by remember { mutableIntStateOf(0) }
     val netWorth by databaseViewModel.netWorth.observeAsState(0.0)
@@ -50,21 +54,19 @@ fun PatrimonialScreen(
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
-    var showValidation by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
     var showCreditScreen by remember { mutableStateOf(false) }
 
-    if (showValidation) {
-        InvestmentValidationInterface(
-            databaseViewModel = databaseViewModel,
-            investmentViewModel = investmentViewModel,
-            onDismiss = { showValidation = false },
-            onRefresh = { refreshTrigger++ }
-        )
-    }
+    val context = LocalContext.current
+    val prefs = remember { DataStorage(context) }
+    val isVisibilityOff by prefs.isVisibilityOffFlow.collectAsState(initial = false)
+
     if (showSettings) {
-        SettingsScreen(onDismiss = { showSettings = false })
+        SettingsScreen(onDismiss = { 
+            showSettings = false 
+            refreshTrigger++ // Force refresh chart when settings are closed
+        })
     }
     if (showImportExport) {
         ImportExportInterface(
@@ -88,9 +90,6 @@ fun PatrimonialScreen(
     val validDates = transactions.mapNotNull { it.date }
     val minDate = validDates.minOrNull()?: 0.0
     val todayExcel = (System.currentTimeMillis() / (1000 * 86400.0)) + 25569
-
-    val context = LocalContext.current
-    val prefs = remember { DataStorage(context) }
     
     var isPrefsLoaded by remember { mutableStateOf(false) }
     var range by remember { mutableStateOf(minDate.toFloat()..todayExcel.toFloat()) }
@@ -138,9 +137,12 @@ fun PatrimonialScreen(
         modifier = modifier,
         topBar = {
             TopBar(
-                onValidateClick = { showValidation = true },
                 onSettingsClick = { showSettings = true },
                 onImportExportClick = { showImportExport = true },
+                onVisibilityClick = {
+                    scope.launch { prefs.saveVisibilityState(!isVisibilityOff) }
+                },
+                isVisibilityOff = isVisibilityOff,
                 name = stringResource(id = R.string.patrimonial_title)
             )
         },
@@ -169,7 +171,7 @@ fun PatrimonialScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${"%.2f".format(netWorth ?: 0.0)} €",
+                    text = if (isVisibilityOff) "**** €" else "${"%.2f".format(netWorth ?: 0.0)} €",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = if ((netWorth ?: 0.0) >= 0) Color.Green else Color.Red

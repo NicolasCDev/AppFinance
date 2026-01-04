@@ -14,11 +14,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.example.appfinancetest.ui.theme.AppFinanceTestTheme
@@ -42,6 +44,14 @@ class MainActivity : AppCompatActivity() {
 
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    val dataStorage = remember { DataStorage(context) }
+    
+    // Force visibility to OFF on every app launch
+    LaunchedEffect(Unit) {
+        dataStorage.saveVisibilityState(true)
+    }
+
     val databaseViewModel: DataBaseViewModel = viewModel()
     val investmentViewModel: InvestmentDBViewModel = viewModel()
     val creditViewModel: CreditDBViewModel = viewModel()

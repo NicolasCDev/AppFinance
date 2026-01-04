@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,6 +27,10 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 
 @Composable
 fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Double) {
+    val context = LocalContext.current
+    val prefs = remember { DataStorage(context) }
+    val isVisibilityOff by prefs.isVisibilityOffFlow.collectAsState(initial = false)
+
     val transactions by produceState(initialValue = emptyList(), viewModel) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
@@ -111,7 +116,7 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(labelTransactions) { transaction ->
-                            TransactionRow(transaction) // Reuse Dashboard component
+                            TransactionRow(transaction, isVisibilityOff) // Reuse Dashboard component
                             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
@@ -242,8 +247,11 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                 Box(modifier = Modifier.size(12.dp).background(color))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = label, modifier = Modifier.weight(1f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                
+                val evolutionText = if (evolution == null) "N/A" else (if (evolution >= 0) "+" else "") + "%.1f%%".format(evolution)
                 Text(
-                    text = "%.2f € (%.1f%%) %s".format(amount, percent, if (evolution == null) "N/A" else (if (evolution >= 0) "+" else "") + "%.1f%%".format(evolution)),
+                    text = if (isVisibilityOff) "**** € (%.1f%%) %s".format(percent, evolutionText)
+                           else "%.2f € (%.1f%%) %s".format(amount, percent, evolutionText),
                     fontSize = 12.sp,
                     textAlign = TextAlign.End,
                     color = if (evolution != null && evolution < 0) androidx.compose.ui.graphics.Color.Red 

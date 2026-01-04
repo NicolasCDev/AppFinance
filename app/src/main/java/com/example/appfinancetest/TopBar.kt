@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -22,9 +24,10 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar (
-    onValidateClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onImportExportClick: () -> Unit,
+    onVisibilityClick: () -> Unit,
+    isVisibilityOff: Boolean,
     name: String
 ) {
     CenterAlignedTopAppBar(
@@ -55,16 +58,33 @@ fun TopBar (
             }
         },
         actions = {
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.size(40.dp).padding(end = 4.dp)
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(end = 4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
+                IconButton(
+                    onClick = onVisibilityClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isVisibilityOff) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = "Toggle Visibility",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color.White
+                    )
+                }
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color.White
+                    )
+                }
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

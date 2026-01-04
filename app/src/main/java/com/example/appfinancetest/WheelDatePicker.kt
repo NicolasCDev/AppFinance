@@ -1,9 +1,8 @@
 package com.example.appfinancetest
 
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,15 +23,27 @@ fun WheelDatePickerDialog(
     onDismiss: () -> Unit,
     onDateSelected: (Double) -> Unit
 ) {
-    val calendar = Calendar.getInstance()
-    if (initialDate > 0) {
-        val millis = ((initialDate - 25569.0) * 86400000.0).toLong()
-        calendar.timeInMillis = millis
-    }
+    // Use UTC to avoid timezone shifts during conversion to/from Excel dates
+    val utcTimeZone = remember { TimeZone.getTimeZone("UTC") }
+    val calendar = remember { Calendar.getInstance(utcTimeZone) }
+    
+    // States for selection
+    var selectedDay by remember { mutableIntStateOf(1) }
+    var selectedMonth by remember { mutableIntStateOf(1) }
+    var selectedYear by remember { mutableIntStateOf(2025) }
 
-    var selectedDay by remember { mutableIntStateOf(calendar.get(Calendar.DAY_OF_MONTH)) }
-    var selectedMonth by remember { mutableIntStateOf(calendar.get(Calendar.MONTH) + 1) }
-    var selectedYear by remember { mutableIntStateOf(calendar.get(Calendar.YEAR)) }
+    // Initialize states once or when initialDate changes
+    LaunchedEffect(initialDate) {
+        if (initialDate > 0) {
+            val millis = ((initialDate - 25569.0) * 86400000.0).toLong()
+            calendar.timeInMillis = millis
+        } else {
+            calendar.timeInMillis = System.currentTimeMillis()
+        }
+        selectedDay = calendar.get(Calendar.DAY_OF_MONTH)
+        selectedMonth = calendar.get(Calendar.MONTH) + 1
+        selectedYear = calendar.get(Calendar.YEAR)
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -86,7 +97,7 @@ fun WheelDatePickerDialog(
                         val days = (1..31).toList()
                         WheelPicker(
                             items = days,
-                            initialIndex = days.indexOf(selectedDay).coerceAtLeast(0),
+                            initialIndex = (selectedDay - 1).coerceIn(0, 30),
                             onItemSelected = { selectedDay = it },
                             modifier = Modifier.weight(1f),
                             label = { it.toString().padStart(2, '0') }
@@ -96,7 +107,7 @@ fun WheelDatePickerDialog(
                         val months = (1..12).toList()
                         WheelPicker(
                             items = months,
-                            initialIndex = months.indexOf(selectedMonth).coerceAtLeast(0),
+                            initialIndex = (selectedMonth - 1).coerceIn(0, 11),
                             onItemSelected = { selectedMonth = it },
                             modifier = Modifier.weight(1f),
                             label = { it.toString().padStart(2, '0') }
@@ -105,7 +116,7 @@ fun WheelDatePickerDialog(
 
                     // Year
                     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-                    val years = ((currentYear - 50)..(currentYear + 50)).toList()
+                    val years = ((currentYear - 100)..(currentYear + 100)).toList()
                     WheelPicker(
                         items = years,
                         initialIndex = years.indexOf(selectedYear).coerceAtLeast(0),
@@ -126,16 +137,11 @@ fun WheelDatePickerDialog(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
-                        val resultCalendar = Calendar.getInstance()
-                        // Ensure day is valid for the month
-                        resultCalendar.set(Calendar.YEAR, selectedYear)
-                        resultCalendar.set(Calendar.MONTH, selectedMonth - 1)
+                        val resultCalendar = Calendar.getInstance(utcTimeZone)
+                        resultCalendar.clear()
+                        resultCalendar.set(selectedYear, selectedMonth - 1, 1)
                         val maxDay = resultCalendar.getActualMaximum(Calendar.DAY_OF_MONTH)
                         resultCalendar.set(Calendar.DAY_OF_MONTH, selectedDay.coerceAtMost(maxDay))
-                        resultCalendar.set(Calendar.HOUR_OF_DAY, 0)
-                        resultCalendar.set(Calendar.MINUTE, 0)
-                        resultCalendar.set(Calendar.SECOND, 0)
-                        resultCalendar.set(Calendar.MILLISECOND, 0)
                         
                         val excelDate = (resultCalendar.timeInMillis / 86400000.0) + 25569.0
                         onDateSelected(excelDate)
@@ -157,23 +163,25 @@ fun <T> WheelPicker(
     label: (T) -> String
 ) {
     val itemHeight = 40.dp
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
-    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+    val containerHeight = 150.dp
+    val pagerState = rememberPagerState(initialPage = initialIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))) {
+        items.size
+    }
 
-    val selectedIndex by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex
+    LaunchedEffect(pagerState.currentPage) {
+        if (items.isNotEmpty()) {
+            onItemSelected(items[pagerState.currentPage])
         }
     }
 
-    LaunchedEffect(selectedIndex) {
-        if (selectedIndex in items.indices) {
-            onItemSelected(items[selectedIndex])
+    // Update pager state if external selection changes (e.g. initialization)
+    LaunchedEffect(initialIndex) {
+        if (initialIndex in items.indices && initialIndex != pagerState.currentPage) {
+            pagerState.scrollToPage(initialIndex)
         }
     }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        // Selection indicator (background)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -182,30 +190,28 @@ fun <T> WheelPicker(
             shape = RoundedCornerShape(8.dp)
         ) {}
 
-        LazyColumn(
-            state = listState,
-            flingBehavior = flingBehavior,
+        VerticalPager(
+            state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = itemHeight * 1.3f), // Center adjustment
+            contentPadding = PaddingValues(vertical = (containerHeight - itemHeight) / 2),
+            pageSpacing = 0.dp,
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            items(items.size) { index ->
-                val isSelected = index == selectedIndex
-                Box(
-                    modifier = Modifier
-                        .height(itemHeight)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = label(items[index]),
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = if (isSelected) 20.sp else 16.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
-                        )
+        ) { page ->
+            val isSelected = page == pagerState.currentPage
+            Box(
+                modifier = Modifier
+                    .height(itemHeight)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label(items[page]),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = if (isSelected) 20.sp else 16.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
                     )
-                }
+                )
             }
         }
     }

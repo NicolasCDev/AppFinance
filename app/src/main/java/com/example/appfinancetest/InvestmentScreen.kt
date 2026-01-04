@@ -18,12 +18,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.launch
 
 @Composable
 fun InvestmentScreen(
@@ -33,12 +35,16 @@ fun InvestmentScreen(
     creditViewModel: CreditDBViewModel
 ) {
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
-    var showValidation by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
     
+    val context = LocalContext.current
+    val prefs = remember { DataStorage(context) }
+    val isVisibilityOff by prefs.isVisibilityOffFlow.collectAsState(initial = false)
+
     // State for the detail view
     var selectedCategoryForDetail by remember { mutableStateOf<String?>(null) }
 
@@ -52,14 +58,6 @@ fun InvestmentScreen(
         allInvestments.mapNotNull { it.item }.filter { it.isNotBlank() }.distinct().sorted()
     }
 
-    if (showValidation) {
-        InvestmentValidationInterface(
-            databaseViewModel = databaseViewModel,
-            investmentViewModel = investmentViewModel,
-            onDismiss = { showValidation = false },
-            onRefresh = { refreshTrigger++ }
-        )
-    }
     if (showSettings) {
         SettingsScreen(onDismiss = { showSettings = false })
     }
@@ -83,6 +81,7 @@ fun InvestmentScreen(
             investments = allInvestments.filter { it.item == category },
             databaseViewModel = databaseViewModel,
             investmentViewModel = investmentViewModel,
+            isVisibilityOff = isVisibilityOff,
             onRefresh = { refreshTrigger++ },
             onDismiss = { selectedCategoryForDetail = null }
         )
@@ -92,9 +91,12 @@ fun InvestmentScreen(
         modifier = modifier,
         topBar = {
             TopBar(
-                onValidateClick = { showValidation = true },
                 onSettingsClick = { showSettings = true },
                 onImportExportClick = { showImportExport = true },
+                onVisibilityClick = {
+                    scope.launch { prefs.saveVisibilityState(!isVisibilityOff) }
+                },
+                isVisibilityOff = isVisibilityOff,
                 name = stringResource(id = R.string.investments_title)
             )
         },
@@ -157,6 +159,7 @@ fun InvestmentScreen(
                         profitEuro = profitEuro,
                         profitPercent = profitPercent,
                         weightedAnnualProfitability = weightedAnnualProfitability,
+                        isVisibilityOff = isVisibilityOff,
                         onClick = { selectedCategoryForDetail = itemKey }
                     )
                 }
@@ -173,6 +176,7 @@ fun InvestmentCategoryCard(
     profitEuro: Double,
     profitPercent: Double,
     weightedAnnualProfitability: Double,
+    isVisibilityOff: Boolean,
     onClick: () -> Unit
 ) {
     Card(
@@ -197,13 +201,13 @@ fun InvestmentCategoryCard(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    LabelValue(label = stringResource(id = R.string.investment_current), value = "%.2f €".format(sumOngoing))
-                    LabelValue(label = stringResource(id = R.string.investment_closed), value = "%.2f €".format(sumFinished))
+                    LabelValue(label = stringResource(id = R.string.investment_current), value = if (isVisibilityOff) "**** €" else "%.2f €".format(sumOngoing))
+                    LabelValue(label = stringResource(id = R.string.investment_closed), value = if (isVisibilityOff) "**** €" else "%.2f €".format(sumFinished))
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(text = stringResource(id = R.string.capital_gain_realized), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                     Text(
-                        text = "${if (profitEuro >= 0) "+" else ""}${"%.2f".format(profitEuro)} €",
+                        text = if (isVisibilityOff) "**** €" else "${if (profitEuro >= 0) "+" else ""}${"%.2f".format(profitEuro)} €",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (profitEuro >= 0) Color(0xFF4CAF50) else Color.Red
@@ -235,6 +239,7 @@ fun InvestmentDetailDialog(
     investments: List<InvestmentDB>,
     databaseViewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDBViewModel,
+    isVisibilityOff: Boolean,
     onRefresh: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -358,7 +363,7 @@ fun InvestmentDetailDialog(
                                 enableDismissFromStartToEnd = selectedTabIndex == 0,
                                 enableDismissFromEndToStart = selectedTabIndex == 1
                             ) {
-                                PositionItemCard(investment)
+                                PositionItemCard(investment, isVisibilityOff)
                             }
                         }
                     }
@@ -369,7 +374,7 @@ fun InvestmentDetailDialog(
 }
 
 @Composable
-fun PositionItemCard(investment: InvestmentDB) {
+fun PositionItemCard(investment: InvestmentDB, isVisibilityOff: Boolean) {
     val invested = investment.invested ?: 0.0
     val earned = investment.earned ?: 0.0
     val profitEuro = earned - invested
@@ -401,7 +406,7 @@ fun PositionItemCard(investment: InvestmentDB) {
                 Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "${if (profitEuro >= 0) "+" else ""}${"%.2f".format(profitEuro)} €",
+                            text = if (isVisibilityOff) "**** €" else "${if (profitEuro >= 0) "+" else ""}${"%.2f".format(profitEuro)} €",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = if (profitEuro >= 0) Color(0xFF4CAF50) else Color.Red
@@ -425,8 +430,8 @@ fun PositionItemCard(investment: InvestmentDB) {
             Spacer(modifier = Modifier.height(4.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                InfoLabelSmall(label = stringResource(id = R.string.invested), value = "%.2f €".format(invested))
-                InfoLabelSmall(label = stringResource(id = R.string.earned), value = "%.2f €".format(earned))
+                InfoLabelSmall(label = stringResource(id = R.string.invested), value = if (isVisibilityOff) "**** €" else "%.2f €".format(invested))
+                InfoLabelSmall(label = stringResource(id = R.string.earned), value = if (isVisibilityOff) "**** €" else "%.2f €".format(earned))
             }
         }
     }

@@ -106,4 +106,19 @@ class DataBaseViewModel(application: Application) : AndroidViewModel(application
             dbDAO.getInvestmentTransactionsByID(idInvest)
         }
     }
+
+    suspend fun getFirstTransactionBalance(): Double {
+        return withContext(Dispatchers.IO) {
+            val firstDate = dbDAO.getTransactionsSortedByDateASC().firstOrNull()?.date
+            if (firstDate != null) {
+                dbDAO.getNetWorthAtDateStatic(firstDate)
+            } else 0.0
+        }
+    }
+
+    suspend fun getFirstTransactionDate(): Double {
+        return withContext(Dispatchers.IO) {
+            dbDAO.getTransactionsSortedByDateASC().firstOrNull()?.date ?: ((System.currentTimeMillis() / 86400000.0) + 25569.0)
+        }
+    }
 }

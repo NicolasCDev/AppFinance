@@ -101,6 +101,13 @@
     <string name="parameters_title">Paramètres</string>
     <string name="language">Langue de l\'application</string>
     <string name="database">Base de données</string>
+    <string name="goals_title">Objectifs</string>
+    <string name="target_millionaire_age">Âge cible pour être millionnaire</string>
+    <string name="birth_date">Date de naissance</string>
+    <string name="goal_start_date">Date de début de la simulation</string>
+    <string name="show_goals">Afficher les objectifs</string>
+    <string name="annual_interest_rate">Taux d\'intérêt annuel (%)</string>
+    <string name="annual_invested_amount">Somme investie par an (€)</string>
 
     <!-- DateRangePicker -->
     <string name="cancel">Annuler</string>

@@ -40,7 +40,7 @@
     <string name="range_last_month">Last month</string>
     <string name="range_last_6_months">Last 6 months</string>
     <string name="range_last_year">Last year</string>
-    <string name="range_last_5_years">Last 5 years</string>
+    <string name="range_last_5_years">5 years</string>
     <string name="range_all_time">All time</string>
 
     <!-- Filters -->
@@ -101,6 +101,13 @@
     <string name="parameters_title">Parameters</string>
     <string name="language">Application language</string>
     <string name="database">Database</string>
+    <string name="goals_title">Goals</string>
+    <string name="target_millionaire_age">Target age to be a millionaire</string>
+    <string name="birth_date">Birth date</string>
+    <string name="goal_start_date">Simulation starting date</string>
+    <string name="show_goals">Show goals</string>
+    <string name="annual_interest_rate">Annual interest rate (%)</string>
+    <string name="annual_invested_amount">Invested amount per year (€)</string>
 
     <!-- DateRangePicker -->
     <string name="cancel">Cancel</string>
