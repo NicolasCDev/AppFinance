@@ -3,17 +3,24 @@ package com.example.appfinancetest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
-import android.icu.text.SimpleDateFormat
 import android.widget.TextView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import java.util.*
@@ -21,6 +28,7 @@ import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import android.view.MotionEvent
+import androidx.compose.ui.graphics.toArgb
 import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
@@ -29,6 +37,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.pow
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PatrimonialLineChart(
     viewModel: DataBaseViewModel,
@@ -58,6 +67,9 @@ fun PatrimonialLineChart(
     var goalEntries by remember { mutableStateOf<List<Entry>>(emptyList()) }
     
     var isCalculating by remember { mutableStateOf(false) }
+
+    // State to track hidden data sets by their labels
+    val hiddenLabels = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(transactions, endedInvestments, refreshTrigger) {
         if (transactions.isEmpty()) {
@@ -159,8 +171,76 @@ fun PatrimonialLineChart(
         isCalculating = false
     }
 
+    // Get translated labels at the composable level
+    val globalEstateLabel = stringResource(R.string.net_worth_simple)
+    val millionaireGoalLabel = stringResource(R.string.millionaire_goal_label)
+
+    // Pre-calculate ALL possible datasets info for the custom legend
+    val allLegendInfos = remember(fullHistory, dynamicInvestmentSeries, goalEntries, globalEstateLabel, millionaireGoalLabel) {
+        val infos = mutableListOf<Pair<String, Int>>()
+        infos.add(globalEstateLabel to Color.GREEN)
+        if (goalEntries.isNotEmpty()) {
+            infos.add(millionaireGoalLabel to ComposeColor.White.toArgb())
+        }
+        val colors = listOf(Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.RED, Color.LTGRAY, Color.GRAY)
+        dynamicInvestmentSeries.keys.forEachIndexed { index, label ->
+            infos.add(label to colors[index % colors.size])
+        }
+        infos
+    }
+
+    // Pre-calculate LineData to contain ONLY VISIBLE datasets so the Y-axis adapts
+    val lineData = remember(fullHistory, dynamicInvestmentSeries, goalEntries, startDate, endDate, globalEstateLabel, millionaireGoalLabel, hiddenLabels.toList()) {
+        val filterLambda = { entry: Entry ->
+            val excelDate = (entry.x / (86400 * 1000.0)) + 25569
+            excelDate in startDate..endDate
+        }
+
+        fun createDataSet(entries: List<Entry>, label: String, color: Int, isMain: Boolean = false, isDashed: Boolean = false): LineDataSet? {
+            // If hidden, don't even add it to LineData to force axis recalculation
+            if (hiddenLabels.contains(label)) return null
+            
+            val filtered = entries.filter(filterLambda)
+            if (filtered.isEmpty()) return null
+            return LineDataSet(filtered, label).apply {
+                this.color = color
+                setCircleColor(color)
+                lineWidth = if (isMain) 3f else 1.5f
+                circleRadius = if (isMain) 3f else 0f
+                setDrawCircles(isMain)
+                setDrawCircleHole(false)
+                valueTextColor = Color.WHITE
+                setDrawValues(false)
+                setDrawFilled(false)
+                if (isDashed) {
+                    enableDashedLine(10f, 10f, 0f)
+                }
+            }
+        }
+
+        val dataSets = mutableListOf<ILineDataSet>()
+        
+        createDataSet(fullHistory, globalEstateLabel, Color.GREEN, true)?.let { dataSets.add(it) }
+        
+        if (goalEntries.isNotEmpty()) {
+            createDataSet(goalEntries, millionaireGoalLabel, ComposeColor.White.toArgb(), isMain = false, isDashed = true)?.let { dataSets.add(it) }
+        }
+        
+        val colors = listOf(Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.RED, Color.LTGRAY, Color.GRAY)
+        dynamicInvestmentSeries.entries.forEachIndexed { index, entry ->
+            val color = colors[index % colors.size]
+            createDataSet(entry.value, entry.key, color)?.let { dataSets.add(it) }
+        }
+        
+        if (dataSets.isNotEmpty()) LineData(dataSets) else null
+    }
+
     var chartRef by remember { mutableStateOf<LineChart?>(null) }
-    
+
+    val bodyMediumStyle = MaterialTheme.typography.bodyMedium
+    val bodyMediumSize = bodyMediumStyle.fontSize.value // Extrait la taille (ex: 12f)
+
+
     LaunchedEffect(hideMarkerTrigger) {
         if (hideMarkerTrigger > 0) {
             chartRef?.let {
@@ -173,7 +253,7 @@ fun PatrimonialLineChart(
     AndroidView(
         modifier = Modifier
             .fillMaxWidth()
-            .height(350.dp)
+            .height(250.dp)
             .padding(4.dp),
         factory = { context ->
             LineChart(context).apply {
@@ -184,18 +264,32 @@ fun PatrimonialLineChart(
                 description.isEnabled = false
                 xAxis.textColor = Color.WHITE
                 axisLeft.textColor = Color.WHITE
-                
-                legend.apply {
+
+                xAxis.apply {
                     textColor = Color.WHITE
-                    horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
-                    verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-                    orientation = Legend.LegendOrientation.HORIZONTAL
-                    setDrawInside(false)
-                    isWordWrapEnabled = true
+                    textSize = bodyMediumSize
+                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    position = XAxis.XAxisPosition.BOTTOM
                 }
+                axisLeft.apply {
+                    textColor = Color.WHITE
+                    textSize = bodyMediumSize
+                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                }
+                // Set extra top offset to accommodate the marker at the top
+                setExtraOffsets(0f, 0f, 0f, 0f)
+                
+                setTouchEnabled(true)
+                setDragEnabled(true)
+                setScaleEnabled(true)
+                setPinchZoom(false)
+                isHighlightPerDragEnabled = true // Crucial for smooth sliding
+                
+                // Disable native legend as we use a custom Compose one
+                legend.isEnabled = false
                 
                 xAxis.valueFormatter = object : ValueFormatter() {
-                    private val dateFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+                    private val dateFormat = android.text.format.DateFormat.getDateFormat(context)
                     override fun getFormattedValue(value: Float): String {
                         return dateFormat.format(Date(value.toLong()))
                     }
@@ -203,7 +297,9 @@ fun PatrimonialLineChart(
                 
                 axisLeft.valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        if (isVisibilityOff) return "****"
+                        val currentMarker = marker as? CustomMarkerPatrimonial
+                        if (currentMarker?.isVisibilityOff == true) return "****"
+                        
                         return if (abs(value) >= 1000) {
                             "%.1fK €".format(value / 1000f).replace(".0K", "K")
                         } else {
@@ -217,13 +313,17 @@ fun PatrimonialLineChart(
                 this.marker = marker
                 
                 this.onChartGestureListener = object : OnChartGestureListener {
-                    override fun onChartGestureStart(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {}
-                    override fun onChartGestureEnd(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {}
+                    override fun onChartGestureStart(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {
+                        this@apply.parent?.requestDisallowInterceptTouchEvent(true)
+                    }
+                    override fun onChartGestureEnd(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {
+                        this@apply.parent?.requestDisallowInterceptTouchEvent(false)
+                    }
                     override fun onChartLongPressed(me: MotionEvent?) {}
                     override fun onChartDoubleTapped(me: MotionEvent?) {}
                     override fun onChartSingleTapped(me: MotionEvent?) {
-                        me?.let {
-                            val h = getHighlightByTouchPoint(it.x, it.y)
+                        me?.let { event ->
+                            val h = getHighlightByTouchPoint(event.x, event.y)
                             if (h == null) {
                                 highlightValue(null, true)
                                 onHideMarkers?.invoke()
@@ -237,61 +337,55 @@ fun PatrimonialLineChart(
             }
         },
         update = { chart ->
-            // Update visibility state in marker
-            (chart.marker as? CustomMarkerPatrimonial)?.isVisibilityOff = isVisibilityOff
+            val marker = chart.marker as? CustomMarkerPatrimonial
+            marker?.isVisibilityOff = isVisibilityOff
             
-            // Use exact startDate/endDate to avoid stretching the X axis into the future
-            val filterLambda = { entry: Entry ->
-                val excelDate = (entry.x / (86400 * 1000.0)) + 25569
-                excelDate in startDate..endDate
-            }
+            // Re-set data every time to ensure axis recalculation from the new LineData object
+            chart.data = lineData
+            marker?.dataSets = lineData?.dataSets ?: emptyList()
 
-            fun createDataSet(entries: List<Entry>, label: String, color: Int, isMain: Boolean = false, isDashed: Boolean = false): LineDataSet? {
-                val filtered = entries.filter(filterLambda)
-                if (filtered.isEmpty()) return null
-                return LineDataSet(filtered, label).apply {
-                    this.color = color
-                    setCircleColor(color)
-                    lineWidth = if (isMain) 3f else 1.5f
-                    circleRadius = if (isMain) 3f else 0f
-                    setDrawCircles(isMain)
-                    setDrawCircleHole(false)
-                    valueTextColor = Color.WHITE
-                    setDrawValues(false)
-                    setDrawFilled(false)
-                    if (isDashed) {
-                        enableDashedLine(10f, 10f, 0f)
-                    }
-                }
-            }
-
-            val dataSets = mutableListOf<ILineDataSet>()
-            
-            // Main Estate Curve
-            createDataSet(fullHistory, "Global estate (€)", Color.GREEN, true)?.let { dataSets.add(it) }
-            
-            // Goal Line (Monthly Geometric progression)
-            if (goalEntries.isNotEmpty()) {
-                createDataSet(goalEntries, "Millionaire Goal", Color.WHITE, isMain = false, isDashed = true)?.let { dataSets.add(it) }
-            }
-            
-            // Dynamic Investment Series
-            val colors = listOf(Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.RED, Color.LTGRAY, Color.GRAY)
-            dynamicInvestmentSeries.entries.forEachIndexed { index, entry ->
-                val color = colors[index % colors.size]
-                createDataSet(entry.value, entry.key, color)?.let { dataSets.add(it) }
-            }
-
-            if (dataSets.isNotEmpty()) {
-                chart.data = LineData(dataSets)
-                (chart.marker as? CustomMarkerPatrimonial)?.dataSets = dataSets
-                chart.animateX(500)
-                chart.invalidate()
-            } else {
-                chart.clear()
-            }
+            chart.notifyDataSetChanged()
+            chart.invalidate()
         }
     )
+
+    // Use allLegendInfos for the legend to keep hidden items visible and clickable
+    if (allLegendInfos.isNotEmpty()) {
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            allLegendInfos.forEach { (label, color) ->
+                val isHidden = hiddenLabels.contains(label)
+                Row(
+                    modifier = Modifier
+                        .clickable {
+                            if (isHidden) hiddenLabels.remove(label) else hiddenLabels.add(label)
+                        }
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(
+                                color = if (isHidden) ComposeColor.Gray else ComposeColor(color),
+                                shape = CircleShape
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isHidden) ComposeColor.Gray else MaterialTheme.typography.bodyMedium.color,
+                        textDecoration = if (isHidden) TextDecoration.LineThrough else null
+                    )
+                }
+            }
+        }
+    }
 }
 
 @SuppressLint("ViewConstructor")
@@ -302,9 +396,14 @@ class CustomMarkerPatrimonial(
 
     private val tvDate: TextView = findViewById(R.id.marker_date)
     private val tvValue: TextView = findViewById(R.id.marker_value)
-    private val dateFormat = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+    private val dateFormat = android.text.format.DateFormat.getDateFormat(context)
     var dataSets: List<ILineDataSet> = emptyList()
     var isVisibilityOff: Boolean = false
+
+    init {
+        this.isClickable = false
+        this.isFocusable = false
+    }
 
     @SuppressLint("SetTextI18n")
     override fun refreshContent(e: Entry?, highlight: Highlight?) {
@@ -313,8 +412,10 @@ class CustomMarkerPatrimonial(
             tvDate.text = "Date : ${dateFormat.format(date)}"
             
             val sb = StringBuilder()
+            val millionaireGoalLabel = context.getString(R.string.millionaire_goal_label)
+            
             for (dataSet in dataSets) {
-                if (dataSet.label == "Millionaire Goal") continue
+                if (dataSet.label == millionaireGoalLabel) continue
                 
                 val entry = dataSet.getEntryForXValue(it.x, Float.NaN)
                 if (entry != null) {
@@ -328,6 +429,24 @@ class CustomMarkerPatrimonial(
     }
 
     override fun getOffset(): MPPointF {
-        return MPPointF(-(width / 2f), -height.toFloat())
+        return MPPointF(-(width / 2f), -height.toFloat() - 20f)
+    }
+
+    override fun getOffsetForDrawingAtPoint(posX: Float, posY: Float): MPPointF {
+        val offset = MPPointF(-(width / 2f), -posY + 100f)
+        
+        val chart = chartView ?: return offset
+        
+        // Prevent popup from going off-screen to the left
+        if (posX + offset.x < 0) {
+            offset.x = -posX
+        }
+        
+        // Prevent popup from going off-screen to the right
+        if (posX + offset.x + width > chart.width) {
+            offset.x = chart.width - posX - width
+        }
+        
+        return offset
     }
 }

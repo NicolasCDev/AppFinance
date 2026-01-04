@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">AppFinanceTest</string>
     <string name="dashboard_title">Menu principal</string>
-    <string name="net_worth">PATRIMOINE NET</string>
+    <string name="net_worth">Patrimoine net</string>
     <string name="recent_transactions">Dernières transactions</string>
     <string name="no_transactions">Aucune transaction à afficher</string>
     <string name="balance_as_of">Solde au %s</string>
@@ -29,10 +29,11 @@
 
     <!-- Patrimonial Screen -->
     <string name="patrimonial_title">Patrimoine</string>
-    <string name="net_worth_simple">Valeur nette</string>
+    <string name="net_worth_simple">Patrimoine net</string>
     <string name="estate_evolution">Évolution du patrimoine</string>
     <string name="breakdown_by_category">Répartition par catégorie</string>
     <string name="category">Catégories</string>
+    <string name="millionaire_goal_label">Objectif Millionnaire</string>
 
     <!-- Date Range Options -->
     <string name="range_last_day">Dernier jour</string>

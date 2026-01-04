@@ -26,14 +26,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -167,14 +164,15 @@ fun PatrimonialScreen(
             ) {
                 Text(
                     text = stringResource(id = R.string.net_worth_simple),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleSmall,
+                    textAlign = TextAlign.Start
                 )
-                Text(
-                    text = if (isVisibilityOff) "**** €" else "${"%.2f".format(netWorth ?: 0.0)} €",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if ((netWorth ?: 0.0) >= 0) Color.Green else Color.Red
+                
+                CurrencyText(
+                    amount = netWorth ?: 0.0,
+                    style = MaterialTheme.typography.titleSmall,
+                    isVisibilityOff = isVisibilityOff,
+                    textAlign = TextAlign.End
                 )
             }
 
@@ -189,8 +187,7 @@ fun PatrimonialScreen(
                     ) {
                         Text(
                             stringResource(id = R.string.no_transactions),
-                            textAlign = TextAlign.Center,
-                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(bottom = 24.dp)
                         )
                         
@@ -227,8 +224,8 @@ fun PatrimonialScreen(
 
                     Text(
                         text = stringResource(id = R.string.estate_evolution),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(top = 0.dp, bottom = 0.dp)
                     )
                     
                     PatrimonialLineChart(
@@ -243,8 +240,8 @@ fun PatrimonialScreen(
 
                     Text(
                         text = stringResource(id = R.string.breakdown_by_category),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                     )
 
                     BalancePieChart(

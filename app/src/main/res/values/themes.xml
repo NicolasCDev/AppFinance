@@ -1,12 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Thème principal de l'app -->
+    <!-- Main theme of the application -->
     <style name="Theme.AppFinanceTest" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/purple_500</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorSecondary">@color/teal_200</item>
+        
+        <!-- Liaison dynamique des couleurs de montants -->
+        <item name="colorAmountPositive">@color/green</item>
+        <item name="colorAmountNegative">@android:color/holo_red_dark</item>
+    </style>
+
+    <!-- Styles pour les montants monétaires -->
+    <style name="TextAppearance.AppFinance.Amount" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/purple_500</item>
+    </style>
+
+    <!-- Classic text theme -->
+    <style name="TextAppearance.AppFinance.Classic" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <!-- Style pour les étiquettes discrètes (ex: "En cours", "Clôturés") -->
+    <style name="TextAppearance.AppFinance.LabelDiscrete" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textColor">#888888</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <!-- Green confirm Button -->
@@ -73,16 +95,6 @@
         <item name="materialCalendarHeaderTitle">@style/DateRangePicker.HeaderTitle</item>
         <item name="materialCalendarHeaderLayout">@style/Header_Layout</item>
         <item name="materialCalendarHeaderSelection">@style/DateRangePicker.HeaderSelection</item>
-
-        <!--
-        <item name="materialCalendarHeaderDivider">@style/Widget.MaterialComponents.MaterialCalendar.HeaderDivider</item>
-        <item name="materialCalendarHeaderToggleButton">@style/Widget.MaterialComponents.MaterialCalendar.HeaderToggleButton</item>
-        <item name="materialCalendarYearNavigationButton">@style/Widget.MaterialComponents.MaterialCalendar.YearNavigationButton</item>
-        <item name="materialCalendarMonthNavigationButton">@style/Widget.MaterialComponents.MaterialCalendar.MonthNavigationButton</item>
-        <item name="materialCalendarDayOfWeekLabel">@style/Widget.MaterialComponents.MaterialCalendar.DayOfWeekLabel</item>
-        <item name="materialCalendarDay">@style/Widget.MaterialComponents.MaterialCalendar.DayTextView</item>
-        <item name="materialCalendarMonth">@style/Widget.MaterialComponents.MaterialCalendar.MonthTextView</item>
-        -->
     </style>
 
 </resources>

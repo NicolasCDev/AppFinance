@@ -101,7 +101,6 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                         Text(
                             text = selectedLabelForTransactions ?: "",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = { selectedLabelForTransactions = null }) {
@@ -136,7 +135,7 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                 selectedItem == null -> "$selectedCategory"
                 else -> "$selectedCategory : $selectedItem"
             },
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -169,10 +168,11 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                 factory = { context ->
                     PieChart(context).apply {
                         description.isEnabled = false
-                        isRotationEnabled = true
+                        isRotationEnabled = false
                         setUsePercentValues(true)
                         setEntryLabelColor(Color.WHITE)
                         setEntryLabelTextSize(12f)
+                        setEntryLabelTypeface(android.graphics.Typeface.DEFAULT_BOLD)
                         legend.isEnabled = false
                         setHoleColor(Color.TRANSPARENT)
                         minOffset = 0f
@@ -183,6 +183,7 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                         colors = customColors.take(chartEntries.size)
                         valueTextColor = Color.WHITE
                         valueTextSize = 14f
+                        valueTypeface = android.graphics.Typeface.DEFAULT_BOLD
                     }
                     chart.data = PieData(dataSet)
                     chart.setDrawEntryLabels(selectedCategory == null)
@@ -241,23 +242,40 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
             val evolution = if (previousAmount != 0.0) ((amount - previousAmount) / previousAmount * 100) else null
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.size(12.dp).background(color))
+                Box(modifier = Modifier
+                    .size(12.dp)
+                    .background(color))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = label, modifier = Modifier.weight(1f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(text = label, modifier = Modifier.weight(1f), fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color, textAlign = TextAlign.Start)
                 
-                val evolutionText = if (evolution == null) "N/A" else (if (evolution >= 0) "+" else "") + "%.1f%%".format(evolution)
-                Text(
-                    text = if (isVisibilityOff) "**** € (%.1f%%) %s".format(percent, evolutionText)
-                           else "%.2f € (%.1f%%) %s".format(amount, percent, evolutionText),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.End,
-                    color = if (evolution != null && evolution < 0) androidx.compose.ui.graphics.Color.Red 
-                            else if (evolution != null && evolution > 0) androidx.compose.ui.graphics.Color.Green 
-                            else MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CurrencyTextOnPrimary(
+                        amount = amount,
+                        isVisibilityOff = isVisibilityOff,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    
+                    Text(" (", fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color)
+                    PercentageTextOnPrimary(
+                        amount = percent,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(") ", fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color)
+
+                    if (evolution == null) {
+                        Text("N/A", fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color)
+                    } else {
+                        PercentageText(
+                            amount = evolution,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
         }
     }

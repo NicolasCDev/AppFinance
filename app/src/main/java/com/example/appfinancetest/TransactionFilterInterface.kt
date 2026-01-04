@@ -67,7 +67,10 @@ fun TransactionFilterInterface(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(id = R.string.filter_title), style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        stringResource(id = R.string.filter_title),
+                        style = MaterialTheme.typography.titleLarge
+                    )
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.close))
                     }
@@ -89,7 +92,7 @@ fun TransactionFilterInterface(
                             dateMinState = newValue.copy(text = formatted, selection = newSelection)
                             onDateMinFilterChange(formatted)
                         },
-                        label = { Text(stringResource(id = R.string.filter_after)) },
+                        label = { Text(stringResource(id = R.string.filter_after))},
                         modifier = Modifier.weight(1f),
                         placeholder = { Text(stringResource(id = R.string.date_placeholder)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -163,12 +166,18 @@ fun TransactionFilterInterface(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text(stringResource(id = R.string.filter_delete_all))
+                        Text(
+                            stringResource(id = R.string.filter_delete_all),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                     Button(
                         onClick = onDismiss
                     ) {
-                        Text(stringResource(id = R.string.filter_apply))
+                        Text(
+                            stringResource(id = R.string.filter_apply),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }

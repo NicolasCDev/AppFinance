@@ -18,9 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -28,6 +27,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ImportActionCard(
+    modifier: Modifier = Modifier.fillMaxWidth(0.9f),
     databaseViewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDBViewModel? = null,
     creditViewModel: CreditDBViewModel? = null,
@@ -39,7 +39,6 @@ fun ImportActionCard(
     onProcessingChange: (Boolean) -> Unit = {},
     onRefresh: () -> Unit,
     onDismiss: (() -> Unit)? = null,
-    modifier: Modifier = Modifier.fillMaxWidth(0.9f)
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -135,8 +134,8 @@ fun GenericActionCard(
             Spacer(modifier = Modifier.width(16.dp))
             
             Column {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(title, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Start)
+                Text(description, style = MaterialTheme.typography.bodySmall)
             }
         }
     }

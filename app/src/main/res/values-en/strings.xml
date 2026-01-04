@@ -33,6 +33,7 @@
     <string name="estate_evolution">Estate evolution</string>
     <string name="breakdown_by_category">Breakdown by category</string>
     <string name="category">Categories</string>
+    <string name="millionaire_goal_label">Millionaire Goal</string>
 
     <!-- Date Range Options -->
     <string name="range_last_day">Last day</string>

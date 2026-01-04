@@ -37,14 +37,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -162,26 +159,35 @@ fun DashboardScreen(
         }
     }
 
-    LaunchedEffect(currentPage, refreshTrigger, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter, isFiltersLoaded) {
+    LaunchedEffect(
+        currentPage,
+        refreshTrigger,
+        isFiltersLoaded,
+        dateMinFilter,
+        dateMaxFilter,
+        categoryFilter,
+        itemFilter,
+        labelFilter,
+        amountMinFilter,
+        amountMaxFilter
+    ) {
         if (!isFiltersLoaded) return@LaunchedEffect
-        
-        scope.launch {
-            val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || labelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
-            
-            if (isFilterActive) {
-                val allTransactions = databaseViewModel.getTransactionsSortedByDateDESC()
-                val filtered = filterTransactions(allTransactions, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter)
+
+        val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || labelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
+
+        if (isFilterActive) {
+            val allTransactions = databaseViewModel.getTransactionsSortedByDateDESC()
+            val filtered = filterTransactions(allTransactions, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter)
+            transactionsPaged.clear()
+            transactionsPaged.addAll(filtered)
+        } else {
+            val offset = (currentPage - 1) * pageSize
+            val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
+            if (currentPage == 1) {
                 transactionsPaged.clear()
-                transactionsPaged.addAll(filtered)
-            } else {
-                val offset = (currentPage - 1) * pageSize
-                val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
-                if (currentPage == 1) {
-                    transactionsPaged.clear()
-                    isFirstLoadPaged = false
-                }
-                transactionsPaged.addAll(newTransactions)
+                isFirstLoadPaged = false
             }
+            transactionsPaged.addAll(newTransactions)
         }
     }
 
@@ -279,16 +285,14 @@ fun DashboardScreen(
                 ) {
                     Text(
                         text = stringResource(id = R.string.net_worth),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
-                    Text(
-                        text = if (isVisibilityOff) "**** €" else "${"%.2f".format(netWorth ?: 0.0)} €",
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if ((netWorth ?: 0.0) >= 0) Color.Green else Color.Red,
-                        modifier = Modifier.padding(top = 4.dp),
+                    
+                    CurrencyText(
+                        amount = netWorth ?: 0.0,
+                        isVisibilityOff = isVisibilityOff,
+                        style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
 
@@ -319,14 +323,13 @@ fun DashboardScreen(
                         ) {
                             Text(
                                 text = stringResource(id = R.string.balance_as_of, dateFormattedText(lastDate)),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.titleSmall
                             )
-                            Text(
-                                text = if (isVisibilityOff) "**** €" else "${"%.2f".format(lastBalance)} €",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.secondary
+                            
+                            CurrencyTextOnPrimary(
+                                amount = lastBalance,
+                                isVisibilityOff = isVisibilityOff,
+                                style = MaterialTheme.typography.titleSmall
                             )
                         }
                     }
@@ -337,18 +340,17 @@ fun DashboardScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = stringResource(id = R.string.recent_transactions),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleSmall
                     )
                     Row {
                         val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || labelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
-                        
+
                         if (isFilterActive) {
                             IconButton(onClick = clearFilters) {
                                 Icon(
@@ -358,7 +360,7 @@ fun DashboardScreen(
                                 )
                             }
                         }
-                        
+
                         IconButton(onClick = { showFilter = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.List,
@@ -380,8 +382,7 @@ fun DashboardScreen(
                     ) {
                         Text(
                             stringResource(id = R.string.no_transactions),
-                            textAlign = TextAlign.Center,
-                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(bottom = 24.dp)
                         )
                         
@@ -414,17 +415,21 @@ fun DashboardScreen(
 @Composable
 fun EvolutionItem(label: String, evolution: Double?) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         Text(
-            text = if (evolution == null) "N/A" else (if (evolution >= 0) "+" else "") + "%.1f%%".format(evolution),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = when {
-                evolution == null -> MaterialTheme.colorScheme.onSurface
-                evolution >= 0 -> Color.Green
-                else -> Color.Red
-            }
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
         )
+        if (evolution == null) {
+            Text(
+                text = "N/A",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        } else {
+            PercentageText(
+                amount = evolution,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
     }
 }
 
@@ -440,22 +445,22 @@ fun TransactionRow(transaction: TransactionDB, isVisibilityOff: Boolean) {
             Text(
                 text = transaction.label ?: stringResource(id = R.string.no_label),
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
                 maxLines = 1
             )
             Text(
                 text = "${dateFormattedText(transaction.date)} • ${transaction.category} • ${transaction.item}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
         val isNegative =
             transaction.category == "Charge" || transaction.category == "Investissement"
-        Text(
-            text = if (isVisibilityOff) "*** €" else "${if (isNegative) "-" else "+"}${"%.2f".format(transaction.amount ?: 0.0)} €",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            color = if (isNegative) Color.Red else Color.Green,
+        
+        // Use of CurrencyText for transactions too
+        CurrencyText(
+            amount = transaction.amount ?: 0.0,
+            isNegative = isNegative,
+            isVisibilityOff = isVisibilityOff,
+            showSign = true,
             textAlign = TextAlign.End
         )
     }

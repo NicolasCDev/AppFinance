@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -67,11 +66,9 @@ fun DateRangeSelector(
 
             Text(
                 text = stringResource(id = selectedOption.resId),
-                modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f)
             )
 
             IconButton(onClick = {

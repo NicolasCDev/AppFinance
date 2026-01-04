@@ -58,7 +58,6 @@ fun WheelDatePickerDialog(
                 Text(
                     stringResource(id = R.string.choose_date),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
 
@@ -133,7 +132,7 @@ fun WheelDatePickerDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text(stringResource(id = R.string.cancel))
+                        Text(stringResource(id = R.string.cancel), style = MaterialTheme.typography.bodyMedium)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
@@ -146,7 +145,7 @@ fun WheelDatePickerDialog(
                         val excelDate = (resultCalendar.timeInMillis / 86400000.0) + 25569.0
                         onDateSelected(excelDate)
                     }) {
-                        Text(stringResource(id = R.string.save_button))
+                        Text(stringResource(id = R.string.save_button), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

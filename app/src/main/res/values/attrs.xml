@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="colorAmountPositive" format="color" />
+    <attr name="colorAmountNegative" format="color" />
+    <attr name="colorOnPrimary" format="color" />
+</resources>

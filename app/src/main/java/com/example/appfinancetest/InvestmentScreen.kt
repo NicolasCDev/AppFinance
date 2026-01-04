@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -120,8 +120,7 @@ fun InvestmentScreen(
                 ) {
                     Text(
                         stringResource(id = R.string.no_investments_found),
-                        textAlign = TextAlign.Center,
-                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
                     
@@ -192,40 +191,44 @@ fun InvestmentCategoryCard(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.titleLarge
             )
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    LabelValue(label = stringResource(id = R.string.investment_current), value = if (isVisibilityOff) "**** €" else "%.2f €".format(sumOngoing))
-                    LabelValue(label = stringResource(id = R.string.investment_closed), value = if (isVisibilityOff) "**** €" else "%.2f €".format(sumFinished))
+                    LabelValue(label = stringResource(id = R.string.investment_current), amount = sumOngoing, isVisibilityOff = isVisibilityOff)
+                    LabelValue(label = stringResource(id = R.string.investment_closed), amount = sumFinished, isVisibilityOff = isVisibilityOff)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(text = stringResource(id = R.string.capital_gain_realized), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    Text(
-                        text = if (isVisibilityOff) "**** €" else "${if (profitEuro >= 0) "+" else ""}${"%.2f".format(profitEuro)} €",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (profitEuro >= 0) Color(0xFF4CAF50) else Color.Red
+                    Text(text = stringResource(id = R.string.capital_gain_realized), style = MaterialTheme.typography.bodySmall)
+                    
+                    CurrencyText(
+                        amount = profitEuro,
+                        isVisibilityOff = isVisibilityOff,
+                        showSign = true,
+                        style = MaterialTheme.typography.bodyLarge
                     )
-                    Text(
-                        text = "(${if (profitPercent >= 0) "+" else ""}${"%.1f".format(profitPercent)}%)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (profitPercent >= 0) Color(0xFF4CAF50) else Color.Red
+
+                    PercentageText(
+                        amount = profitPercent,
+                        style = MaterialTheme.typography.bodySmall
                     )
                     
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = stringResource(id = R.string.annual_profitability), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    Text(
-                        text = "${if (weightedAnnualProfitability >= 0) "+" else ""}${"%.1f".format(weightedAnnualProfitability)} % (${stringResource(id = R.string.annual)})",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = if (weightedAnnualProfitability >= 0) Color(0xFF4CAF50) else Color.Red
-                    )
+                    Text(text = stringResource(id = R.string.annual_profitability), style = MaterialTheme.typography.bodySmall)
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PercentageText(
+                            amount = weightedAnnualProfitability,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = " (${stringResource(id = R.string.annual)})",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }
@@ -265,8 +268,7 @@ fun InvestmentDetailDialog(
                 ) {
                     Text(
                         text = category,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge
                     )
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
@@ -304,7 +306,10 @@ fun InvestmentDetailDialog(
                     if (filteredInvestments.isEmpty()) {
                         item {
                             Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text(stringResource(id = R.string.no_investment), color = Color.Gray)
+                                Text(
+                                    stringResource(id = R.string.no_investment),
+                                        style = MaterialTheme.typography.bodyLarge
+                                )
                             }
                         }
                     } else {
@@ -396,8 +401,8 @@ fun PositionItemCard(investment: InvestmentDB, isVisibilityOff: Boolean) {
             ) {
                 Text(
                     text = investment.label ?: stringResource(id = R.string.no_label),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Start,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -405,50 +410,61 @@ fun PositionItemCard(investment: InvestmentDB, isVisibilityOff: Boolean) {
                 
                 Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = if (isVisibilityOff) "**** €" else "${if (profitEuro >= 0) "+" else ""}${"%.2f".format(profitEuro)} €",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (profitEuro >= 0) Color(0xFF4CAF50) else Color.Red
+                        CurrencyText(
+                            amount = profitEuro,
+                            isVisibilityOff = isVisibilityOff,
+                            showSign = true,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "(${if (profitPercent >= 0) "+" else ""}${"%.1f".format(profitPercent)}%)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (profitPercent >= 0) Color(0xFF4CAF50) else Color.Red
+                        PercentageText(
+                            amount = profitPercent,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    Text(
-                        text = "${if (annual >= 0) "+" else ""}${"%.1f".format(annual)} % (${stringResource(id = R.string.annual)})",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = if (annual >= 0) Color(0xFF4CAF50) else Color.Red
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PercentageText(
+                            amount = annual,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = " (${stringResource(id = R.string.annual)})",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
             
             Spacer(modifier = Modifier.height(4.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                InfoLabelSmall(label = stringResource(id = R.string.invested), value = if (isVisibilityOff) "**** €" else "%.2f €".format(invested))
-                InfoLabelSmall(label = stringResource(id = R.string.earned), value = if (isVisibilityOff) "**** €" else "%.2f €".format(earned))
+                InfoLabelSmall(label = stringResource(id = R.string.invested), amount = invested, isVisibilityOff = isVisibilityOff)
+                InfoLabelSmall(label = stringResource(id = R.string.earned), amount = earned, isVisibilityOff = isVisibilityOff)
             }
         }
     }
 }
 
 @Composable
-fun InfoLabelSmall(label: String, value: String) {
-    Row {
-        Text("$label: ", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.labelSmall)
+fun InfoLabelSmall(label: String, amount: Double, isVisibilityOff: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("$label: ", style = MaterialTheme.typography.bodySmall)
+        CurrencyTextOnPrimary(
+            amount = amount,
+            isVisibilityOff = isVisibilityOff,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
 @Composable
-fun LabelValue(label: String, value: String) {
+fun LabelValue(label: String, amount: Double, isVisibilityOff: Boolean) {
     Column(modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(text = label, style = MaterialTheme.typography.bodySmall)
+        CurrencyTextOnPrimary(
+            amount = amount,
+            isVisibilityOff = isVisibilityOff,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }

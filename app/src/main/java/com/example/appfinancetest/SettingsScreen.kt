@@ -41,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -173,8 +172,7 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = stringResource(id = R.string.parameters_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.titleLarge
                         )
                         IconButton(onClick = onDismiss) {
                             Icon(
@@ -229,12 +227,11 @@ fun SettingsScreen(
                             Column {
                                 Text(
                                     text = stringResource(id = R.string.birth_date),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
                                     text = dateFormattedText(birthDate),
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
@@ -248,7 +245,7 @@ fun SettingsScreen(
                         SettingsHeader(title = stringResource(id = R.string.goals_title))
 
                         ListItem(
-                            headlineContent = { Text(stringResource(id = R.string.show_goals)) },
+                            headlineContent = { Text(stringResource(id = R.string.show_goals), style = MaterialTheme.typography.bodyMedium) },
                             trailingContent = {
                                 Switch(
                                     checked = showGoals,
@@ -262,13 +259,11 @@ fun SettingsScreen(
 
                         if (showGoals) {
                             ListItem(
-                                headlineContent = { Text(stringResource(id = R.string.target_millionaire_age)) },
+                                headlineContent = { Text(stringResource(id = R.string.target_millionaire_age),style = MaterialTheme.typography.bodyMedium) },
                                 trailingContent = {
                                     Text(
                                         text = "$calculatedTargetAge ans",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
                             )
@@ -301,7 +296,7 @@ fun SettingsScreen(
                                         }
                                     }
                                 },
-                                label = { Text(stringResource(id = R.string.annual_invested_amount)) },
+                                label = { Text(stringResource(id = R.string.annual_invested_amount), style = MaterialTheme.typography.bodyMedium) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 24.dp, vertical = 8.dp),
@@ -322,12 +317,11 @@ fun SettingsScreen(
                                 Column {
                                     Text(
                                         text = stringResource(id = R.string.goal_start_date),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
                                         text = dateFormattedText(goalStartDate),
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
                             }
@@ -367,9 +361,7 @@ fun SettingsScreen(
 fun SettingsHeader(title: String) {
     Text(
         text = title.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.bodyLarge,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
     )
 }
@@ -381,7 +373,7 @@ fun SettingsLanguageItem(label: String, selected: Boolean, onClick: () -> Unit) 
         headlineContent = { 
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             ) 
         },
         trailingContent = {
