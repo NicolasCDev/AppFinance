@@ -57,6 +57,7 @@
     <string name="filter_delete_all">Tout supprimer</string>
     <string name="filter_apply">Appliquer</string>
     <string name="filter_all">Tout</string>
+    <string name="search_label_placeholder">Rechercher un libellé…</string>
 
     <!-- Investment Management -->
     <string name="investment_management_title">Gestion des investissements</string>
@@ -112,4 +113,12 @@
 
     <!-- DateRangePicker -->
     <string name="cancel">Annuler</string>
+
+    <!-- Transaction Edit -->
+    <string name="edit_transaction_title">Modifier la transaction</string>
+    <string name="transaction_amount_label">Montant</string>
+    <string name="transaction_date_label">Date</string>
+    <string name="transaction_label_label">Libellé</string>
+    <string name="transaction_category_label">Catégorie</string>
+    <string name="transaction_item_label">Objet</string>
 </resources>

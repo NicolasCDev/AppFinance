@@ -2,13 +2,18 @@ package com.example.appfinancetest
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -45,10 +51,13 @@ fun PatrimonialScreen(
     val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var hideMarkerTrigger by remember { mutableIntStateOf(0) }
-    val netWorth by databaseViewModel.netWorth.observeAsState(0.0)
+    val netWorth by databaseViewModel.netWorth.observeAsState(null)
     
+    var isLoadingTransactions by remember { mutableStateOf(true) }
     val transactions by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
+        isLoadingTransactions = true
         value = databaseViewModel.getTransactionsSortedByDateASC()
+        isLoadingTransactions = false
     }
 
     var showSettings by remember { mutableStateOf(false) }
@@ -168,89 +177,126 @@ fun PatrimonialScreen(
                     textAlign = TextAlign.Start
                 )
                 
-                CurrencyText(
-                    amount = netWorth ?: 0.0,
-                    style = MaterialTheme.typography.titleSmall,
-                    isVisibilityOff = isVisibilityOff,
-                    textAlign = TextAlign.End
-                )
-            }
-
-            if (isPrefsLoaded) {
-                if (transactions.isEmpty()) {
-                    Column(
+                if (netWorth == null) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        Text(
-                            stringResource(id = R.string.no_transactions),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(bottom = 24.dp)
-                        )
-                        
-                        ImportActionCard(
-                            databaseViewModel = databaseViewModel,
-                            investmentViewModel = investmentViewModel,
-                            creditViewModel = creditViewModel,
-                            onRefresh = {
-                                refreshTrigger++
-                                databaseViewModel.refreshNetWorth()
-                            }
-                        )
-                    }
+                            .size(100.dp, 20.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerLoadingAnimation()
+                    )
                 } else {
-                    // Use of DateRangeSelector
-                    DateRangeSelector(
-                        selectedOption = selectedOption,
-                        onOptionChange = { option ->
-                            selectedOption = option
-                            range = calculateRangeFromOption(option, minDate)
-                        },
-                        onCalendarClick = { showDateRangePicker = true }
-                    )
-
-                    if (showDateRangePicker) {
-                        LegacyMaterialDateRangePicker(
-                            onDismiss = { showDateRangePicker = false },
-                            onDateSelected = { start, end ->
-                                range = start..end
-                                showDateRangePicker = false
-                            }
-                        )
-                    }
-
-                    Text(
-                        text = stringResource(id = R.string.estate_evolution),
+                    CurrencyText(
+                        amount = netWorth ?: 0.0,
                         style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(top = 0.dp, bottom = 0.dp)
-                    )
-                    
-                    PatrimonialLineChart(
-                        viewModel = databaseViewModel,
-                        investmentViewModel = investmentViewModel,
-                        startDate = range.start.toDouble(),
-                        endDate = range.endInclusive.toDouble(),
-                        refreshTrigger = refreshTrigger,
-                        hideMarkerTrigger = hideMarkerTrigger,
-                        onHideMarkers = { hideMarkerTrigger++ }
-                    )
-
-                    Text(
-                        text = stringResource(id = R.string.breakdown_by_category),
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                    )
-
-                    BalancePieChart(
-                        viewModel = databaseViewModel,
-                        startDate = range.start.toDouble(),
-                        endDate = range.endInclusive.toDouble()
+                        isVisibilityOff = isVisibilityOff,
+                        textAlign = TextAlign.End
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (!isPrefsLoaded || isLoadingTransactions) {
+                PatrimonialShimmer()
+            } else if (transactions.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Text(
+                        stringResource(id = R.string.no_transactions),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    
+                    ImportActionCard(
+                        databaseViewModel = databaseViewModel,
+                        investmentViewModel = investmentViewModel,
+                        creditViewModel = creditViewModel,
+                        onRefresh = {
+                            refreshTrigger++
+                            databaseViewModel.refreshNetWorth()
+                        }
+                    )
+                }
+            } else {
+                // Use of DateRangeSelector
+                DateRangeSelector(
+                    selectedOption = selectedOption,
+                    onOptionChange = { option ->
+                        selectedOption = option
+                        range = calculateRangeFromOption(option, minDate)
+                    },
+                    onCalendarClick = { showDateRangePicker = true }
+                )
+
+                if (showDateRangePicker) {
+                    LegacyMaterialDateRangePicker(
+                        onDismiss = { showDateRangePicker = false },
+                        onDateSelected = { start, end ->
+                            range = start..end
+                            showDateRangePicker = false
+                        }
+                    )
+                }
+
+                Text(
+                    text = stringResource(id = R.string.estate_evolution),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 0.dp, bottom = 0.dp)
+                )
+                
+                PatrimonialLineChart(
+                    viewModel = databaseViewModel,
+                    investmentViewModel = investmentViewModel,
+                    startDate = range.start.toDouble(),
+                    endDate = range.endInclusive.toDouble(),
+                    refreshTrigger = refreshTrigger,
+                    hideMarkerTrigger = hideMarkerTrigger,
+                    onHideMarkers = { hideMarkerTrigger++ }
+                )
+
+                Text(
+                    text = stringResource(id = R.string.breakdown_by_category),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                )
+
+                BalancePieChart(
+                    viewModel = databaseViewModel,
+                    startDate = range.start.toDouble(),
+                    endDate = range.endInclusive.toDouble()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PatrimonialShimmer() {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Date selector shimmer
+        Box(modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(8.dp)).shimmerLoadingAnimation())
+        
+        // Line chart shimmer
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(id = R.string.estate_evolution),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Box(modifier = Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(12.dp)).shimmerLoadingAnimation())
+        }
+        
+        // Pie chart shimmer
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(id = R.string.breakdown_by_category),
+                style = MaterialTheme.typography.titleSmall
+            )
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(12.dp)).shimmerLoadingAnimation())
         }
     }
 }

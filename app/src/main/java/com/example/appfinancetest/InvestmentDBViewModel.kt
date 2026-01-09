@@ -55,4 +55,13 @@ class InvestmentDBViewModel (application: Application) : AndroidViewModel(applic
     suspend fun getPagedInvestments(limit: Int, offset: Int): List<InvestmentDB> {
         return dbDAO.getInvestmentsPaged(limit, offset)
     }
+
+    suspend fun updateInvestmentEndDate(idInvest: String, dateEnd: Double) {
+        withContext(Dispatchers.IO) {
+            val investment = dbDAO.getInvestmentById(idInvest)
+            if (investment != null) {
+                dbDAO.updateInvestment(investment.copy(dateEnd = dateEnd))
+            }
+        }
+    }
 }

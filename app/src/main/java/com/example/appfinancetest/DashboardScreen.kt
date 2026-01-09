@@ -1,25 +1,32 @@
 package com.example.appfinancetest
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -61,11 +69,12 @@ fun DashboardScreen(
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
-    val netWorth by databaseViewModel.netWorth.observeAsState(0.0)
+    val netWorth by databaseViewModel.netWorth.observeAsState(null)
 
     var showSettings by remember { mutableStateOf(false) }
     var showImportExport by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
+    var transactionToEdit by remember { mutableStateOf<TransactionDB?>(null) }
 
     val context = LocalContext.current
     val prefs = remember { DataStorage(context) }
@@ -180,14 +189,15 @@ fun DashboardScreen(
             val filtered = filterTransactions(allTransactions, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter)
             transactionsPaged.clear()
             transactionsPaged.addAll(filtered)
+            isFirstLoadPaged = false
         } else {
             val offset = (currentPage - 1) * pageSize
             val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
             if (currentPage == 1) {
                 transactionsPaged.clear()
-                isFirstLoadPaged = false
             }
             transactionsPaged.addAll(newTransactions)
+            isFirstLoadPaged = false
         }
     }
 
@@ -228,6 +238,19 @@ fun DashboardScreen(
             onAmountMaxFilterChange = { amountMaxFilter = it; currentPage = 1 },
             onClearAll = clearFilters,
             onDismiss = { showFilter = false }
+        )
+    }
+    if (transactionToEdit != null) {
+        TransactionEditDialog(
+            transaction = transactionToEdit!!,
+            onDismiss = { transactionToEdit = null },
+            onSave = { updated ->
+                scope.launch {
+                    databaseViewModel.insertTransaction(updated)
+                    refreshTrigger++
+                    transactionToEdit = null
+                }
+            }
         )
     }
 
@@ -289,12 +312,22 @@ fun DashboardScreen(
                         textAlign = TextAlign.Center
                     )
                     
-                    CurrencyText(
-                        amount = netWorth ?: 0.0,
-                        isVisibilityOff = isVisibilityOff,
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center
-                    )
+                    if (netWorth == null) {
+                        Box(
+                            modifier = Modifier
+                                .padding(vertical = 4.dp)
+                                .size(120.dp, 24.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerLoadingAnimation()
+                        )
+                    } else {
+                        CurrencyText(
+                            amount = netWorth ?: 0.0,
+                            isVisibilityOff = isVisibilityOff,
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center
+                        )
+                    }
 
                     Row(
                         modifier = Modifier
@@ -302,11 +335,11 @@ fun DashboardScreen(
                             .padding(top = 4.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        EvolutionItem("6M", evo6m)
+                        EvolutionItem("6M", evo6m, isLoading = netWorth == null)
                         Spacer(modifier = Modifier.padding(horizontal = 12.dp))
-                        EvolutionItem("1Y", evo1y)
+                        EvolutionItem("1Y", evo1y, isLoading = netWorth == null)
                         Spacer(modifier = Modifier.padding(horizontal = 12.dp))
-                        EvolutionItem("5Y", evo5y)
+                        EvolutionItem("5Y", evo5y, isLoading = netWorth == null)
                     }
 
                     if (transactions.isNotEmpty()) {
@@ -331,6 +364,17 @@ fun DashboardScreen(
                                 isVisibilityOff = isVisibilityOff,
                                 style = MaterialTheme.typography.titleSmall
                             )
+                        }
+                    } else if (isFirstLoadPaged) {
+                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.size(150.dp, 16.dp).clip(RoundedCornerShape(4.dp)).shimmerLoadingAnimation())
+                            Box(modifier = Modifier.size(80.dp, 16.dp).clip(RoundedCornerShape(4.dp)).shimmerLoadingAnimation())
                         }
                     }
                 }
@@ -371,7 +415,36 @@ fun DashboardScreen(
                     }
                 }
 
-                if (transactions.isEmpty() && isFiltersLoaded && !isFirstLoadPaged) {
+                OutlinedTextField(
+                    value = labelFilter,
+                    onValueChange = { 
+                        labelFilter = it
+                        currentPage = 1 
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    placeholder = { Text(stringResource(id = R.string.search_label_placeholder)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (labelFilter.isNotEmpty()) {
+                            IconButton(onClick = { labelFilter = ""; currentPage = 1 }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                if (isFirstLoadPaged || !isFiltersLoaded) {
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(5) {
+                            TransactionRowShimmer()
+                            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                    }
+                } else if (transactionsPaged.isEmpty()) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -402,7 +475,11 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         items(transactionsPaged) { transaction ->
-                            TransactionRow(transaction, isVisibilityOff)
+                            TransactionRow(
+                                transaction = transaction, 
+                                isVisibilityOff = isVisibilityOff,
+                                onClick = { transactionToEdit = transaction }
+                            )
                             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
@@ -413,13 +490,21 @@ fun DashboardScreen(
 }
 
 @Composable
-fun EvolutionItem(label: String, evolution: Double?) {
+fun EvolutionItem(label: String, evolution: Double?, isLoading: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
         )
-        if (evolution == null) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .size(40.dp, 16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerLoadingAnimation()
+            )
+        } else if (evolution == null) {
             Text(
                 text = "N/A",
                 style = MaterialTheme.typography.bodyLarge,
@@ -434,10 +519,15 @@ fun EvolutionItem(label: String, evolution: Double?) {
 }
 
 @Composable
-fun TransactionRow(transaction: TransactionDB, isVisibilityOff: Boolean) {
+fun TransactionRow(
+    transaction: TransactionDB, 
+    isVisibilityOff: Boolean,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -462,6 +552,39 @@ fun TransactionRow(transaction: TransactionDB, isVisibilityOff: Boolean) {
             isVisibilityOff = isVisibilityOff,
             showSign = true,
             textAlign = TextAlign.End
+        )
+    }
+}
+
+@Composable
+fun TransactionRowShimmer() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .size(150.dp, 20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerLoadingAnimation()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(200.dp, 14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerLoadingAnimation()
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(60.dp, 20.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerLoadingAnimation()
         )
     }
 }

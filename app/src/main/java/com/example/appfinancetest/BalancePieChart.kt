@@ -24,20 +24,24 @@ import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import kotlinx.coroutines.launch
 
 @Composable
 fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Double) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val prefs = remember { DataStorage(context) }
     val isVisibilityOff by prefs.isVisibilityOffFlow.collectAsState(initial = false)
 
-    val transactions by produceState(initialValue = emptyList(), viewModel) {
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+    val transactions by produceState(initialValue = emptyList(), viewModel, refreshTrigger) {
         value = viewModel.getTransactionsSortedByDateASC()
     }
 
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedItem by remember { mutableStateOf<String?>(null) }
     var selectedLabelForTransactions by remember { mutableStateOf<String?>(null) }
+    var transactionToEdit by remember { mutableStateOf<TransactionDB?>(null) }
 
     val filteredTransactions = transactions.filter {
         it.date != null && it.amount != null && it.category != null &&
@@ -115,13 +119,31 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(labelTransactions) { transaction ->
-                            TransactionRow(transaction, isVisibilityOff) // Reuse Dashboard component
+                            TransactionRow(
+                                transaction = transaction, 
+                                isVisibilityOff = isVisibilityOff,
+                                onClick = { transactionToEdit = transaction }
+                            )
                             HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
                 }
             }
         }
+    }
+
+    if (transactionToEdit != null) {
+        TransactionEditDialog(
+            transaction = transactionToEdit!!,
+            onDismiss = { transactionToEdit = null },
+            onSave = { updated ->
+                scope.launch {
+                    viewModel.insertTransaction(updated)
+                    refreshTrigger++
+                    transactionToEdit = null
+                }
+            }
+        )
     }
 
     Column(
