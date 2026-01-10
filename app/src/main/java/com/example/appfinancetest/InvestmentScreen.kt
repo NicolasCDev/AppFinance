@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -51,7 +53,7 @@ fun InvestmentScreen(
     // Collecting every investment with refreshTrigger
     val allInvestments by produceState(initialValue = emptyList(), investmentViewModel, refreshTrigger) {
         isLoading = true
-        // Simuler un léger délai pour voir le shimmer ou attendre le retour BDD
+        // Simulate a slight delay to see the shimmer or wait for the BDD return.
         value = investmentViewModel.getInvestment()
         isLoading = false
     }
@@ -296,6 +298,7 @@ fun InvestmentDetailDialog(
         Surface(
             shape = RoundedCornerShape(16.dp),
             tonalElevation = 8.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer,
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
@@ -339,20 +342,77 @@ fun InvestmentDetailDialog(
                     }
                 }
 
-                if (filteredInvestments.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = stringResource(id = R.string.no_investment))
-                    }
-                } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(filteredInvestments) { invest ->
-                            InvestmentItemCard(
-                                invest = invest,
-                                databaseViewModel = databaseViewModel,
-                                investmentViewModel = investmentViewModel,
-                                isVisibilityOff = isVisibilityOff,
-                                onRefresh = onRefresh
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (filteredInvestments.isEmpty()) {
+                        item {
+                            Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    stringResource(id = R.string.no_investment),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    } else {
+                        // FIX: Key is modified to include selectedTabIndex to prevent state reuse between tabs
+                        items(filteredInvestments, key = { "${it.id}_$selectedTabIndex" }) { investment ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.StartToEnd && selectedTabIndex == 0) true
+                                    else value == SwipeToDismissBoxValue.EndToStart && selectedTabIndex == 1
+                                }
                             )
+
+                            // Effect to handle the actual database update after the swipe is confirmed
+                            LaunchedEffect(dismissState.currentValue) {
+                                if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd && selectedTabIndex == 0) {
+                                    validateInvestments(databaseViewModel, investmentViewModel, investment.idInvest) {
+                                        databaseViewModel.refreshNetWorth()
+                                        onRefresh()
+                                    }
+                                } else if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart && selectedTabIndex == 1) {
+                                    invalidateInvestments(databaseViewModel, investmentViewModel, investment.idInvest) {
+                                        databaseViewModel.refreshNetWorth()
+                                        onRefresh()
+                                    }
+                                }
+                            }
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {
+                                    val isDismissingToEnd = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+                                    val isDismissingToStart = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+
+                                    val color = if (isDismissingToEnd) Color(0xFF4CAF50)
+                                    else if (isDismissingToStart) Color.Gray
+                                    else Color.Transparent
+
+                                    val alignment = if (isDismissingToEnd) Alignment.CenterStart
+                                    else if (isDismissingToStart) Alignment.CenterEnd
+                                    else Alignment.Center
+
+                                    val icon = if (isDismissingToEnd) Icons.Default.Done
+                                    else if (isDismissingToStart) Icons.Default.Refresh
+                                    else null
+
+                                    Box(
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(color, RoundedCornerShape(12.dp))
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = alignment
+                                    ) {
+                                        icon?.let { Icon(it, contentDescription = null, tint = Color.White) }
+                                    }
+                                },
+                                enableDismissFromStartToEnd = selectedTabIndex == 0,
+                                enableDismissFromEndToStart = selectedTabIndex == 1
+                            ) {
+                                PositionItemCard(investment, isVisibilityOff)
+                            }
                         }
                     }
                 }
@@ -362,114 +422,92 @@ fun InvestmentDetailDialog(
 }
 
 @Composable
-fun InvestmentItemCard(
-    invest: InvestmentDB,
-    databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDBViewModel,
-    isVisibilityOff: Boolean,
-    onRefresh: () -> Unit
-) {
-    val scope = rememberCoroutineScope()
-    var showDatePicker by remember { mutableStateOf(false) }
+fun PositionItemCard(investment: InvestmentDB, isVisibilityOff: Boolean) {
+    val invested = investment.invested ?: 0.0
+    val earned = investment.earned ?: 0.0
+    val profitEuro = earned - invested
+    val profitPercent = if (invested > 0) (profitEuro / invested) * 100 else 0.0
+    val annual = investment.annualProfitability ?: 0.0
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = invest.label ?: stringResource(id = R.string.no_label),
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${stringResource(id = R.string.beginning)} : ${dateFormattedText(invest.dateBegin)}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    if (invest.dateEnd != null && invest.dateEnd != 0.0) {
-                        Text(
-                            text = "${stringResource(id = R.string.end)} : ${dateFormattedText(invest.dateEnd)}",
+                Text(
+                    text = investment.label ?: stringResource(id = R.string.no_label),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CurrencyText(
+                            amount = profitEuro,
+                            isVisibilityOff = isVisibilityOff,
+                            showSign = true,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        PercentageText(
+                            amount = profitPercent,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                }
-                
-                // Action to close or reopen an investment
-                IconButton(onClick = { showDatePicker = true }) {
-                    Icon(
-                        imageVector = if (invest.dateEnd == null || invest.dateEnd == 0.0) Icons.Default.Done else Icons.Default.Refresh,
-                        contentDescription = stringResource(id = R.string.edit_closing_date),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PercentageText(
+                            amount = annual,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = " (${stringResource(id = R.string.annual)})",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    LabelValueSmall(label = stringResource(id = R.string.invested), amount = invest.invested ?: 0.0, isVisibilityOff = isVisibilityOff)
-                    LabelValueSmall(label = stringResource(id = R.string.earned), amount = invest.earned ?: 0.0, isVisibilityOff = isVisibilityOff)
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    val gain = (invest.earned ?: 0.0) - (invest.invested ?: 0.0)
-                    LabelValueSmall(label = stringResource(id = R.string.capital_gain), amount = gain, isVisibilityOff = isVisibilityOff)
-                    
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        PercentageText(
-                            amount = invest.annualProfitability ?: 0.0,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Text(" (${stringResource(id = R.string.annual)})", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
+                InfoLabelSmall(label = stringResource(id = R.string.invested), amount = invested, isVisibilityOff = isVisibilityOff)
+                InfoLabelSmall(label = stringResource(id = R.string.earned), amount = earned, isVisibilityOff = isVisibilityOff)
             }
         }
     }
+}
 
-    if (showDatePicker) {
-        WheelDatePickerDialog(
-            initialDate = if (invest.dateEnd != null && invest.dateEnd != 0.0) invest.dateEnd else ((System.currentTimeMillis() / 86400000.0) + 25569.0),
-            onDismiss = { showDatePicker = false },
-            onDateSelected = { date ->
-                scope.launch {
-                    investmentViewModel.updateInvestmentEndDate(invest.idInvest ?: "", date)
-                    onRefresh()
-                    showDatePicker = false
-                }
-            }
+@Composable
+fun InfoLabelSmall(label: String, amount: Double, isVisibilityOff: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("$label: ", style = MaterialTheme.typography.bodySmall)
+        CurrencyTextOnPrimary(
+            amount = amount,
+            isVisibilityOff = isVisibilityOff,
+            style = MaterialTheme.typography.bodySmall
         )
     }
 }
 
 @Composable
 fun LabelValue(label: String, amount: Double, isVisibilityOff: Boolean) {
-    Column {
+    Column(modifier = Modifier.padding(vertical = 2.dp)) {
         Text(text = label, style = MaterialTheme.typography.bodySmall)
-        CurrencyText(
+        CurrencyTextOnPrimary(
             amount = amount,
             isVisibilityOff = isVisibilityOff,
             style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
-
-@Composable
-fun LabelValueSmall(label: String, amount: Double, isVisibilityOff: Boolean) {
-    Row {
-        Text(text = "$label : ", style = MaterialTheme.typography.bodySmall)
-        CurrencyText(
-            amount = amount,
-            isVisibilityOff = isVisibilityOff,
-            style = MaterialTheme.typography.bodySmall
         )
     }
 }

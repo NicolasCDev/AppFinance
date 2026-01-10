@@ -35,6 +35,18 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/license.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/notice.txt"
+            excludes += "/META-INF/ASL2.0"
+        }
+    }
 }
 
 kotlin {
@@ -74,4 +86,13 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
 
+    // Google Drive API
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation("com.google.api-client:google-api-client-android:2.0.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0")
+    implementation("com.google.guava:guava:31.1-android")
+    
+    // HTTP & JSON components for Drive
+    implementation("com.google.http-client:google-http-client-android:2.0.3")
+    implementation("com.google.http-client:google-http-client-jackson2:2.0.3")
 }

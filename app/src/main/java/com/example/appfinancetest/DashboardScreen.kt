@@ -1,5 +1,6 @@
 package com.example.appfinancetest
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +29,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +67,7 @@ fun DashboardScreen(
 )  {
 
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var refreshTrigger by remember { mutableIntStateOf(0) }
     val transactions by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
@@ -91,6 +95,8 @@ fun DashboardScreen(
     var amountMinFilter by remember { mutableStateOf("") }
     var amountMaxFilter by remember { mutableStateOf("") }
 
+    val errorLoadingFiltersMessage = stringResource(id = R.string.error_loading_filters)
+
     // Load filters ONCE at startup
     LaunchedEffect(Unit) {
         try {
@@ -101,7 +107,10 @@ fun DashboardScreen(
             labelFilter = prefs.dashboardLabelFilterFlow.first() ?: ""
             amountMinFilter = prefs.dashboardAmountMinFilterFlow.first() ?: ""
             amountMaxFilter = prefs.dashboardAmountMaxFilterFlow.first() ?: ""
-        } catch (e: Exception) { }
+        } catch (e: Exception) {
+            Log.e("DashboardScreen", "Error loading filters", e)
+            snackbarHostState.showSnackbar(errorLoadingFiltersMessage)
+        }
         isFiltersLoaded = true
     }
 
@@ -287,6 +296,7 @@ fun DashboardScreen(
                 name = stringResource(id = R.string.dashboard_title)
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         content = { paddingValues ->
             Column(

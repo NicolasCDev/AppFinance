@@ -50,8 +50,7 @@ fun TopBar (
                     Icon(
                         painter = painterResource(id = R.drawable.ic_import_export),
                         contentDescription = "Import / Export",
-                        modifier = Modifier.size(24.dp),
-                        tint = Color.White
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -69,8 +68,7 @@ fun TopBar (
                     Icon(
                         imageVector = if (isVisibilityOff) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = "Toggle Visibility",
-                        modifier = Modifier.size(24.dp),
-                        tint = Color.White
+                        modifier = Modifier.size(24.dp)
                     )
                 }
                 IconButton(
@@ -80,15 +78,13 @@ fun TopBar (
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Settings",
-                        modifier = Modifier.size(24.dp),
-                        tint = Color.White
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.Transparent,
-            titleContentColor = Color.White
+            containerColor = Color.Transparent
         )
     )
 }

@@ -29,6 +29,9 @@ class DataStorage(private val context: Context) {
 
         // Visibility key
         val IS_VISIBILITY_OFF_KEY = booleanPreferencesKey("is_visibility_off")
+        
+        // Theme key
+        val IS_DARK_THEME_KEY = booleanPreferencesKey("is_dark_theme")
     }
 
     // Dashboard Filter Flows
@@ -47,6 +50,9 @@ class DataStorage(private val context: Context) {
 
     // Visibility Flow - Set default to true to hide values on first open
     val isVisibilityOffFlow: Flow<Boolean> = context.dataStore.data.map { it[IS_VISIBILITY_OFF_KEY] ?: true }
+
+    // Theme Flow - null means use system default
+    val isDarkThemeFlow: Flow<Boolean?> = context.dataStore.data.map { it[IS_DARK_THEME_KEY] }
 
     // Save methods for Dashboard Filters
     suspend fun saveDashboardDateMinFilter(filter: String) {
@@ -85,5 +91,16 @@ class DataStorage(private val context: Context) {
     // Save method for Visibility
     suspend fun saveVisibilityState(isOff: Boolean) {
         context.dataStore.edit { prefs -> prefs[IS_VISIBILITY_OFF_KEY] = isOff }
+    }
+
+    // Save method for Theme
+    suspend fun saveDarkThemeState(isDark: Boolean?) {
+        context.dataStore.edit { prefs ->
+            if (isDark == null) {
+                prefs.remove(IS_DARK_THEME_KEY)
+            } else {
+                prefs[IS_DARK_THEME_KEY] = isDark
+            }
+        }
     }
 }

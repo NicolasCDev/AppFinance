@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -36,18 +38,21 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         
         setContent {
-            AppFinanceTestTheme {
-                MainScreen()
+            val context = LocalContext.current
+            val dataStorage = remember { DataStorage(context) }
+            val isDarkThemeCustom by dataStorage.isDarkThemeFlow.collectAsState(initial = null)
+            
+            val darkTheme = isDarkThemeCustom ?: isSystemInDarkTheme()
+
+            AppFinanceTestTheme(darkTheme = darkTheme) {
+                MainScreen(dataStorage)
             }
         }
     }
 }
 
 @Composable
-fun MainScreen() {
-    val context = LocalContext.current
-    val dataStorage = remember { DataStorage(context) }
-    
+fun MainScreen(dataStorage: DataStorage) {
     // Force visibility to OFF on every app launch
     LaunchedEffect(Unit) {
         dataStorage.saveVisibilityState(true)

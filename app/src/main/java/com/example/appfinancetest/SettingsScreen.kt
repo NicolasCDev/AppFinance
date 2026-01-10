@@ -3,6 +3,7 @@ package com.example.appfinancetest
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,11 +32,13 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.edit
 import androidx.core.os.LocaleListCompat
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 @Composable
@@ -55,6 +59,12 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    val dataStorage = remember { DataStorage(context) }
+    val scope = rememberCoroutineScope()
+
+    // Theme state
+    val isDarkThemeCustom by dataStorage.isDarkThemeFlow.collectAsState(initial = null)
+    val darkTheme = isDarkThemeCustom ?: isSystemInDarkTheme()
 
     // Show/Hide goals
     var showGoals by remember {
@@ -190,6 +200,28 @@ fun SettingsScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = 16.dp)
                     ) {
+                        SettingsHeader(title = stringResource(id = R.string.theme_title))
+                        
+                        ListItem(
+                            headlineContent = { Text(stringResource(id = R.string.dark_theme), style = MaterialTheme.typography.bodyMedium) },
+                            trailingContent = {
+                                Switch(
+                                    checked = darkTheme,
+                                    onCheckedChange = { isDark ->
+                                        scope.launch {
+                                            dataStorage.saveDarkThemeState(isDark)
+                                        }
+                                    }
+                                )
+                            }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+
                         SettingsHeader(title = stringResource(id = R.string.language))
                         
                         SettingsLanguageItem(

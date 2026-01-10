@@ -1,14 +1,9 @@
 package com.example.appfinancetest
 
-import android.content.Context
-import android.util.TypedValue
-import androidx.annotation.AttrRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -32,17 +27,8 @@ fun formatPercentage(amount: Double?): String {
 }
 
 /**
- * Retrieves a color from the attributes of the current theme.
- */
-private fun getThemeColor(context: Context, @AttrRes attrRes: Int): Color {
-    val typedValue = TypedValue()
-    context.theme.resolveAttribute(attrRes, typedValue, true)
-    return Color(typedValue.data)
-}
-
-/**
  * Stylized Text component for monetary amounts.
- * Dynamically uses the colors defined in the theme (themes.xml via attrs.xml).
+ * Dynamically uses the colors defined in the theme.
  */
 @Composable
 fun CurrencyText(
@@ -54,12 +40,11 @@ fun CurrencyText(
     textAlign: TextAlign = TextAlign.Start,
     style: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
-    val context = LocalContext.current
     val finalIsNegative = isNegative ?: (amount < 0)
     
-    // Dynamic theme color retrieval
-    val colorPositive = getThemeColor(context, R.attr.colorAmountPositive)
-    val colorNegative = getThemeColor(context, R.attr.colorAmountNegative)
+    // Dynamic theme color retrieval from MaterialTheme.colorScheme
+    val colorPositive = MaterialTheme.colorScheme.surfaceVariant
+    val colorNegative = MaterialTheme.colorScheme.error
     
     val color = if (finalIsNegative) colorNegative else colorPositive
 
@@ -86,7 +71,7 @@ fun CurrencyText(
 }
 
 /**
- * Text component for monetary amounts using the colorOnPrimary color from the theme.
+ * Text component for monetary amounts using the onPrimary color from the theme.
  * Keep the formatting with two decimal places, thousands separator, and € symbol.
  */
 @Composable
@@ -99,7 +84,7 @@ fun CurrencyTextOnPrimary(
     textAlign: TextAlign = TextAlign.Start,
     style: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
-    val color = getThemeColor(LocalContext.current, R.attr.colorOnPrimary)
+    val color = MaterialTheme.colorScheme.onPrimary
 
     val finalIsNegative = amount < 0
     
@@ -129,7 +114,7 @@ fun CurrencyTextOnPrimary(
 /**
  * Text component for percentages.
  * Must display the (+/-) sign, one decimal place, and use
- * the colors colorAmountPositive/colorAmountNegative.
+ * the theme's colors.
  */
 @Composable
 fun PercentageText(
@@ -139,16 +124,14 @@ fun PercentageText(
     textAlign: TextAlign = TextAlign.Start,
     style: TextStyle = MaterialTheme.typography.bodySmall
 ) {
-    val context = LocalContext.current
     val isNegative = amount < 0
 
-    // Recovering theme colors
-    val colorPositive = getThemeColor(context, R.attr.colorAmountPositive)
-    val colorNegative = getThemeColor(context, R.attr.colorAmountNegative)
+    // Recovering theme colors from colorScheme
+    val colorPositive = MaterialTheme.colorScheme.surfaceVariant
+    val colorNegative = MaterialTheme.colorScheme.error
     val color = if (isNegative) colorNegative else colorPositive
 
     // String construction: Sign + Formatted absolute value
-    // String.format “%.1f%%” guarantees a single decimal place and the % symbol is appended.
     val sign = if (isNegative) "-" else "+"
     val displayValue = "$sign${formatPercentage(abs(amount))}"
 
@@ -164,7 +147,7 @@ fun PercentageText(
 }
 
 /**
- * Text component for percentages using the colorOnPrimary color from the theme.
+ * Text component for percentages using the onPrimary color from the theme.
  * Displays the (+/-) sign and one decimal place.
  */
 @Composable
@@ -175,7 +158,7 @@ fun PercentageTextOnPrimary(
     textAlign: TextAlign = TextAlign.Start,
     style: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
-    val color = getThemeColor(LocalContext.current, R.attr.colorOnPrimary)
+    val color = MaterialTheme.colorScheme.onPrimary
 
     val displayValue = formatPercentage(abs(amount))
 

@@ -76,6 +76,10 @@
     <string name="export_excel_desc">Sauvegarde l\'intégralité de vos transactions sur votre appareil.</string>
     <string name="manage_credits">Gérer les Crédits</string>
     <string name="manage_credits_desc">Ajouter ou modifier vos crédits en cours.</string>
+    <string name="cloud_backup">Sauvegarde Cloud</string>
+    <string name="cloud_backup_desc">Sauvegarde votre base de données sur Google Drive.</string>
+    <string name="cloud_restore">Restaurer du Cloud</string>
+    <string name="cloud_restore_desc">Récupère votre base de données depuis Google Drive.</string>
 
     <!-- Credit Screen -->
     <string name="credits_title">Mes Crédits</string>
@@ -110,6 +114,8 @@
     <string name="show_goals">Afficher les objectifs</string>
     <string name="annual_interest_rate">Taux d\'intérêt annuel (%)</string>
     <string name="annual_invested_amount">Somme investie par an (€)</string>
+    <string name="theme_title">Thème</string>
+    <string name="dark_theme">Thème sombre</string>
 
     <!-- DateRangePicker -->
     <string name="cancel">Annuler</string>
@@ -121,4 +127,7 @@
     <string name="transaction_label_label">Libellé</string>
     <string name="transaction_category_label">Catégorie</string>
     <string name="transaction_item_label">Objet</string>
+
+    <!-- Errors -->
+    <string name="error_loading_filters">Erreur lors du chargement des filtres</string>
 </resources>

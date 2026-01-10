@@ -76,6 +76,10 @@
     <string name="export_excel_desc">Saves all your transactions on your device.</string>
     <string name="manage_credits">Manage Credits</string>
     <string name="manage_credits_desc">Add or edit current credits.</string>
+    <string name="cloud_backup">Cloud backup</string>
+    <string name="cloud_backup_desc">Back up your database to Google Drive.</string>
+    <string name="cloud_restore">Restore from the Cloud</string>
+    <string name="cloud_restore_desc">Retrieve your database from Google Drive.</string>
 
     <!-- Credit Screen -->
     <string name="credits_title">My Credits</string>
@@ -110,6 +114,8 @@
     <string name="show_goals">Show goals</string>
     <string name="annual_interest_rate">Annual interest rate (%)</string>
     <string name="annual_invested_amount">Invested amount per year (€)</string>
+    <string name="theme_title">Theme</string>
+    <string name="dark_theme">Dark theme</string>
 
     <!-- DateRangePicker -->
     <string name="cancel">Cancel</string>
@@ -122,4 +128,6 @@
     <string name="transaction_category_label">Category</string>
     <string name="transaction_item_label">Objet</string>
 
+    <!-- Errors -->
+    <string name="error_loading_filters">Error loading filters</string>
 </resources>

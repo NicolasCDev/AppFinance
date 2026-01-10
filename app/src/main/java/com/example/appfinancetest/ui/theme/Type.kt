@@ -7,57 +7,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 
-// style = MaterialTheme.typography.titleSmall
 // Set of Material typography styles to start with
 val Typography = Typography(
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 24.sp, // 24.sp
+        fontSize = 24.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp,
-        textAlign = TextAlign.Center,
-        color = white
+        textAlign = TextAlign.Center
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 30.sp, // 30.sp
+        fontSize = 30.sp,
         lineHeight = 30.sp,
-        letterSpacing = 0.5.sp,
-        color = white
+        letterSpacing = 0.5.sp
     ),
     titleSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 20.sp, // 20.sp
+        fontSize = 20.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.5.sp,
-        color = white
+        letterSpacing = 0.5.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 16.sp, // 16.sp
+        fontSize = 16.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
-        textAlign = TextAlign.Center,
-        color = white
+        textAlign = TextAlign.Center
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 12.sp, // 12.sp
+        fontSize = 12.sp,
         lineHeight = 12.sp,
-        letterSpacing = 0.5.sp,
-        color = white
+        letterSpacing = 0.5.sp
     ),
     bodySmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 10.sp,// 10.sp
+        fontSize = 10.sp,
         lineHeight = 10.sp,
-        letterSpacing = 0.5.sp,
-        color = gray
+        letterSpacing = 0.5.sp
     )
 )

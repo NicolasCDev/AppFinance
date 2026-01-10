@@ -2,9 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Demande de permission pour accéder aux fichiers locaux -->
+    <!-- Permissions pour l'accès aux fichiers locaux -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Pour les versions Android 10 et supérieures -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" tools:ignore="ScopedStorage" />
@@ -23,7 +24,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AppFinanceTest">
+            android:theme="@style/Theme.AppFinanceTest"
+            android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
