@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
+import kotlin.math.pow
 
 @Composable
 fun InvestmentScreen(
@@ -53,9 +54,12 @@ fun InvestmentScreen(
     // Collecting every investment with refreshTrigger
     val allInvestments by produceState(initialValue = emptyList(), investmentViewModel, refreshTrigger) {
         isLoading = true
-        // Simulate a slight delay to see the shimmer or wait for the BDD return.
         value = investmentViewModel.getInvestment()
         isLoading = false
+    }
+
+    val allTransactions by produceState<List<TransactionDB>>(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
+        value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
     // Dynamic extraction of unique items in BDD the database
@@ -154,10 +158,48 @@ fun InvestmentScreen(
                     val profitEuro = sumFinishedEarned - sumFinishedInvested
                     val profitPercent = if (sumFinishedInvested > 0) (profitEuro / sumFinishedInvested) * 100 else 0.0
 
-                    // Weighted annual profitability calculation
-                    val totalInvested = investmentsInCategory.sumOf { it.invested ?: 0.0 }
-                    val weightedAnnualProfitability = if (totalInvested > 0.0) {
-                        investmentsInCategory.sumOf { (it.annualProfitability ?: 0.0) * (it.invested ?: 0.0) } / totalInvested
+                    // Weighted annual profitability calculation for closed investments using detailed transaction cash-flow dates
+                    val finishedInvested = finished.sumOf { it.invested ?: 0.0 }
+                    val weightedAnnualProfitability = if (finishedInvested > 0.0 && sumFinishedEarned > 0.0 && profitEuro > 0.0) {
+                        // Extract all transaction IDs across all finished investments in this category
+                        val finishedIdInvests = finished.mapNotNull { it.idInvest }.toSet()
+                        
+                        // Fetch or filter directly using allTransactions
+                        val catTransactions = allTransactions.filter { it.idInvest in finishedIdInvests }
+                        val investedTransactions = catTransactions.filter { it.category == "Investissement" }
+                        val earnedTransactions = catTransactions.filter { it.category == "Gain investissement" }
+
+                        val avgInvestDate = if (sumFinishedInvested > 0.0) {
+                            investedTransactions.sumOf { (it.date ?: 0.0) * (it.amount ?: 0.0) } / sumFinishedInvested
+                        } else 0.0
+
+                        val avgEarnDate = if (sumFinishedEarned > 0.0) {
+                            earnedTransactions.sumOf { (it.date ?: 0.0) * (it.amount ?: 0.0) } / sumFinishedEarned
+                        } else 0.0
+
+                        val weightedDays = (avgEarnDate - avgInvestDate).coerceAtLeast(1.0)
+                        
+                        ((sumFinishedEarned / sumFinishedInvested).pow(365.0 / weightedDays) - 1.0) * 100.0
+                    } else if (finishedInvested > 0.0 && sumFinishedEarned > 0.0 && profitEuro < 0.0) {
+                        // If there is a capital loss, we calculate the negative annual rate based on cash-flow weighted days
+                        val finishedIdInvests = finished.mapNotNull { it.idInvest }.toSet()
+                        val catTransactions = allTransactions.filter { it.idInvest in finishedIdInvests }
+                        val investedTransactions = catTransactions.filter { it.category == "Investissement" }
+                        val earnedTransactions = catTransactions.filter { it.category == "Gain investissement" }
+
+                        val avgInvestDate = if (sumFinishedInvested > 0.0) {
+                            investedTransactions.sumOf { (it.date ?: 0.0) * (it.amount ?: 0.0) } / sumFinishedInvested
+                        } else 0.0
+
+                        val avgEarnDate = if (sumFinishedEarned > 0.0) {
+                            earnedTransactions.sumOf { (it.date ?: 0.0) * (it.amount ?: 0.0) } / sumFinishedEarned
+                        } else 0.0
+
+                        val weightedDays = (avgEarnDate - avgInvestDate).coerceAtLeast(1.0)
+                        
+                        ((sumFinishedEarned / sumFinishedInvested).pow(365.0 / weightedDays) - 1.0) * 100.0
+                    } else if (finishedInvested > 0.0 && sumFinishedEarned <= 0.0) {
+                        -100.0
                     } else 0.0
 
                     InvestmentCategoryCard(
@@ -294,6 +336,44 @@ fun InvestmentDetailDialog(
         stringResource(id = R.string.investment_closed)
     )
 
+    var selectedInvestmentTransactions by remember { mutableStateOf<List<TransactionDB>?>(null) }
+    var selectedInvestmentLabel by remember { mutableStateOf<String?>(null) }
+    var transactionToEdit by remember { mutableStateOf<TransactionDB?>(null) }
+    var innerRefreshTrigger by remember { mutableIntStateOf(0) }
+
+    val allTransactionsList by produceState<List<TransactionDB>>(initialValue = emptyList(), databaseViewModel, innerRefreshTrigger) {
+        value = databaseViewModel.getTransactionsSortedByDateASC()
+    }
+
+    TransactionsLabelDialog(
+        selectedLabel = selectedInvestmentLabel,
+        othersTransactions = selectedInvestmentTransactions,
+        isVisibilityOff = isVisibilityOff,
+        onDismiss = { 
+            selectedInvestmentLabel = null
+            selectedInvestmentTransactions = null
+        },
+        onTransactionClick = { transactionToEdit = it }
+    )
+
+    val innerScope = rememberCoroutineScope()
+
+    if (transactionToEdit != null) {
+        TransactionEditDialog(
+            transaction = transactionToEdit!!,
+            onDismiss = { transactionToEdit = null },
+            onSave = { updated ->
+                innerScope.launch {
+                    databaseViewModel.insertTransaction(updated)
+                    innerRefreshTrigger++
+                    databaseViewModel.refreshNetWorth()
+                    onRefresh()
+                    transactionToEdit = null
+                }
+            }
+        )
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -411,7 +491,12 @@ fun InvestmentDetailDialog(
                                 enableDismissFromStartToEnd = selectedTabIndex == 0,
                                 enableDismissFromEndToStart = selectedTabIndex == 1
                             ) {
-                                PositionItemCard(investment, isVisibilityOff)
+                                Box(modifier = Modifier.clickable {
+                                    selectedInvestmentLabel = investment.label ?: "Investment"
+                                    selectedInvestmentTransactions = allTransactionsList.filter { it.idInvest == investment.idInvest }
+                                }) {
+                                    PositionItemCard(investment, isVisibilityOff)
+                                }
                             }
                         }
                     }

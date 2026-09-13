@@ -24,7 +24,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = Color.White,
 
     surfaceVariant = Color(0xFF00C853), // Light green (Positive text)
-    error = Color(0xFF8B0000)        // Dark red (Negative text)
+    error = Color(0xFFD32F2F)        // More luminous red (Negative text)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -40,7 +40,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = Color.Black,
 
     surfaceVariant = Color(0xFF008000), // Dark green (Positive text)
-    error = Color(0xFF8B0000)        // Dark red (Negative text)
+    error = Color(0xFFD32F2F)        // More luminous red (Negative text)
 )
 
 @Composable

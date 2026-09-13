@@ -41,10 +41,13 @@ fun filterTransactions(
         (dateMin == null || (it.date ?: 0.0) >= dateMin) &&
         (dateMax == null || (it.date ?: 0.0) <= dateMax) &&
         
-        // Text filters
+        // Text filters (labelQuery checks against label, category or item)
         (categoryQuery.isBlank() || it.category?.contains(categoryQuery, ignoreCase = true) == true) &&
         (itemQuery.isBlank() || it.item?.contains(itemQuery, ignoreCase = true) == true) &&
-        (labelQuery.isBlank() || it.label?.contains(labelQuery, ignoreCase = true) == true) &&
+        (labelQuery.isBlank() || 
+            it.label?.contains(labelQuery, ignoreCase = true) == true ||
+            it.category?.contains(labelQuery, ignoreCase = true) == true ||
+            it.item?.contains(labelQuery, ignoreCase = true) == true) &&
         
         // Amount filters
         (minAmount == null || (it.amount ?: 0.0) >= minAmount) &&

@@ -29,6 +29,7 @@
 
     <!-- Patrimonial Screen -->
     <string name="patrimonial_title">Patrimoine</string>
+    <string name="test_title">Laboratoire</string>
     <string name="net_worth_simple">Patrimoine net</string>
     <string name="estate_evolution">Évolution du patrimoine</string>
     <string name="breakdown_by_category">Répartition par catégorie</string>
@@ -57,7 +58,7 @@
     <string name="filter_delete_all">Tout supprimer</string>
     <string name="filter_apply">Appliquer</string>
     <string name="filter_all">Tout</string>
-    <string name="search_label_placeholder">Rechercher un libellé…</string>
+    <string name="search_label_placeholder">Rechercher une transaction…</string>
 
     <!-- Investment Management -->
     <string name="investment_management_title">Gestion des investissements</string>

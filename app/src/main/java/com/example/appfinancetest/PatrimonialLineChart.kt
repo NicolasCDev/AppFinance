@@ -270,6 +270,8 @@ fun PatrimonialLineChart(
                     textSize = bodyMediumSize
                     typeface = android.graphics.Typeface.DEFAULT_BOLD
                     position = XAxis.XAxisPosition.BOTTOM
+                    setLabelCount(4, true) // Force exact spacing and limit label overlapping
+                    setAvoidFirstLastClipping(true)
                 }
                 axisLeft.apply {
                     textColor = Color.WHITE

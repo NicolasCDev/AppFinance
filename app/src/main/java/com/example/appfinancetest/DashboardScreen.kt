@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -425,6 +426,8 @@ fun DashboardScreen(
                     }
                 }
 
+                var isSearchFocused by remember { mutableStateOf(false) }
+
                 OutlinedTextField(
                     value = labelFilter,
                     onValueChange = { 
@@ -433,8 +436,15 @@ fun DashboardScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    placeholder = { Text(stringResource(id = R.string.search_label_placeholder)) },
+                        .padding(bottom = 8.dp)
+                        .onFocusChanged { 
+                            isSearchFocused = it.isFocused 
+                        },
+                    placeholder = { 
+                        if (!isSearchFocused) {
+                            Text(stringResource(id = R.string.search_label_placeholder)) 
+                        }
+                    },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (labelFilter.isNotEmpty()) {

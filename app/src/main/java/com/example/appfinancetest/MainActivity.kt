@@ -28,6 +28,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.example.appfinancetest.ui.theme.AppFinanceTestTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 
 
 class MainActivity : AppCompatActivity() {
@@ -67,7 +69,8 @@ fun MainScreen(dataStorage: DataStorage) {
     val items = listOf(
         stringResource(id = R.string.dashboard_title),
         stringResource(id = R.string.investments_title),
-        stringResource(id = R.string.patrimonial_title)
+        stringResource(id = R.string.patrimonial_title),
+        stringResource(id = R.string.test_title)
     )
     val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine)
     
@@ -78,10 +81,17 @@ fun MainScreen(dataStorage: DataStorage) {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         icon = {
-                            Icon(
-                                painter = painterResource(id = icons[index]),
-                                contentDescription = item
-                            )
+                            if (index == 3) {
+                                Icon(
+                                    imageVector = Icons.Default.Build,
+                                    contentDescription = item
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = icons[index]),
+                                    contentDescription = item
+                                )
+                            }
                         },
                         label = { Text(item, style = MaterialTheme.typography.bodyMedium ) },
                         selected = selectedItem == index,
@@ -114,6 +124,12 @@ fun MainScreen(dataStorage: DataStorage) {
                     modifier = screenModifier, 
                     databaseViewModel = databaseViewModel, 
                     investmentViewModel = investmentViewModel, 
+                    creditViewModel = creditViewModel
+                )
+                3 -> TestScreen(
+                    modifier = screenModifier,
+                    databaseViewModel = databaseViewModel,
+                    investmentViewModel = investmentViewModel,
                     creditViewModel = creditViewModel
                 )
                 else -> {

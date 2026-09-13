@@ -29,6 +29,7 @@
 
     <!-- Patrimonial Screen -->
     <string name="patrimonial_title">Estate</string>
+    <string name="test_title">Lab</string>
     <string name="net_worth_simple">Net worth</string>
     <string name="estate_evolution">Estate evolution</string>
     <string name="breakdown_by_category">Breakdown by category</string>
@@ -57,7 +58,7 @@
     <string name="filter_delete_all">Delete all</string>
     <string name="filter_apply">Apply</string>
     <string name="filter_all">All</string>
-    <string name="search_label_placeholder">Search a label…</string>
+    <string name="search_label_placeholder">Search a transaction…</string>
 
     <!-- Investment Management -->
     <string name="investment_management_title">Investment management</string>
