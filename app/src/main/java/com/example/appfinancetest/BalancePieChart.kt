@@ -25,6 +25,7 @@ import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @Composable
 fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Double) {
@@ -227,9 +228,9 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val periodDuration = endDate - startDate
-        val previousStart = startDate - periodDuration
-        val previousEnd = startDate - 1
+        val periodDays = endDate - startDate + 1.0
+        val previousEnd = startDate - 1.0
+        val previousStart = startDate - periodDays
         val previousTransactions = transactions.filter {
             it.date != null && it.amount != null && it.category != null &&
                     it.date in previousStart..previousEnd
@@ -248,14 +249,19 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
         }
 
         val total = chartEntries.sumOf { it.value.toDouble() }
+        val topLabels = chartEntries.map { it.label }.filter { it != "Others" }.toSet()
 
         chartEntries.forEachIndexed { index, entry ->
             val label = entry.label
             val amount = entry.value.toDouble()
             val percent = if (total > 0) (amount / total * 100) else 0.0
             val color = androidx.compose.ui.graphics.Color(customColors[index % customColors.size])
-            val previousAmount = previousMap[label] ?: 0.0
-            val evolution = if (previousAmount != 0.0) ((amount - previousAmount) / previousAmount * 100) else null
+            val previousAmount = if (label == "Others") {
+                previousMap.filterKeys { it !in topLabels }.values.sum()
+            } else {
+                previousMap[label] ?: 0.0
+            }
+            val evolution = if (previousAmount != 0.0) ((amount - previousAmount) / abs(previousAmount) * 100) else null
 
             Row(
                 modifier = Modifier

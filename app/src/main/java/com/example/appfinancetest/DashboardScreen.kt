@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -278,9 +279,9 @@ fun DashboardScreen(
             val nw1y = databaseViewModel.getNetWorthAtDateStatic(today - 365)
             val nw5y = databaseViewModel.getNetWorthAtDateStatic(today - 1825)
 
-            evo6m = if (nw6m != 0.0) ((currentNW - nw6m) / nw6m * 100) else null
-            evo1y = if (nw1y != 0.0) ((currentNW - nw1y) / nw1y * 100) else null
-            evo5y = if (nw5y != 0.0) ((currentNW - nw5y) / nw5y * 100) else null
+            evo6m = if (nw6m != 0.0) ((currentNW - nw6m) / abs(nw6m) * 100) else null
+            evo1y = if (nw1y != 0.0) ((currentNW - nw1y) / abs(nw1y) * 100) else null
+            evo5y = if (nw5y != 0.0) ((currentNW - nw5y) / abs(nw5y) * 100) else null
         }
     }
 
