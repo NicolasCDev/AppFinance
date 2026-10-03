@@ -31,9 +31,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 
-
-import androidx.compose.material.icons.filled.Home
-
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +66,6 @@ fun MainScreen(dataStorage: DataStorage) {
     
     // Use translated strings for the navigation bar
     val items = listOf(
-        stringResource(id = R.string.home_title),
         stringResource(id = R.string.dashboard_title),
         stringResource(id = R.string.investments_title),
         stringResource(id = R.string.patrimonial_title),
@@ -84,11 +80,10 @@ fun MainScreen(dataStorage: DataStorage) {
                     NavigationBarItem(
                         icon = {
                             when (index) {
-                                0 -> Icon(imageVector = Icons.Default.Home, contentDescription = item)
-                                1 -> Icon(painter = painterResource(id = R.drawable.ic_dashboard), contentDescription = item)
-                                2 -> Icon(painter = painterResource(id = R.drawable.ic_investment), contentDescription = item)
-                                3 -> Icon(painter = painterResource(id = R.drawable.ic_patrimoine), contentDescription = item)
-                                4 -> Icon(imageVector = Icons.Default.Build, contentDescription = item)
+                                0 -> Icon(painter = painterResource(id = R.drawable.ic_dashboard), contentDescription = item)
+                                1 -> Icon(painter = painterResource(id = R.drawable.ic_investment), contentDescription = item)
+                                2 -> Icon(painter = painterResource(id = R.drawable.ic_patrimoine), contentDescription = item)
+                                3 -> Icon(imageVector = Icons.Default.Build, contentDescription = item)
                             }
                         },
                         label = { Text(item, style = MaterialTheme.typography.bodyMedium ) },
@@ -111,25 +106,19 @@ fun MainScreen(dataStorage: DataStorage) {
                     databaseViewModel = databaseViewModel,
                     investmentViewModel = investmentViewModel
                 )
-                1 -> DashboardScreen(
+                1 -> InvestmentScreen(
                     modifier = screenModifier, 
                     databaseViewModel = databaseViewModel, 
                     investmentViewModel = investmentViewModel,
                     creditViewModel = creditViewModel
                 )
-                2 -> InvestmentScreen(
-                    modifier = screenModifier, 
-                    databaseViewModel = databaseViewModel, 
-                    investmentViewModel = investmentViewModel,
-                    creditViewModel = creditViewModel
-                )
-                3 -> PatrimonialScreen(
+                2 -> PatrimonialScreen(
                     modifier = screenModifier, 
                     databaseViewModel = databaseViewModel, 
                     investmentViewModel = investmentViewModel, 
                     creditViewModel = creditViewModel
                 )
-                4 -> TestScreen(
+                3 -> TestScreen(
                     modifier = screenModifier,
                     databaseViewModel = databaseViewModel,
                     investmentViewModel = investmentViewModel,

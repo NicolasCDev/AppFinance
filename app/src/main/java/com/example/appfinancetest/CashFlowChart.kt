@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -169,7 +168,7 @@ fun CashFlowChart(
 
                 // --- COLONNE 2 : BUDGET ---
                 val budgetX = colSpacing * 0.8f
-                val budgetH = (height * 0.6f).toFloat()
+                val budgetH = height * 0.6f
                 val budgetY = height * 0.15f
                 drawRect(color = incomeColor.copy(alpha = 0.1f), topLeft = Offset(budgetX, budgetY), size = Size(colSpacing * 0.7f, budgetH))
                 drawRect(color = budgetColor, topLeft = Offset(budgetX + colSpacing * 0.7f, budgetY), size = Size(nodeWidth, budgetH))

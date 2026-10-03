@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ImportActionCard(
-    modifier: Modifier = Modifier.fillMaxWidth(0.9f),
+    modifier: Modifier = Modifier,
     databaseViewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDBViewModel? = null,
     creditViewModel: CreditDBViewModel? = null,
@@ -109,7 +109,7 @@ fun GenericActionCard(
     icon: ImageVector,
     color: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth()
+    modifier: Modifier = Modifier
 ) {
     Card(
         onClick = onClick,

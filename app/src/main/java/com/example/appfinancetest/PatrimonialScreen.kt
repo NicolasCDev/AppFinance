@@ -116,14 +116,11 @@ fun PatrimonialScreen(
                 range = savedStart..savedEnd
             }
             if (savedOption != null) {
-                try {
-                    selectedOption = DateRangeOption.valueOf(savedOption)
-                } catch (e: Exception) {
-                    selectedOption = DateRangeOption.ALL_TIME
-                }
+                selectedOption = DateRangeOption.valueOf(savedOption)
             }
         } catch (e: Exception) {
             // Default values already set
+            selectedOption = DateRangeOption.ALL_TIME
         } finally {
             isPrefsLoaded = true
         }

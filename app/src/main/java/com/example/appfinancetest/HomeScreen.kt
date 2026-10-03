@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -1157,7 +1158,7 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
 
     return when {
         catLower.contains("btc") || catLower.contains("crypto") -> Pair(Icons.Default.CurrencyBitcoin, Color(0xFFF59E0B))
-        catLower.contains(" bourse") || catLower.contains("etf") || catLower.contains("pea") || catLower.contains("action") -> Pair(Icons.Default.ShowChart, Color(0xFF1E293B))
+        catLower.contains(" bourse") || catLower.contains("etf") || catLower.contains("pea") || catLower.contains("action") -> Pair(Icons.AutoMirrored.Filled.ShowChart, Color(0xFF1E293B))
         catLower.contains("salaire") || catLower.contains("virement") || catLower.contains("revenus") -> Pair(Icons.Default.ArrowDownward, Color(0xFF0D9488))
         catLower.contains("immobilier") || catLower.contains("loyer") -> Pair(Icons.Default.HomeWork, Color(0xFF10B981))
         else -> Pair(Icons.Default.AccountBalanceWallet, Color(0xFF334155))
