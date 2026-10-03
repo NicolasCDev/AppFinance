@@ -38,6 +38,12 @@ interface TransactionDao {
     @Query("DELETE FROM TransactionDB")
     suspend fun deleteAll()
 
+    @Query("SELECT * FROM TransactionDB ORDER BY date DESC, id DESC LIMIT 1")
+    fun getLatestTransaction(): LiveData<TransactionDB?>
+
+    @Query("SELECT * FROM TransactionDB ORDER BY date DESC, id DESC LIMIT 1")
+    suspend fun getLatestTransactionStatic(): TransactionDB?
+
     @Query("SELECT * FROM TransactionDB ORDER BY date DESC")
     suspend fun getTransactionsSortedByDate(): List<TransactionDB>
 

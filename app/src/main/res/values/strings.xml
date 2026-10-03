@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">AppFinanceTest</string>
+    <string name="home_title">Accueil</string>
     <string name="dashboard_title">Menu principal</string>
+    <string name="quick_actions">Actions rapides</string>
+    <string name="financial_summary">Aperçu financier</string>
+    <string name="see_all">Voir tout</string>
+    <string name="welcome_back">Bienvenue</string>
     <string name="net_worth">Patrimoine net</string>
     <string name="recent_transactions">Dernières transactions</string>
     <string name="no_transactions">Aucune transaction à afficher</string>
@@ -13,6 +18,12 @@
     <string name="no_file_selected">Aucun fichier sélectionné</string>
     <string name="file_selected">Fichier : \n %s</string>
     <string name="close">Fermer</string>
+
+    <!-- Dashboard Screen -->
+    <string name="hello">Bonjour </string>
+    <string name="wealth_sentence">Voici la vue d\'ensemble de votre patrimoine</string>
+    <string name="net_worth_simple">Patrimoine net</string>
+    <string name="bank_account">Compte courant</string>
 
     <!-- Investment Screen -->
     <string name="investments_title">Investissements</string>
@@ -30,7 +41,6 @@
     <!-- Patrimonial Screen -->
     <string name="patrimonial_title">Patrimoine</string>
     <string name="test_title">Laboratoire</string>
-    <string name="net_worth_simple">Patrimoine net</string>
     <string name="estate_evolution">Évolution du patrimoine</string>
     <string name="breakdown_by_category">Répartition par catégorie</string>
     <string name="category">Catégories</string>
@@ -131,4 +141,26 @@
 
     <!-- Errors -->
     <string name="error_loading_filters">Erreur lors du chargement des filtres</string>
+
+    <!-- Home Time Ranges & Portfolio -->
+    <string name="range_1m">1M</string>
+    <string name="range_6m">6M</string>
+    <string name="range_1y">1A</string>
+    <string name="range_5y">5A</string>
+    <string name="range_all">TOUT</string>
+
+    <string name="period_1_month">sur 1 mois</string>
+    <string name="period_6_months">sur 6 mois</string>
+    <string name="period_1_year">sur 1 an</string>
+    <string name="period_5_years">sur 5 ans</string>
+    <string name="period_all">sur tout</string>
+
+    <string name="portfolio_breakdown">Répartition du portefeuille</string>
+    <string name="recent_movements">Derniers mouvements</string>
+
+    <!-- Transaction date labels -->
+    <string name="date_today">Aujourd\'hui</string>
+    <string name="date_yesterday">Hier</string>
+    <string name="date_recent">Récent</string>
+    <string name="purchase">Achat</string>
 </resources>

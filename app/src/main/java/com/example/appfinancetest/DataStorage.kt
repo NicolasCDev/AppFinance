@@ -29,6 +29,9 @@ class DataStorage(private val context: Context) {
 
         // Visibility key
         val IS_VISIBILITY_OFF_KEY = booleanPreferencesKey("is_visibility_off")
+
+        // Home key
+        val HOME_TIME_RANGE_KEY = stringPreferencesKey("home_time_range")
         
         // Theme key
         val IS_DARK_THEME_KEY = booleanPreferencesKey("is_dark_theme")
@@ -91,6 +94,13 @@ class DataStorage(private val context: Context) {
     // Save method for Visibility
     suspend fun saveVisibilityState(isOff: Boolean) {
         context.dataStore.edit { prefs -> prefs[IS_VISIBILITY_OFF_KEY] = isOff }
+    }
+
+    // Home Time Range Flow & Save
+    val homeTimeRangeFlow: Flow<String?> = context.dataStore.data.map { it[HOME_TIME_RANGE_KEY] }
+
+    suspend fun saveHomeTimeRange(rangeName: String) {
+        context.dataStore.edit { prefs -> prefs[HOME_TIME_RANGE_KEY] = rangeName }
     }
 
     // Save method for Theme

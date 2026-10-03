@@ -427,35 +427,13 @@ fun DashboardScreen(
                     }
                 }
 
-                var isSearchFocused by remember { mutableStateOf(false) }
-
-                OutlinedTextField(
-                    value = labelFilter,
-                    onValueChange = { 
+                SearchField(
+                    query = labelFilter,
+                    onQueryChange = { 
                         labelFilter = it
                         currentPage = 1 
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                        .onFocusChanged { 
-                            isSearchFocused = it.isFocused 
-                        },
-                    placeholder = { 
-                        if (!isSearchFocused) {
-                            Text(stringResource(id = R.string.search_label_placeholder)) 
-                        }
-                    },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (labelFilter.isNotEmpty()) {
-                            IconButton(onClick = { labelFilter = ""; currentPage = 1 }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
 
                 if (isFirstLoadPaged || !isFiltersLoaded) {

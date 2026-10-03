@@ -24,6 +24,8 @@ class DataBaseViewModel(application: Application) : AndroidViewModel(application
         dbDAO.getNetWorthAtDate(date)
     }
 
+    val latestTransaction: LiveData<TransactionDB?> = dbDAO.getLatestTransaction()
+
     fun setNetWorthDate(date: Double) {
         _netWorthDate.value = date
     }
@@ -119,6 +121,12 @@ class DataBaseViewModel(application: Application) : AndroidViewModel(application
     suspend fun getFirstTransactionDate(): Double {
         return withContext(Dispatchers.IO) {
             dbDAO.getTransactionsSortedByDateASC().firstOrNull()?.date ?: ((System.currentTimeMillis() / 86400000.0) + 25569.0)
+        }
+    }
+
+    suspend fun getLatestTransaction(): TransactionDB? {
+        return withContext(Dispatchers.IO) {
+            dbDAO.getLatestTransactionStatic()
         }
     }
 }

@@ -32,6 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 
 
+import androidx.compose.material.icons.filled.Home
+
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,12 +69,12 @@ fun MainScreen(dataStorage: DataStorage) {
     
     // Use translated strings for the navigation bar
     val items = listOf(
+        stringResource(id = R.string.home_title),
         stringResource(id = R.string.dashboard_title),
         stringResource(id = R.string.investments_title),
         stringResource(id = R.string.patrimonial_title),
         stringResource(id = R.string.test_title)
     )
-    val icons = listOf(R.drawable.ic_dashboard, R.drawable.ic_investment, R.drawable.ic_patrimoine)
     
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -81,16 +83,12 @@ fun MainScreen(dataStorage: DataStorage) {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         icon = {
-                            if (index == 3) {
-                                Icon(
-                                    imageVector = Icons.Default.Build,
-                                    contentDescription = item
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = icons[index]),
-                                    contentDescription = item
-                                )
+                            when (index) {
+                                0 -> Icon(imageVector = Icons.Default.Home, contentDescription = item)
+                                1 -> Icon(painter = painterResource(id = R.drawable.ic_dashboard), contentDescription = item)
+                                2 -> Icon(painter = painterResource(id = R.drawable.ic_investment), contentDescription = item)
+                                3 -> Icon(painter = painterResource(id = R.drawable.ic_patrimoine), contentDescription = item)
+                                4 -> Icon(imageVector = Icons.Default.Build, contentDescription = item)
                             }
                         },
                         label = { Text(item, style = MaterialTheme.typography.bodyMedium ) },
@@ -108,32 +106,36 @@ fun MainScreen(dataStorage: DataStorage) {
         
         Box(modifier = Modifier.fillMaxSize()) {
             when (selectedItem) {
-                0 -> DashboardScreen(
+                0 -> HomeScreen(
+                    modifier = screenModifier,
+                    databaseViewModel = databaseViewModel,
+                    investmentViewModel = investmentViewModel
+                )
+                1 -> DashboardScreen(
                     modifier = screenModifier, 
                     databaseViewModel = databaseViewModel, 
                     investmentViewModel = investmentViewModel,
                     creditViewModel = creditViewModel
                 )
-                1 -> InvestmentScreen(
+                2 -> InvestmentScreen(
                     modifier = screenModifier, 
                     databaseViewModel = databaseViewModel, 
                     investmentViewModel = investmentViewModel,
                     creditViewModel = creditViewModel
                 )
-                2 -> PatrimonialScreen(
+                3 -> PatrimonialScreen(
                     modifier = screenModifier, 
                     databaseViewModel = databaseViewModel, 
                     investmentViewModel = investmentViewModel, 
                     creditViewModel = creditViewModel
                 )
-                3 -> TestScreen(
+                4 -> TestScreen(
                     modifier = screenModifier,
                     databaseViewModel = databaseViewModel,
                     investmentViewModel = investmentViewModel,
                     creditViewModel = creditViewModel
                 )
                 else -> {
-                    // ErrorScreen() // Assumed to exist or replaced with a simple text
                     Text("Error")
                 }
             }
