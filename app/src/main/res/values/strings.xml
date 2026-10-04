@@ -45,6 +45,12 @@
 
     <!-- Patrimonial Screen -->
     <string name="patrimonial_title">Patrimoine</string>
+    <string name="budget_title">Budget</string>
+    <string name="overview_title">Vue d\'ensemble</string>
+    <string name="period_monthly">Mensuel</string>
+    <string name="period_yearly">Annuel</string>
+    <string name="savings_rate_label">Taux d\'épargne</string>
+    <string name="inflows_vs_outflows">Entrées vs Sorties</string>
     <string name="test_title">Laboratoire</string>
     <string name="estate_evolution">Évolution du patrimoine</string>
     <string name="breakdown_by_category">Répartition par catégorie</string>

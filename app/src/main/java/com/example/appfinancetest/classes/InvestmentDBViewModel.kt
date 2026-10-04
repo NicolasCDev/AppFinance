@@ -64,4 +64,10 @@ class InvestmentDBViewModel (application: Application) : AndroidViewModel(applic
             }
         }
     }
+
+    suspend fun deleteInvestmentById(idInvest: String) {
+        withContext(Dispatchers.IO) {
+            dbDAO.deleteByIdInvest(idInvest)
+        }
+    }
 }

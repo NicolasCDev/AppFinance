@@ -23,7 +23,7 @@ import com.example.appfinancetest.calculations.PercentageTextOnPrimary
 import com.example.appfinancetest.R
 import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.views.TransactionEditDialog
-import com.example.appfinancetest.TransactionsLabelDialog
+import com.example.appfinancetest.views.TransactionsLabelDialog
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.highlight.Highlight
@@ -32,7 +32,12 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
-fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Double) {
+fun BalancePieChart(
+    viewModel: DataBaseViewModel,
+    startDate: Double,
+    endDate: Double,
+    initialCategory: String? = null
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { DataStorage(context) }
@@ -43,8 +48,12 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
         value = viewModel.getTransactionsSortedByDateASC()
     }
 
-    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var selectedCategory by remember(initialCategory) { mutableStateOf<String?>(initialCategory) }
     var selectedItem by remember { mutableStateOf<String?>(null) }
+    var isViewingOthersCategories by remember { mutableStateOf(false) }
+    var isViewingOthersItems by remember { mutableStateOf(false) }
+    var isViewingOthersLabels by remember { mutableStateOf(false) }
+
     var selectedLabelForTransactions by remember { mutableStateOf<String?>(null) }
     var transactionToEdit by remember { mutableStateOf<TransactionDB?>(null) }
     var selectedOthersTransactions by remember { mutableStateOf<List<TransactionDB>?>(null) }
@@ -54,28 +63,55 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                 it.date in startDate..endDate
     }
 
-    val chartEntries = if (selectedCategory == null && selectedItem == null) {
-        filteredTransactions
-            .groupBy { it.category }
-            .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-            .map { (category, total) ->
-                PieEntry(total.toFloat(), category)
+    val chartEntries = when {
+        initialCategory == null && selectedCategory == null && !isViewingOthersCategories -> {
+            val catTotals = filteredTransactions
+                .groupBy { it.category ?: "Inconnu" }
+                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+            createPieEntries(catTotals, topN = 8, othersLabel = "Others")
+        }
+        initialCategory == null && selectedCategory == null && isViewingOthersCategories -> {
+            val catTotals = filteredTransactions
+                .groupBy { it.category ?: "Inconnu" }
+                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+            val sorted = catTotals.entries.sortedByDescending { it.value }
+            val topCats = sorted.take(8).map { it.key }.toSet()
+            catTotals.filterKeys { it !in topCats }.map { (cat, total) -> PieEntry(total.toFloat(), cat) }
+        }
+        else -> {
+            val currentCat = selectedCategory ?: initialCategory
+            if (currentCat != null) {
+                if (selectedItem == null && !isViewingOthersItems) {
+                    val itemTotals = filteredTransactions
+                        .filter { it.category == currentCat && it.item != null }
+                        .groupBy { it.item!! }
+                        .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+                    createPieEntries(itemTotals, topN = 8, othersLabel = "Others")
+                } else if (selectedItem == null && isViewingOthersItems) {
+                    val itemTotals = filteredTransactions
+                        .filter { it.category == currentCat && it.item != null }
+                        .groupBy { it.item!! }
+                        .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+                    val sorted = itemTotals.entries.sortedByDescending { it.value }
+                    val topItems = sorted.take(8).map { it.key }.toSet()
+                    itemTotals.filterKeys { it !in topItems }.map { (item, total) -> PieEntry(total.toFloat(), item) }
+                } else {
+                    val currentItem = selectedItem
+                    val labelTotal = filteredTransactions
+                        .filter { it.category == currentCat && it.item == currentItem && it.label != null }
+                        .groupBy { it.label!! }
+                        .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
+                    if (!isViewingOthersLabels) {
+                        createPieEntries(labelTotal, topN = 8, othersLabel = "Others")
+                    } else {
+                        val sorted = labelTotal.entries.sortedByDescending { it.value }
+                        val topLabels = sorted.take(8).map { it.key }.toSet()
+                        labelTotal.filterKeys { it !in topLabels }.map { (label, total) -> PieEntry(total.toFloat(), label) }
+                    }
+                }
+            } else {
+                emptyList()
             }
-    } else {
-        if (selectedCategory != null && selectedItem == null) {
-            val itemTotals = filteredTransactions
-                .filter { it.category == selectedCategory && it.item != null }
-                .groupBy { it.item!! }
-                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-
-            createPieEntries(itemTotals, topN = 8, othersLabel = "Others")
-        } else {
-            val labelTotal = filteredTransactions
-                .filter { it.category == selectedCategory && it.item == selectedItem && it.label != null }
-                .groupBy { it.label!! }
-                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-
-            createPieEntries(labelTotal, topN = 8, othersLabel = "Others")
         }
     }
 
@@ -91,7 +127,7 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
         selectedLabel = selectedLabelForTransactions,
         othersTransactions = selectedOthersTransactions,
         filteredTransactions = filteredTransactions,
-        selectedCategory = selectedCategory,
+        selectedCategory = selectedCategory ?: initialCategory,
         selectedItem = selectedItem,
         isVisibilityOff = isVisibilityOff,
         onDismiss = {
@@ -107,7 +143,13 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
             onDismiss = { transactionToEdit = null },
             onSave = { updated ->
                 scope.launch {
-                    viewModel.insertTransaction(updated)
+                    val prevInvest = transactionToEdit?.idInvest
+                    saveTransactionAndSyncInvestments(
+                        updated = updated,
+                        previousIdInvest = prevInvest,
+                        databaseViewModel = viewModel,
+                        investmentViewModel = null
+                    )
                     refreshTrigger++
                     transactionToEdit = null
                 }
@@ -122,6 +164,11 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
     ) {
         Text(
             text = when {
+                isViewingOthersCategories -> "Others (Catégories)"
+                isViewingOthersItems -> "${selectedCategory ?: initialCategory} : Others (Items)"
+                isViewingOthersLabels -> "${selectedCategory ?: initialCategory} : $selectedItem : Others (Labels)"
+                initialCategory != null && selectedItem == null -> initialCategory
+                initialCategory != null -> "$initialCategory : $selectedItem"
                 selectedCategory == null -> stringResource(id = R.string.category)
                 selectedItem == null -> "$selectedCategory"
                 else -> "$selectedCategory : $selectedItem"
@@ -136,11 +183,25 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                 .height(250.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (selectedCategory != null) {
+            val canGoBack = if (initialCategory != null) {
+                selectedItem != null || isViewingOthersItems
+            } else {
+                selectedCategory != null || isViewingOthersCategories || isViewingOthersItems || isViewingOthersLabels
+            }
+
+            if (canGoBack) {
                 TextButton(
                     onClick = {
-                        if (selectedItem != null) selectedItem = null
-                        else selectedCategory = null
+                        when {
+                            isViewingOthersLabels -> isViewingOthersLabels = false
+                            selectedItem != null -> {
+                                selectedItem = null
+                                isViewingOthersLabels = false
+                            }
+                            isViewingOthersItems -> isViewingOthersItems = false
+                            selectedCategory != null -> selectedCategory = null
+                            isViewingOthersCategories -> isViewingOthersCategories = false
+                        }
                     },
                     modifier = Modifier
                         .fillMaxHeight()
@@ -177,47 +238,43 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                         valueTypeface = Typeface.DEFAULT_BOLD
                     }
                     chart.data = PieData(dataSet)
-                    chart.setDrawEntryLabels(selectedCategory == null)
+                    chart.setDrawEntryLabels(selectedCategory == null || initialCategory != null)
                     chart.setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
                         override fun onValueSelected(e: Entry?, h: Highlight?) {
                             if (e is PieEntry) {
                                 val label = e.label
                                 when {
-                                    selectedCategory == null -> {
+                                    initialCategory == null && selectedCategory == null && !isViewingOthersCategories -> {
                                         if (label != "Others") {
                                             selectedCategory = label
+                                        } else {
+                                            isViewingOthersCategories = true
                                         }
                                     }
-                                    selectedItem == null -> {
+                                    initialCategory == null && selectedCategory == null && isViewingOthersCategories -> {
+                                        selectedCategory = label
+                                        isViewingOthersCategories = false
+                                    }
+                                    selectedItem == null && !isViewingOthersItems -> {
                                         if (label != "Others") {
                                             selectedItem = label
                                         } else {
-                                            val currentCat = selectedCategory
-                                            val itemTotals = filteredTransactions
-                                                .filter { it.category == currentCat && it.item != null }
-                                                .groupBy { it.item!! }
-                                                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-                                            val topItems = itemTotals.entries.sortedByDescending { it.value }.take(8).map { it.key }.toSet()
-                                            selectedOthersTransactions = filteredTransactions.filter { 
-                                                it.category == currentCat && it.item !in topItems 
-                                            }
+                                            isViewingOthersItems = true
                                         }
                                     }
-                                    else -> {
+                                    selectedItem == null && isViewingOthersItems -> {
+                                        selectedItem = label
+                                        isViewingOthersItems = false
+                                    }
+                                    selectedItem != null && !isViewingOthersLabels -> {
                                         if (label != "Others") {
                                             selectedLabelForTransactions = label
                                         } else {
-                                            val currentCat = selectedCategory
-                                            val currentItem = selectedItem
-                                            val labelTotal = filteredTransactions
-                                                .filter { it.category == currentCat && it.item == currentItem && it.label != null }
-                                                .groupBy { it.label!! }
-                                                .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
-                                            val topLabels = labelTotal.entries.sortedByDescending { it.value }.take(8).map { it.key }.toSet()
-                                            selectedOthersTransactions = filteredTransactions.filter { 
-                                                it.category == currentCat && it.item == currentItem && it.label !in topLabels 
-                                            }
+                                            isViewingOthersLabels = true
                                         }
+                                    }
+                                    selectedItem != null && isViewingOthersLabels -> {
+                                        selectedLabelForTransactions = label
                                     }
                                 }
                             }
@@ -240,23 +297,24 @@ fun BalancePieChart(viewModel: DataBaseViewModel, startDate: Double, endDate: Do
                     it.date in previousStart..previousEnd
         }
 
+        val activeCategory = selectedCategory ?: initialCategory
         val previousMap: Map<String, Double> = when {
-            selectedCategory == null -> {
-                previousTransactions.groupBy { it.category ?: "Inconnu" }.mapValues { it.value.sumOf { t -> t.amount ?: 0.0 } }
+            activeCategory == null -> {
+                previousTransactions.groupBy { it.category ?: "Inconnu" }.mapValues { entry -> entry.value.sumOf { t -> t.amount ?: 0.0 } }
             }
             selectedItem == null -> {
-                previousTransactions.filter { it.category == selectedCategory }.groupBy { it.item ?: "Inconnu" }.mapValues { it.value.sumOf { t -> t.amount ?: 0.0 } }
+                previousTransactions.filter { it.category == activeCategory }.groupBy { it.item ?: "Inconnu" }.mapValues { entry -> entry.value.sumOf { t -> t.amount ?: 0.0 } }
             }
             else -> {
-                previousTransactions.filter { it.category == selectedCategory && it.item == selectedItem }.groupBy { it.label ?: "Inconnu" }.mapValues { it.value.sumOf { t -> t.amount ?: 0.0 } }
+                previousTransactions.filter { it.category == activeCategory && it.item == selectedItem }.groupBy { it.label ?: "Inconnu" }.mapValues { entry -> entry.value.sumOf { t -> t.amount ?: 0.0 } }
             }
         }
 
         val total = chartEntries.sumOf { it.value.toDouble() }
-        val topLabels = chartEntries.map { it.label }.filter { it != "Others" }.toSet()
+        val topLabels = chartEntries.map { val l = it.label; if (l != null) l else "" }.filter { it != "Others" }.toSet()
 
         chartEntries.forEachIndexed { index, entry ->
-            val label = entry.label
+            val label = entry.label ?: ""
             val amount = entry.value.toDouble()
             val percent = if (total > 0) (amount / total * 100) else 0.0
             val color = androidx.compose.ui.graphics.Color(customColors[index % customColors.size])
@@ -316,5 +374,3 @@ fun createPieEntries(dataMap: Map<String, Double>, topN: Int = 8, othersLabel: S
     if (othersTotal > 0) entries.add(PieEntry(othersTotal.toFloat(), othersLabel))
     return entries
 }
-
-// Moved to a dedicated file TransactionsLabelDialog.kt

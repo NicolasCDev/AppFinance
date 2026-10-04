@@ -50,6 +50,9 @@ interface InvestmentDao{
     @Query("SELECT * FROM InvestmentDB ORDER BY idInvest DESC LIMIT :limit OFFSET :offset")
     suspend fun getInvestmentsPaged(limit: Int, offset: Int): List<InvestmentDB>
 
+    @Query("DELETE FROM InvestmentDB WHERE idInvest = :idInvest")
+    suspend fun deleteByIdInvest(idInvest: String)
+
     @Update
     suspend fun updateInvestment(investment: InvestmentDB)
 

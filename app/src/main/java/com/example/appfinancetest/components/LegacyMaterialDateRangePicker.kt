@@ -1,10 +1,11 @@
-package com.example.appfinancetest
+package com.example.appfinancetest.components
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.material.datepicker.MaterialDatePicker
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.FragmentActivity
+import com.example.appfinancetest.R
 
 @Composable
 fun LegacyMaterialDateRangePicker(

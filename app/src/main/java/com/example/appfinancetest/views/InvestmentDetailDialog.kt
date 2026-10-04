@@ -46,13 +46,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.appfinancetest.R
-import com.example.appfinancetest.TransactionsLabelDialog
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.InvestmentDB
 import com.example.appfinancetest.classes.InvestmentDBViewModel
 import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.components.PositionItemCard
 import com.example.appfinancetest.components.invalidateInvestments
+import com.example.appfinancetest.components.saveTransactionAndSyncInvestments
 import com.example.appfinancetest.components.validateInvestments
 import kotlinx.coroutines.launch
 
@@ -101,9 +101,14 @@ fun InvestmentDetailDialog(
             onDismiss = { transactionToEdit = null },
             onSave = { updated ->
                 innerScope.launch {
-                    databaseViewModel.insertTransaction(updated)
+                    val prevInvest = transactionToEdit?.idInvest
+                    saveTransactionAndSyncInvestments(
+                        updated = updated,
+                        previousIdInvest = prevInvest,
+                        databaseViewModel = databaseViewModel,
+                        investmentViewModel = investmentViewModel
+                    )
                     innerRefreshTrigger++
-                    databaseViewModel.refreshNetWorth()
                     onRefresh()
                     transactionToEdit = null
                 }

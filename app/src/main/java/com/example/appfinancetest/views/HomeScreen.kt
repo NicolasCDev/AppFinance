@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,8 +58,8 @@ import com.example.appfinancetest.classes.InvestmentDBViewModel
 import com.example.appfinancetest.R
 import com.example.appfinancetest.components.SearchField
 import com.example.appfinancetest.classes.TransactionDB
-import com.example.appfinancetest.TransactionRowShimmer
-import com.example.appfinancetest.components.calculateRunningBalance
+import com.example.appfinancetest.components.TransactionRowShimmer
+import com.example.appfinancetest.components.saveTransactionAndSyncInvestments
 import com.example.appfinancetest.calculations.dateFormattedText
 import com.example.appfinancetest.calculations.filterTransactions
 import com.example.appfinancetest.calculations.formatCurrency
@@ -72,13 +73,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 
-enum class HomeTimeRange(val labelResId: Int, val periodNameResId: Int, val days: Double) {
-    ONE_MONTH(R.string.range_1m, R.string.period_1_month, 30.0),
-    SIX_MONTHS(R.string.range_6m, R.string.period_6_months, 182.0),
-    ONE_YEAR(R.string.range_1y, R.string.period_1_year, 365.0),
-    FIVE_YEARS(R.string.range_5y, R.string.period_5_years, 1825.0),
-    ALL(R.string.range_all, R.string.period_all, 36500.0)
-}
+import com.example.appfinancetest.classes.HomeTimeRange
+import com.example.appfinancetest.classes.CreditDBViewModel
 
 data class PortfolioSlice(
     val name: String,
@@ -92,10 +88,12 @@ data class PortfolioSlice(
 fun HomeScreen(
     modifier: Modifier = Modifier,
     databaseViewModel: DataBaseViewModel,
-    investmentViewModel: InvestmentDBViewModel
+    investmentViewModel: InvestmentDBViewModel,
+    creditViewModel: CreditDBViewModel
 ) {
     val scope = rememberCoroutineScope()
     var refreshTrigger by remember { mutableIntStateOf(0) }
+    var showImportExport by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -376,8 +374,13 @@ fun HomeScreen(
             onDismiss = { transactionToEdit = null },
             onSave = { updated ->
                 scope.launch {
-                    databaseViewModel.insertTransaction(updated)
-                    calculateRunningBalance(databaseViewModel)
+                    val prevInvest = transactionToEdit?.idInvest
+                    saveTransactionAndSyncInvestments(
+                        updated = updated,
+                        previousIdInvest = prevInvest,
+                        databaseViewModel = databaseViewModel,
+                        investmentViewModel = investmentViewModel
+                    )
                     refreshTrigger++
                     transactionToEdit = null
                 }
@@ -569,11 +572,31 @@ fun HomeScreen(
                     )
                 }
 
-                // Right Action Icons (Visibility Toggle + Settings Icon)
+                // Right Action Icons (Import/Export + Visibility Toggle + Settings Icon)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Import / Export Icon
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(cardBg)
+                            .border(1.dp, cardBorder, CircleShape)
+                            .clickable {
+                                showImportExport = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_import_export),
+                            contentDescription = "Import / Export",
+                            tint = textPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
                     // Visibility Toggle Icon (Eye / Crossed Eye)
                     Box(
                         modifier = Modifier
@@ -673,7 +696,7 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(2.dp))
 
                                 Text(
-                                    text = if (isVisibilityOff) "+*.*%" else "N/A",
+                                    text = "N/A",
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = textMuted
@@ -701,7 +724,7 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(2.dp))
 
                                 Text(
-                                    text = if (isVisibilityOff) "+*.*%" else "$sign${
+                                    text = "$sign${
                                         formatPercentage(
                                             absPercent
                                         )
@@ -939,6 +962,19 @@ fun HomeScreen(
         SettingsScreen(
             databaseViewModel = databaseViewModel,
             onDismiss = { showSettingsDialog = false }
+        )
+    }
+
+    if (showImportExport) {
+        ImportExportInterface(
+            databaseViewModel = databaseViewModel,
+            investmentViewModel = investmentViewModel,
+            creditViewModel = creditViewModel,
+            onDismiss = { showImportExport = false },
+            onRefresh = {
+                refreshTrigger++
+                databaseViewModel.refreshNetWorth()
+            }
         )
     }
 

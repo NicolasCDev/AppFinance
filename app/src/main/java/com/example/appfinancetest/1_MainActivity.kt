@@ -34,9 +34,9 @@ import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
 import com.example.appfinancetest.classes.InvestmentDBViewModel
+import com.example.appfinancetest.views.BudgetScreen
 import com.example.appfinancetest.views.HomeScreen
 import com.example.appfinancetest.views.InvestmentScreen
-import com.example.appfinancetest.views.PatrimonialScreen
 import com.example.appfinancetest.views.TestScreen
 
 class MainActivity : AppCompatActivity() {
@@ -112,7 +112,8 @@ fun MainScreen(dataStorage: DataStorage) {
                 0 -> HomeScreen(
                     modifier = screenModifier,
                     databaseViewModel = databaseViewModel,
-                    investmentViewModel = investmentViewModel
+                    investmentViewModel = investmentViewModel,
+                    creditViewModel = creditViewModel
                 )
                 1 -> InvestmentScreen(
                     modifier = screenModifier,
@@ -120,7 +121,7 @@ fun MainScreen(dataStorage: DataStorage) {
                     investmentViewModel = investmentViewModel,
                     creditViewModel = creditViewModel
                 )
-                2 -> PatrimonialScreen(
+                2 -> BudgetScreen(
                     modifier = screenModifier,
                     databaseViewModel = databaseViewModel,
                     investmentViewModel = investmentViewModel,

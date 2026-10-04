@@ -137,39 +137,109 @@ suspend fun addTransaction(listTransactions: List<Transaction>, databaseViewMode
 }
 
 
+fun calculateVariation(category: String?, amount: Double?): Double {
+    val amt = amount ?: 0.0
+    return when (category) {
+        "Revenus" -> amt
+        "Charge" -> -amt
+        "Investissement" -> -amt
+        "Gain investissement" -> amt
+        else -> amt
+    }
+}
+
 suspend fun calculateRunningBalance(databaseViewModel: DataBaseViewModel) {
     withContext(Dispatchers.IO) {
         val existingTransactions = databaseViewModel.getTransactionsSortedByDateASC()
         var balance = 0.0
-        val updateList = existingTransactions.map { transaction ->
-            balance += (transaction.variation ?: 0.0)
-            Pair(transaction.id, balance)
-        }
-        if (updateList.isNotEmpty()) {
-            databaseViewModel.updateAllBalances(updateList)
+        existingTransactions.forEach { transaction ->
+            val correctVariation = calculateVariation(transaction.category, transaction.amount)
+            balance += correctVariation
+            if (transaction.variation != correctVariation || transaction.balance != balance) {
+                databaseViewModel.insertTransaction(
+                    transaction.copy(variation = correctVariation, balance = balance)
+                )
+            }
         }
     }
 }
 
 
+suspend fun saveTransactionAndSyncInvestments(
+    updated: TransactionDB,
+    previousIdInvest: String? = null,
+    databaseViewModel: DataBaseViewModel,
+    investmentViewModel: InvestmentDBViewModel? = null
+) {
+    var finalTx = updated
+
+    val isInvestmentCat = updated.category == "Investissement" || updated.category == "Gain investissement"
+    if (isInvestmentCat && updated.idInvest.isNullOrBlank()) {
+        val labelOrItem = updated.label?.ifBlank { null } ?: updated.item?.ifBlank { null } ?: "Inv"
+        val generatedId = "I_" + labelOrItem.trim().replace(Regex("[^a-zA-Z0-9_]"), "_")
+        finalTx = updated.copy(idInvest = generatedId)
+    } else if (!isInvestmentCat && !updated.idInvest.isNullOrBlank()) {
+        finalTx = updated.copy(idInvest = null)
+    }
+
+    val computedVariation = calculateVariation(finalTx.category, finalTx.amount)
+    finalTx = finalTx.copy(variation = computedVariation)
+
+    databaseViewModel.insertTransaction(finalTx)
+
+    val targetIdInvest = finalTx.idInvest?.ifBlank { null } ?: previousIdInvest?.ifBlank { null }
+    if (!targetIdInvest.isNullOrBlank()) {
+        val relatedTx = databaseViewModel.getInvestmentTransactionsByID(targetIdInvest)
+        relatedTx.forEach { tx ->
+            if (tx.item != finalTx.item || tx.label != finalTx.label) {
+                databaseViewModel.insertTransaction(tx.copy(item = finalTx.item, label = finalTx.label))
+            }
+        }
+    }
+
+    calculateRunningBalance(databaseViewModel)
+
+    if (investmentViewModel != null) {
+        addInvestments(databaseViewModel, investmentViewModel)
+    }
+
+    databaseViewModel.refreshNetWorth()
+}
+
+
 suspend fun addInvestments(databaseViewModel: DataBaseViewModel, investmentViewModel: InvestmentDBViewModel) {
+    // 1. Ensure all transactions marked as 'Investissement' or 'Gain investissement' have an idInvest
+    val allTransactions = databaseViewModel.getTransactionsSortedByDateASC()
+    val missingIdInvestTx = allTransactions.filter {
+        (it.category == "Investissement" || it.category == "Gain investissement") &&
+        (it.idInvest.isNullOrBlank() || !it.idInvest.startsWith("I", ignoreCase = true))
+    }
+    if (missingIdInvestTx.isNotEmpty()) {
+        missingIdInvestTx.forEach { tx ->
+            val labelOrItem = tx.label?.ifBlank { null } ?: tx.item?.ifBlank { null } ?: "Inv"
+            val generatedId = "I_" + labelOrItem.trim().replace(Regex("[^a-zA-Z0-9_]"), "_")
+            databaseViewModel.insertTransaction(tx.copy(idInvest = generatedId))
+        }
+    }
+
     val investmentList = databaseViewModel.getInvestmentTransactions()
 
     // Filter to only take idInvest starting with 'I'
     val filteredInvestmentList = investmentList.filter { it.idInvest?.startsWith("I", ignoreCase = true) == true }
 
     val investmentListGrouped = filteredInvestmentList.groupBy { it.idInvest }
-        .map { (idInvest, transactions) ->
+        .mapNotNull { (idInvest, transactions) ->
+            if (idInvest.isNullOrBlank()) return@mapNotNull null
             val investedTransactions = transactions.filter { it.category == "Investissement" }
             val earnedTransactions = transactions.filter { it.category == "Gain investissement" }
 
-            val dateBegin = transactions.minOfOrNull { it.date as Double } ?: 0.0
+            val dateBegin = transactions.minOfOrNull { it.date ?: 0.0 } ?: 0.0
             val transactionList = transactions.map { it.id }
-            val invested = investedTransactions.sumOf { it.amount as Double }
-            val earned = earnedTransactions.sumOf { it.amount as Double }
+            val invested = investedTransactions.sumOf { it.amount ?: 0.0 }
+            val earned = earnedTransactions.sumOf { it.amount ?: 0.0 }
 
-            val item = transactions.firstOrNull()?.item ?: ""
-            val label = transactions.firstOrNull()?.label ?: ""
+            val item = transactions.firstOrNull { !it.item.isNullOrBlank() }?.item ?: transactions.firstOrNull()?.item ?: ""
+            val label = transactions.firstOrNull { !it.label.isNullOrBlank() }?.label ?: transactions.firstOrNull()?.label ?: ""
 
             Investment(
                 idInvest,
@@ -185,19 +255,29 @@ suspend fun addInvestments(databaseViewModel: DataBaseViewModel, investmentViewM
             )
         }
 
+    val activeIdInvests = investmentListGrouped.mapNotNull { it.idInvest }.toSet()
+    val existingInvestments = investmentViewModel.getInvestment()
+
     coroutineScope {
+        // Remove orphaned InvestmentDB records whose transactions were deleted or re-assigned
+        val orphans = existingInvestments.filter { it.idInvest != null && it.idInvest !in activeIdInvests }
+        orphans.forEach { orphan ->
+            orphan.idInvest?.let { investmentViewModel.deleteInvestmentById(it) }
+        }
+
         val jobs = investmentListGrouped.map { investment ->
             async {
-                val existing = investmentViewModel.getInvestmentById(investment.idInvest ?: "")
+                val existing = existingInvestments.find { it.idInvest == investment.idInvest }
                 val investmentDB = InvestmentDB(
+                    id = existing?.id ?: 0,
                     idInvest = investment.idInvest ?: "",
                     dateBegin = investment.dateBegin,
-                    dateEnd = investment.dateEnd,
+                    dateEnd = existing?.dateEnd ?: investment.dateEnd,
                     transactionList = investment.transactionList,
                     invested = investment.invested,
                     earned = investment.earned,
-                    profitability = investment.profitability,
-                    annualProfitability = investment.annualProfitability,
+                    profitability = existing?.profitability ?: investment.profitability,
+                    annualProfitability = existing?.annualProfitability ?: investment.annualProfitability,
                     item = investment.item,
                     label = investment.label
                 )

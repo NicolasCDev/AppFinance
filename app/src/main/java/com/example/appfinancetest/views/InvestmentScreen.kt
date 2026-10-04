@@ -20,13 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.appfinancetest.R
-import com.example.appfinancetest.TransactionsLabelDialog
 import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
@@ -38,6 +38,7 @@ import com.example.appfinancetest.components.InvestmentHeatmapView
 import com.example.appfinancetest.components.InvestmentListView
 import com.example.appfinancetest.components.InvestmentSummaryCard
 import com.example.appfinancetest.components.InvestmentViewMode
+import com.example.appfinancetest.components.saveTransactionAndSyncInvestments
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -139,9 +140,14 @@ fun InvestmentScreen(
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
-    // Dynamic extraction of unique category items
-    val dynamicItems = remember(allInvestments) {
-        allInvestments.mapNotNull { it.item }.filter { it.isNotBlank() }.distinct().sorted()
+    // Dynamic extraction of unique category items from both InvestmentDB and investment transactions
+    val dynamicItems = remember(allInvestments, allTransactions) {
+        val itemsFromInvestments = allInvestments.mapNotNull { it.item }.filter { it.isNotBlank() }
+        val itemsFromTransactions = allTransactions
+            .filter { it.category == "Investissement" || it.category == "Gain investissement" }
+            .mapNotNull { it.item }
+            .filter { it.isNotBlank() }
+        (itemsFromInvestments + itemsFromTransactions).distinct().sorted()
     }
 
     // Ensure selectedCategory defaults to first available item if null or not present
@@ -172,9 +178,17 @@ fun InvestmentScreen(
             onDismiss = { transactionToEdit = null },
             onSave = { updated ->
                 scope.launch {
-                    databaseViewModel.insertTransaction(updated)
+                    val prevInvest = transactionToEdit?.idInvest
+                    saveTransactionAndSyncInvestments(
+                        updated = updated,
+                        previousIdInvest = prevInvest,
+                        databaseViewModel = databaseViewModel,
+                        investmentViewModel = investmentViewModel
+                    )
+                    if (!updated.item.isNullOrBlank()) {
+                        selectedCategory = updated.item
+                    }
                     innerRefreshTrigger++
-                    databaseViewModel.refreshNetWorth()
                     refreshTrigger++
                     transactionToEdit = null
                 }
@@ -207,11 +221,9 @@ fun InvestmentScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp),
+                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
             // HEADER
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -225,11 +237,29 @@ fun InvestmentScreen(
                         color = textPrimary
                     )
                 )
-                // Right Action Icons (Visibility Toggle + Settings Icon)
+                // Right Action Icons (Import/Export + Visibility Toggle + Settings Icon)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Import / Export Icon
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(cardBg)
+                            .border(1.dp, cardBorder, CircleShape)
+                            .clickable { showImportExport = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_import_export),
+                            contentDescription = "Import / Export",
+                            tint = textPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
                     // Visibility Toggle Icon (Eye / Crossed Eye)
                     Box(
                         modifier = Modifier
@@ -469,7 +499,6 @@ fun InvestmentScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(2.dp))
         }
     }
 }

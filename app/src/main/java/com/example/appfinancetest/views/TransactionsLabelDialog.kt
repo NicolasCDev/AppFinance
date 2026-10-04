@@ -1,4 +1,4 @@
-package com.example.appfinancetest
+package com.example.appfinancetest.views
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn

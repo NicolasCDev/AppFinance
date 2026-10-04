@@ -1,4 +1,4 @@
-package com.example.appfinancetest
+package com.example.appfinancetest.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.example.appfinancetest.shimmerLoadingAnimation
 
 @Composable
 fun TransactionRowShimmer() {
