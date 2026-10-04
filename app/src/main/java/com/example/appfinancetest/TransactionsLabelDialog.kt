@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.appfinancetest.classes.TransactionDB
+import com.example.appfinancetest.components.TransactionRow
 
 @Composable
 fun TransactionsLabelDialog(
@@ -65,7 +67,7 @@ fun TransactionsLabelDialog(
                     ) {
                         items(sortedTransactions) { transaction ->
                             TransactionRow(
-                                transaction = transaction, 
+                                transaction = transaction,
                                 isVisibilityOff = isVisibilityOff,
                                 onClick = { onTransactionClick(transaction) }
                             )

@@ -14,6 +14,10 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.platform.LocalDensity
+import com.example.appfinancetest.classes.DataBaseViewModel
+import com.example.appfinancetest.classes.InvestmentDBViewModel
+import com.example.appfinancetest.components.BalanceLineChart
+import com.example.appfinancetest.components.InvestmentLineChart
 
 
 @Composable

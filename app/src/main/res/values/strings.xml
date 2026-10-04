@@ -27,11 +27,16 @@
 
     <!-- Investment Screen -->
     <string name="investments_title">Investissements</string>
+    <string name="investment_portfolio_title">Positions</string>
+    <string name="heatmap_title">Heatmap de mes investissements</string>
+    <string name="investment_list_title">Liste des investissements</string>
+    <string name="heatmap_mode">Heatmap</string>
+    <string name="list_mode">Liste</string>
     <string name="no_investments_found">Aucun investissement à afficher</string>
     <string name="investment_current">En cours</string>
     <string name="investment_closed">Clôturés</string>
     <string name="capital_gain_realized">Plus-value réalisée</string>
-    <string name="invested">Investi</string>
+    <string name="invested">Montant investi</string>
     <string name="earned">Gagné</string>
     <string name="capital_gain">Plus-value</string>
     <string name="annual_profitability">Rentabilité annuelle</string>

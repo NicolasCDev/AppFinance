@@ -1,0 +1,34 @@
+package com.example.appfinancetest.calculations
+
+import com.github.mikephil.charting.data.Entry
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+fun makeCumulative(entries: List<Entry>, allDates: List<Float>): List<Entry> {
+    val sorted = entries.sortedBy { it.x }
+    val result = mutableListOf<Entry>()
+    var index = 0
+    var total = 0f
+    for (date in allDates) {
+        while (index < sorted.size && sorted[index].x == date) {
+            total += sorted[index].y
+            index++
+        }
+        result.add(Entry(date, total))
+    }
+    return result
+}
+
+fun dateFormattedText(date: Double?): String {
+    if (date == null) return "N/A"
+    val excelDateMilliSec = (date - 25569) * 86400 * 1000
+    val excelDate = Date(excelDateMilliSec.toLong())
+    
+    // Use Locale.getDefault() with a localized pattern or DateFormat
+    val locale = Locale.getDefault()
+    val pattern = if (locale.language == Locale.FRENCH.language) "dd/MM/yy" else "MM/dd/yy"
+    val dateFormat = SimpleDateFormat(pattern, locale)
+    
+    return dateFormat.format(excelDate)
+}
