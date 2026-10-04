@@ -51,7 +51,7 @@ fun TransactionsLabelDialog(
                     ) {
                         Text(
                             text = selectedLabel ?: "Others",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineSmall,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = onDismiss) {

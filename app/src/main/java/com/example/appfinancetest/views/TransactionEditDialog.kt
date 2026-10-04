@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -21,6 +20,7 @@ import com.example.appfinancetest.R
 import com.example.appfinancetest.components.WheelDatePickerDialog
 import com.example.appfinancetest.calculations.dateFormattedText
 import com.example.appfinancetest.classes.TransactionDB
+import com.example.appfinancetest.ui.theme.*
 
 @Composable
 fun TransactionEditDialog(
@@ -49,7 +49,7 @@ fun TransactionEditDialog(
             ) {
                 Text(
                     text = stringResource(id = R.string.edit_transaction_title),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.headlineMedium
                 )
 
                 OutlinedTextField(
@@ -105,7 +105,7 @@ fun TransactionEditDialog(
                 ) {
                     TextButton(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFCC0000))
+                        colors = ButtonDefaults.textButtonColors(contentColor = RedAccent)
                     ) {
                         Text(stringResource(id = R.string.cancel), style = MaterialTheme.typography.bodyMedium)
                     }
@@ -120,7 +120,7 @@ fun TransactionEditDialog(
                                 amount = amount.toDoubleOrNull() ?: 0.0
                             ))
                         },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF669900))
+                        colors = ButtonDefaults.textButtonColors(contentColor = GreenAccent)
                     ) {
                         Text(stringResource(id = R.string.save_button), style = MaterialTheme.typography.bodyMedium)
                     }

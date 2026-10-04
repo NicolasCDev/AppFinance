@@ -1,4 +1,4 @@
-package com.example.appfinancetest
+package com.example.appfinancetest.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,8 +16,6 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.platform.LocalDensity
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.InvestmentDBViewModel
-import com.example.appfinancetest.components.BalanceLineChart
-import com.example.appfinancetest.components.InvestmentLineChart
 
 
 @Composable

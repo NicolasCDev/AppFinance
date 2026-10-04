@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import com.example.appfinancetest.classes.CreditDB
 import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.R
+import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.components.WheelDatePickerDialog
 import com.example.appfinancetest.calculations.dateFormattedText
 
@@ -63,7 +64,7 @@ fun CreditScreen(
                     ) {
                         Text(
                             text = stringResource(id = R.string.credits_title),
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.headlineSmall
                         )
                         IconButton(onClick = onDismiss) {
                             Icon(
@@ -297,7 +298,7 @@ fun CreditAddEditDialog(
             ) {
                 Text(
                     text = if (isAdd) stringResource(id = R.string.add_credit_dialog_title) else stringResource(id = R.string.edit_credit_dialog_title),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.headlineSmall
                 )
 
                 OutlinedTextField(
@@ -390,7 +391,7 @@ fun CreditAddEditDialog(
                 ) {
                     TextButton(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFCC0000))
+                        colors = ButtonDefaults.textButtonColors(contentColor = RedAccent)
                     ) { 
                         Text(stringResource(id = R.string.cancel), style = MaterialTheme.typography.bodyMedium)
                     }
@@ -408,7 +409,7 @@ fun CreditAddEditDialog(
                                 idInvest = idInvest
                             ))
                         },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF669900))
+                        colors = ButtonDefaults.textButtonColors(contentColor = GreenAccent)
                     ) {
                         Text(stringResource(id = R.string.save_button), style = MaterialTheme.typography.bodyMedium)
                     }

@@ -230,15 +230,14 @@ fun InvestmentItemCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = investment.label ?: stringResource(id = R.string.no_label),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = investment.item ?: "N/A",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 
@@ -293,10 +292,10 @@ fun InvestmentItemCard(
 @Composable
 fun InfoLabel(label: String, value: String, isBoldValue: Boolean = false) {
     Row {
-        Text("$label: ", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text("$label: ", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
         Text(
             value, 
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isBoldValue) FontWeight.Bold else FontWeight.Normal
         )
     }
@@ -316,7 +315,7 @@ fun DatePickerDialog(
             modifier = Modifier.padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(stringResource(id = R.string.edit_closing_date), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(id = R.string.edit_closing_date), style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(

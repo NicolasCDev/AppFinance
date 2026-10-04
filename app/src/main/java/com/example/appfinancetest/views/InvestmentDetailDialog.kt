@@ -33,6 +33,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.example.appfinancetest.ui.theme.*
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -133,7 +134,7 @@ fun InvestmentDetailDialog(
                 ) {
                     Text(
                         text = category,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.headlineMedium
                     )
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
@@ -216,7 +217,7 @@ fun InvestmentDetailDialog(
                                     val isDismissingToEnd = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
                                     val isDismissingToStart = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
 
-                                    val color = if (isDismissingToEnd) Color(0xFF4CAF50)
+                                    val color = if (isDismissingToEnd) GreenAccent
                                     else if (isDismissingToStart) Color.Gray
                                     else Color.Transparent
 

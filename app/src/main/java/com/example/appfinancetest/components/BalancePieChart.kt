@@ -13,7 +13,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.appfinancetest.calculations.CurrencyTextOnPrimary
 import com.example.appfinancetest.classes.DataBaseViewModel
@@ -173,7 +172,7 @@ fun BalancePieChart(
                 selectedItem == null -> "$selectedCategory"
                 else -> "$selectedCategory : $selectedItem"
             },
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -209,7 +208,7 @@ fun BalancePieChart(
                     contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                 ) {
-                    Text("<", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+                    Text("<", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold))
                 }
             }
 
@@ -223,7 +222,7 @@ fun BalancePieChart(
                         isRotationEnabled = false
                         setUsePercentValues(true)
                         setEntryLabelColor(Color.WHITE)
-                        setEntryLabelTextSize(12f)
+                        setEntryLabelTextSize(10f)
                         setEntryLabelTypeface(Typeface.DEFAULT_BOLD)
                         legend.isEnabled = false
                         setHoleColor(Color.TRANSPARENT)
@@ -234,7 +233,7 @@ fun BalancePieChart(
                     val dataSet = PieDataSet(chartEntries, "").apply {
                         colors = customColors.take(chartEntries.size)
                         valueTextColor = Color.WHITE
-                        valueTextSize = 14f
+                        valueTextSize = 10f
                         valueTypeface = Typeface.DEFAULT_BOLD
                     }
                     chart.data = PieData(dataSet)
@@ -335,28 +334,41 @@ fun BalancePieChart(
                     .size(12.dp)
                     .background(color))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = label, modifier = Modifier.weight(1f), fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color, textAlign = TextAlign.Start)
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Start
+                )
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CurrencyTextOnPrimary(
                         amount = amount,
                         isVisibilityOff = isVisibilityOff,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodySmall
                     )
                     
-                    Text(" (", fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color)
+                    Text(
+                        text = " (",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                     PercentageTextOnPrimary(
                         amount = percent,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodySmall
                     )
-                    Text(") ", fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color)
-
+                    Text(
+                        text = ") ",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                     if (evolution == null) {
-                        Text("N/A", fontSize = MaterialTheme.typography.bodyMedium.fontSize, color = MaterialTheme.typography.bodyMedium.color)
+                        Text(
+                            text = "N/A",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     } else {
                         PercentageText(
                             amount = evolution,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }

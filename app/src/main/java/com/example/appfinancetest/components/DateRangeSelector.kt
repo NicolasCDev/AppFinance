@@ -68,7 +68,7 @@ fun DateRangeSelector(
             Text(
                 text = stringResource(id = selectedOption.resId),
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f)
             )
 

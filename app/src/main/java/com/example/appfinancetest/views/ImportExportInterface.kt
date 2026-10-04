@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.classes.DataBaseViewModel
+import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.GoogleDriveService
 import com.example.appfinancetest.classes.InvestmentDBViewModel
 import com.example.appfinancetest.R
@@ -192,7 +193,7 @@ fun ImportExportInterface(
                 ) {
                     Text(
                         stringResource(id = R.string.data_management_title),
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.headlineSmall
                     )
                     if (!isProcessing) {
                         IconButton(onClick = onDismiss) {
@@ -247,7 +248,7 @@ fun ImportExportInterface(
                             title = stringResource(id = R.string.cloud_backup),
                             description = stringResource(id = R.string.cloud_backup_desc),
                             icon = Icons.Default.CloudUpload,
-                            color = Color(0xFFE3F2FD),
+                            color = ImportExportBlueBg,
                             onClick = {
                                 val account = GoogleSignIn.getLastSignedInAccount(context)
                                 if (account == null) {
@@ -265,7 +266,7 @@ fun ImportExportInterface(
                             title = stringResource(id = R.string.cloud_restore),
                             description = stringResource(id = R.string.cloud_restore_desc),
                             icon = Icons.Default.CloudDownload,
-                            color = Color(0xFFF1F8E9),
+                            color = GreenAccent,
                             onClick = {
                                 val account = GoogleSignIn.getLastSignedInAccount(context)
                                 if (account == null) {

@@ -44,7 +44,7 @@ fun TestScreen(
         ) {
             Text(
                 text = "Bienvenue dans le laboratoire !",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 16.dp)
             )

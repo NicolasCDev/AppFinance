@@ -187,7 +187,7 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = stringResource(id = R.string.parameters_title),
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.headlineSmall
                         )
                         IconButton(onClick = onDismiss) {
                             Icon(

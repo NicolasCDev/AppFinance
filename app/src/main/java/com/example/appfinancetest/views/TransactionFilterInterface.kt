@@ -1,15 +1,17 @@
 package com.example.appfinancetest.views
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.appfinancetest.R
+import com.example.appfinancetest.ui.theme.RedAccent
 
 @Composable
 fun TransactionFilterInterface(
@@ -40,7 +43,7 @@ fun TransactionFilterInterface(
     onClearAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // Use of TextFieldValue in order to manage the cursor position when formating
+    // Use of TextFieldValue in order to manage the cursor position when formatting
     var dateMinState by remember { mutableStateOf(TextFieldValue(dateMinFilter, TextRange(dateMinFilter.length))) }
     var dateMaxState by remember { mutableStateOf(TextFieldValue(dateMaxFilter, TextRange(dateMaxFilter.length))) }
 
@@ -58,34 +61,62 @@ fun TransactionFilterInterface(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(24.dp),
             tonalElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        stringResource(id = R.string.filter_title),
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = stringResource(id = R.string.filter_title),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(id = R.string.close))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Date Filters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     OutlinedTextField(
                         value = dateMinState,
                         onValueChange = { newValue ->
                             val formatted = formatDateInput(newValue.text, dateMinState.text)
                             var newSelection = newValue.selection
-                            // If we added a "/" --> we move right the cursor
                             if (formatted.length > newValue.text.length) {
                                 val diff = formatted.length - newValue.text.length
                                 newSelection = TextRange(newSelection.end + diff)
@@ -93,10 +124,25 @@ fun TransactionFilterInterface(
                             dateMinState = newValue.copy(text = formatted, selection = newSelection)
                             onDateMinFilterChange(formatted)
                         },
-                        label = { Text(stringResource(id = R.string.filter_after))},
+                        label = { Text(stringResource(id = R.string.filter_after)) },
                         modifier = Modifier.weight(1f),
                         placeholder = { Text(stringResource(id = R.string.date_placeholder)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        leadingIcon = {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingIcon = {
+                            if (dateMinState.text.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    dateMinState = TextFieldValue("")
+                                    onDateMinFilterChange("")
+                                }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
                     OutlinedTextField(
                         value = dateMaxState,
@@ -113,68 +159,123 @@ fun TransactionFilterInterface(
                         label = { Text(stringResource(id = R.string.filter_before)) },
                         modifier = Modifier.weight(1f),
                         placeholder = { Text(stringResource(id = R.string.date_placeholder)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        leadingIcon = {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingIcon = {
+                            if (dateMaxState.text.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    dateMaxState = TextFieldValue("")
+                                    onDateMaxFilterChange("")
+                                }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
                 }
 
+                // Category Dropdown
                 FilterDropdown(
                     label = stringResource(id = R.string.filter_category),
                     selectedOption = categoryFilter,
                     options = categories,
-                    onOptionSelected = onCategoryFilterChange
+                    onOptionSelected = onCategoryFilterChange,
+                    leadingIcon = Icons.Default.Category
                 )
 
+                // Item Dropdown
                 FilterDropdown(
                     label = stringResource(id = R.string.filter_item),
                     selectedOption = itemFilter,
                     options = items,
-                    onOptionSelected = onItemFilterChange
+                    onOptionSelected = onItemFilterChange,
+                    leadingIcon = Icons.Default.Receipt
                 )
 
+                // Label Dropdown
                 FilterDropdown(
                     label = stringResource(id = R.string.filter_label),
                     selectedOption = labelFilter,
                     options = labels,
-                    onOptionSelected = onLabelFilterChange
+                    onOptionSelected = onLabelFilterChange,
+                    leadingIcon = Icons.Default.Bookmark
                 )
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                // Amount Filters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     OutlinedTextField(
                         value = amountMinFilter,
                         onValueChange = onAmountMinFilterChange,
                         label = { Text(stringResource(id = R.string.filter_amount_min)) },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        leadingIcon = {
+                            Icon(Icons.Default.AttachMoney, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingIcon = {
+                            if (amountMinFilter.isNotEmpty()) {
+                                IconButton(onClick = { onAmountMinFilterChange("") }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
                     OutlinedTextField(
                         value = amountMaxFilter,
                         onValueChange = onAmountMaxFilterChange,
                         label = { Text(stringResource(id = R.string.filter_amount_max)) },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        leadingIcon = {
+                            Icon(Icons.Default.AttachMoney, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingIcon = {
+                            if (amountMaxFilter.isNotEmpty()) {
+                                IconButton(onClick = { onAmountMaxFilterChange("") }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
+                // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(
                         onClick = onClearAll,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        colors = ButtonDefaults.textButtonColors(contentColor = RedAccent)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
                         Text(
                             stringResource(id = R.string.filter_delete_all),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Button(
-                        onClick = onDismiss
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
+                        Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
                         Text(
                             stringResource(id = R.string.filter_apply),
                             style = MaterialTheme.typography.bodyMedium
@@ -210,12 +311,13 @@ fun FilterDropdown(
     label: String,
     selectedOption: String,
     options: List<String>,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String) -> Unit,
+    leadingIcon: ImageVector
 ) {
     var expanded by remember { mutableStateOf(false) }
     val allLabel = stringResource(id = R.string.filter_all)
     
-    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Box(modifier = Modifier.fillMaxWidth()) {
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded },
@@ -226,10 +328,23 @@ fun FilterDropdown(
                 onValueChange = { },
                 readOnly = true,
                 label = { Text(label) },
-                modifier = Modifier.fillMaxWidth().menuAnchor(),
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                leadingIcon = {
+                    Icon(leadingIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                trailingIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (selectedOption.isNotEmpty()) {
+                            IconButton(onClick = { onOptionSelected("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    }
+                },
+                shape = RoundedCornerShape(12.dp),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
             )
             

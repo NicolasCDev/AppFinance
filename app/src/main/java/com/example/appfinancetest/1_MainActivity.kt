@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -13,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,10 +25,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.example.appfinancetest.ui.theme.AppFinanceTestTheme
+import com.example.appfinancetest.ui.theme.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
@@ -67,6 +73,9 @@ fun MainScreen(dataStorage: DataStorage) {
         dataStorage.saveVisibilityState(true)
     }
 
+    val isDarkThemeCustom by dataStorage.isDarkThemeFlow.collectAsState(initial = null)
+    val darkTheme = isDarkThemeCustom ?: isSystemInDarkTheme()
+
     val databaseViewModel: DataBaseViewModel = viewModel()
     val investmentViewModel: InvestmentDBViewModel = viewModel()
     val creditViewModel: CreditDBViewModel = viewModel()
@@ -79,12 +88,21 @@ fun MainScreen(dataStorage: DataStorage) {
         stringResource(id = R.string.patrimonial_title),
         stringResource(id = R.string.test_title)
     )
+
+    val cardBg = if (darkTheme) CardBg else MaterialTheme.colorScheme.surface
+    val cardBorder = if (darkTheme) CardBorder else MaterialTheme.colorScheme.outlineVariant
+    val textMuted = if (darkTheme) TextMuted else MaterialTheme.colorScheme.onSurfaceVariant
+    val bluePill = BluePill
     
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = cardBg,
+                modifier = Modifier.border(1.dp, cardBorder)
+            ) {
                 items.forEachIndexed { index, item ->
+                    val isSelected = selectedItem == index
                     NavigationBarItem(
                         icon = {
                             when (index) {
@@ -94,9 +112,22 @@ fun MainScreen(dataStorage: DataStorage) {
                                 3 -> Icon(imageVector = Icons.Default.Build, contentDescription = item)
                             }
                         },
-                        label = { Text(item, style = MaterialTheme.typography.bodyMedium ) },
-                        selected = selectedItem == index,
-                        onClick = { selectedItem = index }
+                        label = { 
+                            Text(
+                                text = item, 
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            ) 
+                        },
+                        selected = isSelected,
+                        onClick = { selectedItem = index },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = bluePill,
+                            selectedIconColor = Color.White,
+                            unselectedIconColor = textMuted,
+                            selectedTextColor = Color.White,
+                            unselectedTextColor = textMuted
+                        )
                     )
                 }
             }

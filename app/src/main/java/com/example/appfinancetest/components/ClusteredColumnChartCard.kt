@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.appfinancetest.ui.theme.*
 import androidx.compose.ui.unit.sp
 import com.example.appfinancetest.views.FlowBarData
 import java.text.SimpleDateFormat
@@ -43,17 +44,20 @@ import kotlin.math.max
 @Composable
 fun ClusteredColumnChartCard(
     title: String,
-    titleColor: Color = Color.White,
     barDataList: List<FlowBarData>,
     selectedId: String,
     isVisibilityOff: Boolean,
+    cardBg: Color = MaterialTheme.colorScheme.surface,
+    cardBorder: Color = MaterialTheme.colorScheme.outlineVariant,
+    textMuted: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textPrimary: Color = MaterialTheme.colorScheme.onSurface,
     onPeriodClick: (FlowBarData) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF111827)),
-        border = BorderStroke(1.dp, Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = BorderStroke(1.dp, cardBorder)
     ) {
         Column(
             modifier = Modifier
@@ -62,8 +66,7 @@ fun ClusteredColumnChartCard(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = titleColor
+                style = MaterialTheme.typography.headlineSmall
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -75,7 +78,7 @@ fun ClusteredColumnChartCard(
                         .height(180.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Aucune donnée pour cette période", color = Color(0xFF94A3B8))
+                    Text("Aucune donnée pour cette période", color = textMuted)
                 }
             } else {
                 val maxVal = remember(barDataList) {
@@ -113,9 +116,7 @@ fun ClusteredColumnChartCard(
                             else String.format(Locale.getDefault(), "%.0f", valStep)
                             Text(
                                 text = label,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF94A3B8),
-                                fontSize = 10.sp
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
@@ -138,7 +139,7 @@ fun ClusteredColumnChartCard(
                             repeat(4) {
                                 HorizontalDivider(
                                     thickness = 0.5.dp,
-                                    color = Color(0xFF1E293B)
+                                    color = cardBorder
                                 )
                             }
                         }
@@ -179,7 +180,7 @@ fun ClusteredColumnChartCard(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isItemSelected) Color(0xFF1E293B).copy(alpha = 0.5f) else Color.Transparent)
+                                        .background(if (isItemSelected) cardBorder.copy(alpha = 0.5f) else Color.Transparent)
                                         .clickable { onPeriodClick(item) }
                                         .padding(4.dp)
                                 ) {
@@ -196,7 +197,7 @@ fun ClusteredColumnChartCard(
                                                 .weight(1f)
                                                 .fillMaxHeight(inflowHeightRatio)
                                                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                                .background(Color(0xFF00E676))
+                                                .background(GreenAccent)
                                         )
 
                                         // Outflow Bar (Red)
@@ -205,7 +206,7 @@ fun ClusteredColumnChartCard(
                                                 .weight(1f)
                                                 .fillMaxHeight(outflowHeightRatio)
                                                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                                .background(Color(0xFFEF4444))
+                                                .background(RedAccent)
                                         )
                                     }
 
@@ -213,11 +214,10 @@ fun ClusteredColumnChartCard(
 
                                     Text(
                                         text = displayLabel,
-                                        style = MaterialTheme.typography.labelSmall.copy(
+                                        style = MaterialTheme.typography.bodySmall.copy(
                                             fontWeight = if (isItemSelected) FontWeight.Bold else FontWeight.Normal
                                         ),
-                                        color = if (isItemSelected) Color.White else Color(0xFF94A3B8),
-                                        fontSize = 11.sp
+                                        color = if (isItemSelected) textPrimary else textMuted
                                     )
                                 }
                             }

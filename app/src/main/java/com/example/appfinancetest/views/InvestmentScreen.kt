@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.appfinancetest.R
+import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
@@ -61,13 +63,16 @@ fun InvestmentScreen(
 
     var isLoading by remember { mutableStateOf(true) }
 
-    // Colors matching HomeScreen dark design exactly
-    val bgDark = Color(0xFF090E17)
-    val cardBg = Color(0xFF111827)
-    val cardBorder = Color(0xFF1E293B)
-    val textPrimary = Color.White
-    val textMuted = Color(0xFF94A3B8)
-    val bluePill = Color(0xFF0284C7)
+    val isDarkThemeCustom by prefs.isDarkThemeFlow.collectAsState(initial = null)
+    val darkTheme = isDarkThemeCustom ?: isSystemInDarkTheme()
+
+    // Colors supporting Light & Dark mode
+    val bgDark = if (darkTheme) BgDark else MaterialTheme.colorScheme.background
+    val cardBg = if (darkTheme) CardBg else MaterialTheme.colorScheme.surface
+    val cardBorder = if (darkTheme) CardBorder else MaterialTheme.colorScheme.outlineVariant
+    val textPrimary = if (darkTheme) Color.White else MaterialTheme.colorScheme.onSurface
+    val textMuted = if (darkTheme) TextMuted else MaterialTheme.colorScheme.onSurfaceVariant
+    val bluePill = BluePill
 
     // State for tabs: 0 = "Current", 1 = "Closed"
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -233,7 +238,6 @@ fun InvestmentScreen(
                 Text(
                     text = stringResource(id = R.string.investments_title),
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Normal,
                         color = textPrimary
                     )
                 )
@@ -330,7 +334,7 @@ fun InvestmentScreen(
                     )
                 }
             } else {
-                // 1. Tab Switcher ("En cours" / "Clôturé") - pill selector
+                // 1. Tab Switcher Current / Closed - pill selector
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -355,9 +359,9 @@ fun InvestmentScreen(
                         ) {
                             Text(
                                 text = title,
-                                color = if (isSelected) Color.White else textMuted,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color.White else textMuted,
                             )
                         }
                     }
@@ -390,10 +394,10 @@ fun InvestmentScreen(
                                 text = itemKey,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (isSelected) Color.White else textMuted,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 textAlign = TextAlign.Center,
                                 maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -412,7 +416,7 @@ fun InvestmentScreen(
 
                 val totalInvested = filteredInvestments.sumOf { it.invested ?: 0.0 }
 
-                // 3. Montant investi card
+                // 3. Invested amount card
                 InvestmentSummaryCard(
                     totalInvested = totalInvested,
                     isVisibilityOff = isVisibilityOff,
@@ -427,7 +431,7 @@ fun InvestmentScreen(
                     bluePill = bluePill
                 )
 
-                // Conteneur principal englobant (Carte fixe)
+                // Main container (fixe card)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -444,8 +448,7 @@ fun InvestmentScreen(
                             stringResource(id = R.string.heatmap_title)
                         else
                             stringResource(id = R.string.investment_list_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = textMuted
+                        style = MaterialTheme.typography.headlineSmall
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 

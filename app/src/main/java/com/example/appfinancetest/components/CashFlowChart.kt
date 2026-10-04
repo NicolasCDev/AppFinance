@@ -13,15 +13,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.TransactionDB
+import com.example.appfinancetest.ui.theme.*
 import java.util.*
 import kotlin.math.abs
 
@@ -123,12 +122,14 @@ fun CashFlowChart(
 
         Text(
             text = "Flux de Trésorerie (${selectedRange})",
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
         val scrollState = rememberScrollState()
         val textColor = MaterialTheme.colorScheme.onSurface
+        val bodySmallStyle = MaterialTheme.typography.bodySmall.copy(color = textColor)
+        val bodyMediumStyle = MaterialTheme.typography.bodyMedium.copy(color = textColor)
 
         Box(
             modifier = Modifier
@@ -147,12 +148,12 @@ fun CashFlowChart(
                 val colSpacing = width / 4f
 
                 // Couleurs
-                val incomeColor = Color(0xFF4285F4)
-                val budgetColor = Color(0xFFFBBC04)
+                val incomeColor = IncomeBlue
+                val budgetColor = BudgetYellow
                 val detailColors = listOf(
-                    Color(0xFFEA4335), Color(0xFF34A853), Color(0xFFFBBC04), 
-                    Color(0xFF4285F4), Color(0xFF9C27B0), Color(0xFF00BCD4),
-                    Color(0xFFFF5722), Color(0xFF607D8B), Color(0xFF8BC34A)
+                    RedAccent, GreenAccent, BudgetYellow,
+                    IncomeBlue, ChartPurple, ChartCyan,
+                    ChartDeepOrange, ChartBlueGrey, ChartLightGreen
                 )
 
                 // --- COLONNE 1 : SOURCES (Incomes) ---
@@ -163,7 +164,7 @@ fun CashFlowChart(
                     drawRect(color = incomeColor, topLeft = Offset(0f, ySource), size = Size(nodeWidth, h))
                     drawText(textMeasurer, "$name\n%.0f€".format(amount), 
                         topLeft = Offset(nodeWidth + 8f, ySource + h/2 - 18f),
-                        style = TextStyle(color = textColor, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+                        style = bodySmallStyle.copy(fontWeight = FontWeight.Medium))
                     sourceNodes[name] = ySource
                     ySource += h + 30f
                 }
@@ -176,7 +177,7 @@ fun CashFlowChart(
                 drawRect(color = budgetColor, topLeft = Offset(budgetX + colSpacing * 0.7f, budgetY), size = Size(nodeWidth, budgetH))
                 drawText(textMeasurer, "BUDGET\n%.0f€".format(totalIncome), 
                     topLeft = Offset(budgetX + 10f, budgetY + budgetH/2 - 20f),
-                    style = TextStyle(color = textColor, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold))
+                    style = bodyMediumStyle.copy(fontWeight = FontWeight.ExtraBold))
 
                 // --- COLONNE 3 : INTERMÉDIAIRES (Categories) ---
                 val interX = colSpacing * 2.3f
@@ -188,7 +189,7 @@ fun CashFlowChart(
                     drawRect(color = budgetColor, topLeft = Offset(interX, yInter), size = Size(nodeWidth, h))
                     drawText(textMeasurer, "$name\n%.0f€".format(amount), 
                         topLeft = Offset(interX - 110f, yInter + h/2 - 18f),
-                        style = TextStyle(color = textColor, fontSize = 10.sp, textAlign = TextAlign.End))
+                        style = bodySmallStyle.copy(textAlign = TextAlign.End))
                     interNodes[name] = yInter
                     yInter += h + 25f
                 }
@@ -208,7 +209,7 @@ fun CashFlowChart(
                         drawRect(color = color, topLeft = Offset(detailX, yDetail), size = Size(nodeWidth, h))
                         drawText(textMeasurer, "$labelName\n%.0f€".format(amount), 
                             topLeft = Offset(detailX + nodeWidth + 8f, yDetail + h/2 - 15f),
-                            style = TextStyle(color = textColor, fontSize = 9.sp))
+                            style = bodySmallStyle)
 
                         // Lien Catégorie -> Détail
                         val catStartY = interNodes[catName] ?: budgetY

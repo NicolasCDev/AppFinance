@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.appfinancetest.calculations.PercentageText
-import com.example.appfinancetest.shimmerLoadingAnimation
+import com.example.appfinancetest.calculations.shimmerLoadingAnimation
 
 @Composable
 fun EvolutionItem(label: String, evolution: Double?, isLoading: Boolean = false) {

@@ -8,6 +8,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
+import com.example.appfinancetest.ui.theme.*
 import java.util.Locale
 import kotlin.math.abs
 
@@ -42,8 +43,9 @@ fun CurrencyText(
 ) {
     val finalIsNegative = isNegative ?: (amount < 0)
     
-    // Dynamic theme color retrieval from MaterialTheme.colorScheme
-    val colorPositive = MaterialTheme.colorScheme.surfaceVariant
+    // Dynamic positive color based on theme
+    val isDark = MaterialTheme.colorScheme.surface == SurfaceDark || MaterialTheme.colorScheme.background == BackgroundDark
+    val colorPositive = if (isDark) GreenAccent else PositiveGreenLight
     val colorNegative = MaterialTheme.colorScheme.error
     
     val color = if (finalIsNegative) colorNegative else colorPositive
@@ -126,8 +128,9 @@ fun PercentageText(
 ) {
     val isNegative = amount < 0
 
-    // Recovering theme colors from colorScheme
-    val colorPositive = MaterialTheme.colorScheme.surfaceVariant
+    // Dynamic positive color based on theme
+    val isDark = MaterialTheme.colorScheme.surface == SurfaceDark || MaterialTheme.colorScheme.background == BackgroundDark
+    val colorPositive = if (isDark) GreenAccent else PositiveGreenLight
     val colorNegative = MaterialTheme.colorScheme.error
     val color = if (isNegative) colorNegative else colorPositive
 

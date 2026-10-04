@@ -33,6 +33,7 @@ import com.example.appfinancetest.calculations.PercentageText
 import com.example.appfinancetest.R
 import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.calculations.calculateProfitPercent
+import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.calculations.calculateWeightedAnnualProfitability
 
 enum class InvestmentViewMode {
@@ -70,14 +71,13 @@ fun InvestmentSummaryCard(
             Column {
                 Text(
                     text = stringResource(id = R.string.invested),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = textMuted
+                    style = MaterialTheme.typography.headlineSmall
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 CurrencyTextOnPrimary(
                     amount = totalInvested,
                     isVisibilityOff = isVisibilityOff,
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.headlineMedium
                 )
 
                 if (selectedTabIndex == 1) {
@@ -93,8 +93,7 @@ fun InvestmentSummaryCard(
                     ) {
                         Text(
                             text = stringResource(id = R.string.capital_gain) + ":",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = textMuted
+                            style = MaterialTheme.typography.bodySmall
                         )
                         CurrencyText(
                             amount = profitEuro,
@@ -133,7 +132,7 @@ fun InvestmentSummaryCard(
                     ) {
                         Text(
                             text = stringResource(id = R.string.heatmap_mode),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = if (isHeatmap) Color.White else textMuted,
                             fontWeight = if (isHeatmap) FontWeight.Bold else FontWeight.Normal
                         )
@@ -149,7 +148,7 @@ fun InvestmentSummaryCard(
                     ) {
                         Text(
                             text = stringResource(id = R.string.list_mode),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = if (isList) Color.White else textMuted,
                             fontWeight = if (isList) FontWeight.Bold else FontWeight.Normal
                         )
@@ -161,8 +160,7 @@ fun InvestmentSummaryCard(
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = stringResource(id = R.string.annual_profitability),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textMuted
+                        style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -172,8 +170,7 @@ fun InvestmentSummaryCard(
                         )
                         Text(
                             text = " (${stringResource(id = R.string.annual)})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = textMuted
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
@@ -207,10 +204,8 @@ fun InvestmentHeatmapCard(
             Text(
                 text = investment.label ?: stringResource(id = R.string.no_label),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Bold
+                overflow = TextOverflow.Ellipsis
             )
             CurrencyText(
                 amount = investedAmount,
@@ -248,12 +243,10 @@ fun InvestmentListItemCard(
             ) {
                 Text(
                     text = investment.label ?: stringResource(id = R.string.no_label),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = textPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Column(horizontalAlignment = Alignment.End) {
@@ -283,8 +276,7 @@ fun InvestmentListItemCard(
                         )
                         Text(
                             text = " (${stringResource(id = R.string.annual)})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = textMuted
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
@@ -299,8 +291,7 @@ fun InvestmentListItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${stringResource(id = R.string.invested)}: ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textMuted
+                        style = MaterialTheme.typography.bodySmall
                     )
                     CurrencyTextOnPrimary(
                         amount = investment.invested ?: 0.0,
@@ -311,8 +302,7 @@ fun InvestmentListItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${stringResource(id = R.string.earned)}: ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textMuted
+                        style = MaterialTheme.typography.bodySmall
                     )
                     CurrencyTextOnPrimary(
                         amount = investment.earned ?: 0.0,
@@ -465,7 +455,7 @@ fun InvestmentListView(
                     val isDismissingToEnd = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
                     val isDismissingToStart = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
 
-                    val color = if (isDismissingToEnd) Color(0xFF4CAF50)
+                    val color = if (isDismissingToEnd) GreenAccent
                     else if (isDismissingToStart) Color.Gray
                     else Color.Transparent
 

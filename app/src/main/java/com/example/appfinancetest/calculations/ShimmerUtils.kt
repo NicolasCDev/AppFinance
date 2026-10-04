@@ -1,4 +1,4 @@
-package com.example.appfinancetest
+package com.example.appfinancetest.calculations
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background

@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -31,8 +32,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.appfinancetest.R
+import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
@@ -41,6 +42,7 @@ import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.components.PatrimonialLineChart
 import com.example.appfinancetest.components.ClusteredColumnChartCard
 import com.example.appfinancetest.components.BalancePieChart
+import com.example.appfinancetest.components.TimeRangeSelectorPills
 import com.example.appfinancetest.classes.HomeTimeRange
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -70,11 +72,11 @@ class PreparedTransactions(val allTransactions: List<TransactionDB>) {
 
     init {
         val keys = mutableMapOf<String, MutableList<TransactionDB>>()
-        allTransactions.forEach { t ->
-            if (t.date != null && (t.category == "Investissement" || t.category == "Gain investissement")) {
-                val key = t.idInvest?.ifBlank { null } ?: t.item?.ifBlank { null }
+        allTransactions.forEach { it ->
+            if (it.date != null && (it.category == "Investissement" || it.category == "Gain investissement")) {
+                val key = it.idInvest?.ifBlank { null } ?: it.item?.ifBlank { null }
                 if (key != null) {
-                    keys.getOrPut(key) { mutableListOf() }.add(t)
+                    keys.getOrPut(key) { mutableListOf() }.add(it)
                 }
             }
         }
@@ -85,8 +87,8 @@ class PreparedTransactions(val allTransactions: List<TransactionDB>) {
         periodStartExcel: Double,
         periodEndExcel: Double
     ): Pair<Double, Double> {
-        val periodTx = allTransactions.filter { t ->
-            t.date != null && t.date >= periodStartExcel && t.date <= periodEndExcel
+        val periodTx = allTransactions.filter { it ->
+            it.date != null && it.date >= periodStartExcel && it.date <= periodEndExcel
         }
 
         // 1. Standard Revenues
@@ -147,14 +149,17 @@ fun BudgetScreen(
     val context = LocalContext.current
     val prefs = remember { DataStorage(context) }
     val isVisibilityOff by prefs.isVisibilityOffFlow.collectAsState(initial = false)
+    val isDarkThemeCustom by prefs.isDarkThemeFlow.collectAsState(initial = null)
+    val darkTheme = isDarkThemeCustom ?: isSystemInDarkTheme()
 
-    // Colors matching HomeScreen / InvestmentScreen dark theme
-    val bgDark = Color(0xFF090E17)
-    val cardBg = Color(0xFF111827)
-    val cardBorder = Color(0xFF1E293B)
-    val textPrimary = Color.White
-    val textMuted = Color(0xFF94A3B8)
-    val bluePill = Color(0xFF0284C7)
+    // Dynamic colors supporting Light & Dark mode
+    val bgDark = if (darkTheme) BgDark else MaterialTheme.colorScheme.background
+    val cardBg = if (darkTheme) CardBg else MaterialTheme.colorScheme.surface
+    val cardBorder = if (darkTheme) CardBorder else MaterialTheme.colorScheme.outlineVariant
+    val textPrimary = if (darkTheme) Color.White else MaterialTheme.colorScheme.onSurface
+    val textMuted = if (darkTheme) TextMuted else MaterialTheme.colorScheme.onSurfaceVariant
+    val unselectedBg = if (darkTheme) UnselectedBg else MaterialTheme.colorScheme.surfaceVariant
+    val bluePill = BluePill
 
     val allTransactions by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
@@ -284,7 +289,6 @@ fun BudgetScreen(
                 Text(
                     text = stringResource(id = R.string.budget_title),
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Normal,
                         color = textPrimary
                     )
                 )
@@ -399,30 +403,13 @@ fun BudgetScreen(
                             .padding(18.dp)
                     ) {
                         // Time Range Selector Pills (1M, 6M, 1A, 5A, TOUT)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            HomeTimeRange.entries.forEach { range ->
-                                val isSelected = range == selectedRange
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(horizontal = 2.dp)
-                                        .height(34.dp)
-                                        .clip(RoundedCornerShape(17.dp))
-                                        .background(if (isSelected) bluePill else Color(0xFF1E293B))
-                                        .clickable { selectedRange = range },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(range.labelResId),
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                        color = if (isSelected) Color.White else textMuted
-                                    )
-                                }
-                            }
-                        }
+                        TimeRangeSelectorPills(
+                            selectedRange = selectedRange,
+                            onRangeSelected = { selectedRange = it },
+                            bluePill = bluePill,
+                            unselectedBg = unselectedBg,
+                            textMuted = textMuted
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -444,6 +431,118 @@ fun BudgetScreen(
                 // OVERVIEW VIEW
 
                 // CARD 1: PERIOD NAVIGATOR
+                val currentSelectedId = remember(periodMode, selectedYear, selectedMonth) {
+                    if (periodMode == BudgetPeriodMode.MONTHLY) "$selectedYear-$selectedMonth" else "$selectedYear"
+                }
+
+                // CARD 3: Earn VS Spend (Clustered Column Chart) - defined early to compute chartBarData and navigation bounds
+                val currentLocale = LocalConfiguration.current.locales[0]
+                val chartBarData = remember(preparedTx, periodMode, minYear, maxYear, currentLocale) {
+                    val barList = mutableListOf<FlowBarData>()
+                    if (periodMode == BudgetPeriodMode.MONTHLY) {
+                        val sdf = SimpleDateFormat("MMM", currentLocale)
+                        for (yVal in minYear..maxYear) {
+                            for (mIndex in 0..11) {
+                                val startCal = Calendar.getInstance().apply {
+                                    set(Calendar.YEAR, yVal)
+                                    set(Calendar.MONTH, mIndex)
+                                    set(Calendar.DAY_OF_MONTH, 1)
+                                    set(Calendar.HOUR_OF_DAY, 0)
+                                    set(Calendar.MINUTE, 0)
+                                    set(Calendar.SECOND, 0)
+                                    set(Calendar.MILLISECOND, 0)
+                                }
+                                val endCal = (startCal.clone() as Calendar).apply {
+                                    set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
+                                    set(Calendar.HOUR_OF_DAY, 23)
+                                    set(Calendar.MINUTE, 59)
+                                    set(Calendar.SECOND, 59)
+                                }
+                                val start = (startCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
+                                val end = (endCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
+
+                                val periodTx = preparedTx.allTransactions.filter { it.date != null && it.date >= start && it.date <= end }
+                                if (periodTx.isNotEmpty()) {
+                                    val (inflows, outflows) = preparedTx.calculateInflowsAndOutflows(start, end)
+
+                                    val shortYear = yVal.toString().takeLast(2)
+                                    val mName = sdf.format(startCal.time).replaceFirstChar {
+                                        if (it.isLowerCase()) it.titlecase(currentLocale) else it.toString()
+                                    }
+                                    val labelText = "$mName '$shortYear"
+
+                                    barList.add(
+                                        FlowBarData(
+                                            id = "$yVal-$mIndex",
+                                            label = labelText,
+                                            year = yVal,
+                                            month = mIndex,
+                                            inflows = inflows,
+                                            outflows = outflows
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        for (yVal in minYear..maxYear) {
+                            val startCal = Calendar.getInstance().apply {
+                                set(Calendar.YEAR, yVal)
+                                set(Calendar.MONTH, 0)
+                                set(Calendar.DAY_OF_MONTH, 1)
+                                set(Calendar.HOUR_OF_DAY, 0)
+                                set(Calendar.MINUTE, 0)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
+                            val endCal = Calendar.getInstance().apply {
+                                set(Calendar.YEAR, yVal)
+                                set(Calendar.MONTH, 11)
+                                set(Calendar.DAY_OF_MONTH, 31)
+                                set(Calendar.HOUR_OF_DAY, 23)
+                                set(Calendar.MINUTE, 59)
+                                set(Calendar.SECOND, 59)
+                            }
+                            val start = (startCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
+                            val end = (endCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
+
+                            val periodTx = preparedTx.allTransactions.filter { it.date != null && it.date >= start && it.date <= end }
+                            if (periodTx.isNotEmpty()) {
+                                val (inflows, outflows) = preparedTx.calculateInflowsAndOutflows(start, end)
+
+                                barList.add(
+                                    FlowBarData(
+                                        id = "$yVal",
+                                        label = "$yVal",
+                                        year = yVal,
+                                        month = 0,
+                                        inflows = inflows,
+                                        outflows = outflows
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    barList
+                }
+
+                val currentIndex = remember(chartBarData, currentSelectedId) {
+                    chartBarData.indexOfFirst { it.id == currentSelectedId }
+                }
+                val hasPrevious = currentIndex > 0
+                val hasNext = currentIndex >= 0 && currentIndex < chartBarData.size - 1
+
+                LaunchedEffect(chartBarData, periodMode) {
+                    if (chartBarData.isNotEmpty()) {
+                        val currentId = if (periodMode == BudgetPeriodMode.MONTHLY) "$selectedYear-$selectedMonth" else "$selectedYear"
+                        if (chartBarData.none { it.id == currentId }) {
+                            val last = chartBarData.last()
+                            selectedYear = last.year
+                            selectedMonth = last.month
+                        }
+                    }
+                }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -464,28 +563,26 @@ fun BudgetScreen(
                         ) {
                             IconButton(
                                 onClick = {
-                                    if (periodMode == BudgetPeriodMode.MONTHLY) {
-                                        if (selectedMonth > 0) {
-                                            selectedMonth -= 1
-                                        } else {
-                                            selectedMonth = 11
-                                            selectedYear -= 1
-                                        }
-                                    } else {
-                                        selectedYear -= 1
+                                    if (currentIndex > 0) {
+                                        val prev = chartBarData[currentIndex - 1]
+                                        selectedYear = prev.year
+                                        selectedMonth = prev.month
                                     }
                                 },
+                                enabled = hasPrevious,
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                                     contentDescription = "Previous Period",
-                                    tint = textPrimary
+                                    tint = if (hasPrevious) textPrimary else textMuted
                                 )
                             }
 
-                            val periodText = remember(periodMode, selectedYear, selectedMonth) {
-                                if (periodMode == BudgetPeriodMode.MONTHLY) {
+                            val periodText = remember(periodMode, selectedYear, selectedMonth, chartBarData) {
+                                if (chartBarData.isEmpty()) {
+                                    "Aucune transaction"
+                                } else if (periodMode == BudgetPeriodMode.MONTHLY) {
                                     val cal = Calendar.getInstance().apply {
                                         set(Calendar.YEAR, selectedYear)
                                         set(Calendar.MONTH, selectedMonth)
@@ -502,36 +599,31 @@ fun BudgetScreen(
                             Text(
                                 text = periodText,
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = textPrimary
+                                    fontWeight = FontWeight.Bold
                                 ),
                                 modifier = Modifier.padding(horizontal = 4.dp)
                             )
 
                             IconButton(
                                 onClick = {
-                                    if (periodMode == BudgetPeriodMode.MONTHLY) {
-                                        if (selectedMonth < 11) {
-                                            selectedMonth += 1
-                                        } else {
-                                            selectedMonth = 0
-                                            selectedYear += 1
-                                        }
-                                    } else {
-                                        selectedYear += 1
+                                    if (currentIndex >= 0 && currentIndex < chartBarData.size - 1) {
+                                        val next = chartBarData[currentIndex + 1]
+                                        selectedYear = next.year
+                                        selectedMonth = next.month
                                     }
                                 },
+                                enabled = hasNext,
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                     contentDescription = "Next Period",
-                                    tint = textPrimary
+                                    tint = if (hasNext) textPrimary else textMuted
                                 )
                             }
                         }
 
-                        // Right: Mode selector (Mensuel / Annuel)
+                        // Right: Mode selector (Monthly / Annual)
                         Row(
                             modifier = Modifier
                                 .height(36.dp)
@@ -552,9 +644,9 @@ fun BudgetScreen(
                                 Text(
                                     text = stringResource(id = R.string.period_monthly),
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = if (periodMode == BudgetPeriodMode.MONTHLY) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = if (periodMode == BudgetPeriodMode.MONTHLY) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (periodMode == BudgetPeriodMode.MONTHLY) Color.White else textMuted
                                     ),
-                                    color = if (periodMode == BudgetPeriodMode.MONTHLY) Color.White else textMuted
                                 )
                             }
 
@@ -569,16 +661,16 @@ fun BudgetScreen(
                                 Text(
                                     text = stringResource(id = R.string.period_yearly),
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = if (periodMode == BudgetPeriodMode.YEARLY) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = if (periodMode == BudgetPeriodMode.YEARLY) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (periodMode == BudgetPeriodMode.YEARLY) Color.White else textMuted
                                     ),
-                                    color = if (periodMode == BudgetPeriodMode.YEARLY) Color.White else textMuted
                                 )
                             }
                         }
                     }
                 }
 
-                // CARD 2: SAVINGS RATE ("Taux d'épargne")
+                // CARD 2: SAVINGS RATE
                 val (startExcel, endExcel) = remember(periodMode, selectedYear, selectedMonth) {
                     if (periodMode == BudgetPeriodMode.MONTHLY) {
                         val startCal = Calendar.getInstance().apply {
@@ -646,8 +738,7 @@ fun BudgetScreen(
                         // Saving rate text
                         Text(
                             text = stringResource(id = R.string.savings_rate_label),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = textMuted
+                            style = MaterialTheme.typography.headlineSmall
                         )
 
                         // Ring Gauge Progress
@@ -659,8 +750,8 @@ fun BudgetScreen(
                             CircularProgressIndicator(
                                 progress = { progress },
                                 modifier = Modifier.fillMaxSize(),
-                                color = Color(0xFF00E676),
-                                trackColor = Color(0xFF1E293B),
+                                color = GreenAccent,
+                                trackColor = CardBorder,
                                 strokeWidth = 6.dp,
                                 strokeCap = StrokeCap.Round
                             )
@@ -677,112 +768,21 @@ fun BudgetScreen(
 
                         Text(
                             text = formattedRate,
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 30.sp,
-                                color = textPrimary
-                            )
+                            style = MaterialTheme.typography.headlineMedium
                         )
                     }
                 }
 
-                // CARD 3: ENTRÉES VS SORTIES (Clustered Column Chart)
-                // Note: chartBarData relies ONLY on preparedTx, periodMode, minYear, maxYear, currentLocale (NOT selectedYear/selectedMonth)
-                // so selecting a month does ZERO list recalculations!
-                val currentLocale = LocalConfiguration.current.locales[0]
-                val chartBarData = remember(preparedTx, periodMode, minYear, maxYear, currentLocale) {
-                    val barList = mutableListOf<FlowBarData>()
-                    if (periodMode == BudgetPeriodMode.MONTHLY) {
-                        val sdf = SimpleDateFormat("MMM", currentLocale)
-                        for (yVal in minYear..maxYear) {
-                            for (mIndex in 0..11) {
-                                val startCal = Calendar.getInstance().apply {
-                                    set(Calendar.YEAR, yVal)
-                                    set(Calendar.MONTH, mIndex)
-                                    set(Calendar.DAY_OF_MONTH, 1)
-                                    set(Calendar.HOUR_OF_DAY, 0)
-                                    set(Calendar.MINUTE, 0)
-                                    set(Calendar.SECOND, 0)
-                                    set(Calendar.MILLISECOND, 0)
-                                }
-                                val endCal = (startCal.clone() as Calendar).apply {
-                                    set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
-                                    set(Calendar.HOUR_OF_DAY, 23)
-                                    set(Calendar.MINUTE, 59)
-                                    set(Calendar.SECOND, 59)
-                                }
-                                val start = (startCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
-                                val end = (endCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
-
-                                val (inflows, outflows) = preparedTx.calculateInflowsAndOutflows(start, end)
-
-                                val shortYear = yVal.toString().takeLast(2)
-                                val mName = sdf.format(startCal.time).replaceFirstChar {
-                                    if (it.isLowerCase()) it.titlecase(currentLocale) else it.toString()
-                                }
-                                val labelText = "$mName '$shortYear"
-
-                                barList.add(
-                                    FlowBarData(
-                                        id = "$yVal-$mIndex",
-                                        label = labelText,
-                                        year = yVal,
-                                        month = mIndex,
-                                        inflows = inflows,
-                                        outflows = outflows
-                                    )
-                                )
-                            }
-                        }
-                    } else {
-                        for (yVal in minYear..maxYear) {
-                            val startCal = Calendar.getInstance().apply {
-                                set(Calendar.YEAR, yVal)
-                                set(Calendar.MONTH, 0)
-                                set(Calendar.DAY_OF_MONTH, 1)
-                                set(Calendar.HOUR_OF_DAY, 0)
-                                set(Calendar.MINUTE, 0)
-                                set(Calendar.SECOND, 0)
-                                set(Calendar.MILLISECOND, 0)
-                            }
-                            val endCal = Calendar.getInstance().apply {
-                                set(Calendar.YEAR, yVal)
-                                set(Calendar.MONTH, 11)
-                                set(Calendar.DAY_OF_MONTH, 31)
-                                set(Calendar.HOUR_OF_DAY, 23)
-                                set(Calendar.MINUTE, 59)
-                                set(Calendar.SECOND, 59)
-                            }
-                            val start = (startCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
-                            val end = (endCal.timeInMillis / (1000.0 * 86400.0)) + 25569.0
-
-                            val (inflows, outflows) = preparedTx.calculateInflowsAndOutflows(start, end)
-
-                            barList.add(
-                                FlowBarData(
-                                    id = "$yVal",
-                                    label = "$yVal",
-                                    year = yVal,
-                                    month = 0,
-                                    inflows = inflows,
-                                    outflows = outflows
-                                )
-                            )
-                        }
-                    }
-                    barList
-                }
-
-                val currentSelectedId = remember(periodMode, selectedYear, selectedMonth) {
-                    if (periodMode == BudgetPeriodMode.MONTHLY) "$selectedYear-$selectedMonth" else "$selectedYear"
-                }
-
+                // CARD 3: Earn VS Spend (Clustered Column Chart)
                 ClusteredColumnChartCard(
                     title = stringResource(id = R.string.inflows_vs_outflows),
-                    titleColor = textMuted,
                     barDataList = chartBarData,
                     selectedId = currentSelectedId,
                     isVisibilityOff = isVisibilityOff,
+                    cardBg = cardBg,
+                    cardBorder = cardBorder,
+                    textMuted = textMuted,
+                    textPrimary = textPrimary,
                     onPeriodClick = { clickedData ->
                         selectedYear = clickedData.year
                         if (periodMode == BudgetPeriodMode.MONTHLY) {
@@ -805,37 +805,19 @@ fun BudgetScreen(
                     ) {
                         Text(
                             text = stringResource(id = R.string.estate_evolution),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = textMuted
+                            style = MaterialTheme.typography.headlineSmall
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Time Range Selector Pills (1M, 6M, 1A, 5A, TOUT)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            HomeTimeRange.entries.forEach { range ->
-                                val isSelected = range == selectedRange
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(horizontal = 2.dp)
-                                        .height(34.dp)
-                                        .clip(RoundedCornerShape(17.dp))
-                                        .background(if (isSelected) bluePill else Color(0xFF1E293B))
-                                        .clickable { selectedRange = range },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(range.labelResId),
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                        color = if (isSelected) Color.White else textMuted
-                                    )
-                                }
-                            }
-                        }
+                        TimeRangeSelectorPills(
+                            selectedRange = selectedRange,
+                            onRangeSelected = { selectedRange = it },
+                            bluePill = bluePill,
+                            unselectedBg = unselectedBg,
+                            textMuted = textMuted
+                        )
 
                         Spacer(modifier = Modifier.height(12.dp))
 

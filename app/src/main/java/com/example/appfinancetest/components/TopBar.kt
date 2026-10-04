@@ -36,7 +36,7 @@ fun TopBar (
         title = {
             Text(
                 text = name,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 maxLines = 1
             )
         },

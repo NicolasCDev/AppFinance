@@ -58,7 +58,7 @@ fun WheelDatePickerDialog(
             ) {
                 Text(
                     stringResource(id = R.string.choose_date),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
 
@@ -206,10 +206,12 @@ fun <T> WheelPicker(
             ) {
                 Text(
                     text = label(items[page]),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = if (isSelected) 20.sp else 16.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                    style = if (isSelected) MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    ) else MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Normal,
+                        color = Color.Gray
                     )
                 )
             }

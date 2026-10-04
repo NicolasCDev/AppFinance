@@ -33,6 +33,7 @@ import android.view.MotionEvent
 import androidx.compose.ui.graphics.toArgb
 import com.example.appfinancetest.R
 import com.example.appfinancetest.calculations.makeCumulative
+import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
 import com.example.appfinancetest.classes.InvestmentDB
@@ -179,16 +180,22 @@ fun PatrimonialLineChart(
         isCalculating = false
     }
 
+    val darkTheme = MaterialTheme.colorScheme.background == BackgroundDark || MaterialTheme.colorScheme.surface == SurfaceDark
+    val chartTextColor = if (darkTheme) Color.WHITE else Color.BLACK
+    val legendTextColor = MaterialTheme.colorScheme.onSurface
+    val legendMutedColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val goalColorArgb = MaterialTheme.colorScheme.onSurface.toArgb()
+
     // Get translated labels at the composable level
     val globalEstateLabel = stringResource(R.string.net_worth_simple)
     val millionaireGoalLabel = stringResource(R.string.millionaire_goal_label)
 
     // Pre-calculate ALL possible datasets info for the custom legend
-    val allLegendInfos = remember(fullHistory, dynamicInvestmentSeries, goalEntries, globalEstateLabel, millionaireGoalLabel) {
+    val allLegendInfos = remember(fullHistory, dynamicInvestmentSeries, goalEntries, globalEstateLabel, millionaireGoalLabel, goalColorArgb) {
         val infos = mutableListOf<Pair<String, Int>>()
         infos.add(globalEstateLabel to Color.GREEN)
         if (goalEntries.isNotEmpty()) {
-            infos.add(millionaireGoalLabel to ComposeColor.White.toArgb())
+            infos.add(millionaireGoalLabel to goalColorArgb)
         }
         val colors = listOf(Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.RED, Color.LTGRAY, Color.GRAY)
         dynamicInvestmentSeries.keys.forEachIndexed { index, label ->
@@ -231,7 +238,7 @@ fun PatrimonialLineChart(
         createDataSet(fullHistory, globalEstateLabel, Color.GREEN, true)?.let { dataSets.add(it) }
         
         if (goalEntries.isNotEmpty()) {
-            createDataSet(goalEntries, millionaireGoalLabel, ComposeColor.White.toArgb(), isMain = false, isDashed = true)?.let { dataSets.add(it) }
+            createDataSet(goalEntries, millionaireGoalLabel, goalColorArgb, isMain = false, isDashed = true)?.let { dataSets.add(it) }
         }
         
         val colors = listOf(Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.RED, Color.LTGRAY, Color.GRAY)
@@ -245,8 +252,7 @@ fun PatrimonialLineChart(
 
     var chartRef by remember { mutableStateOf<LineChart?>(null) }
 
-    val bodyMediumStyle = MaterialTheme.typography.bodyMedium
-    val bodyMediumSize = bodyMediumStyle.fontSize.value // Extrait la taille (ex: 12f)
+    val bodyMediumSize = MaterialTheme.typography.bodyMedium.fontSize.value
 
 
     LaunchedEffect(hideMarkerTrigger) {
@@ -270,11 +276,11 @@ fun PatrimonialLineChart(
                 xAxis.granularity = 1f
                 chartRef = this
                 description.isEnabled = false
-                xAxis.textColor = Color.WHITE
-                axisLeft.textColor = Color.WHITE
+                xAxis.textColor = chartTextColor
+                axisLeft.textColor = chartTextColor
 
                 xAxis.apply {
-                    textColor = Color.WHITE
+                    textColor = chartTextColor
                     textSize = bodyMediumSize
                     typeface = Typeface.DEFAULT_BOLD
                     position = XAxis.XAxisPosition.BOTTOM
@@ -282,7 +288,7 @@ fun PatrimonialLineChart(
                     setAvoidFirstLastClipping(true)
                 }
                 axisLeft.apply {
-                    textColor = Color.WHITE
+                    textColor = chartTextColor
                     textSize = bodyMediumSize
                     typeface = Typeface.DEFAULT_BOLD
                 }
@@ -381,15 +387,15 @@ fun PatrimonialLineChart(
                         modifier = Modifier
                             .size(8.dp)
                             .background(
-                                color = if (isHidden) ComposeColor.Gray else ComposeColor(color),
+                                color = if (isHidden) legendMutedColor else ComposeColor(color),
                                 shape = CircleShape
                             )
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isHidden) ComposeColor.Gray else MaterialTheme.typography.bodyMedium.color,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isHidden) legendMutedColor else legendTextColor,
                         textDecoration = if (isHidden) TextDecoration.LineThrough else null
                     )
                 }

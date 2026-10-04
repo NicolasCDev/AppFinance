@@ -18,13 +18,16 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = Pink80,
     
     // Contrast for cards
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    surfaceContainer = Color(0xFF121212), // Color for dialogs/popups identical to background
+    background = BackgroundDark,
+    surface = SurfaceDark,
+    surfaceContainer = BackgroundDark, // Color for dialogs/popups identical to background
     onSurface = Color.White,
 
-    surfaceVariant = Color(0xFF00C853), // Light green (Positive text)
-    error = Color(0xFFD32F2F)        // More luminous red (Negative text)
+    surfaceVariant = UnselectedBg,
+    onSurfaceVariant = TextMuted,
+    outline = CardBorder,
+    outlineVariant = CardBorder,
+    error = dark_red        // More luminous red (Negative text)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -34,13 +37,16 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Pink40,
 
     // Contrast for cards
-    background = Color(0xFFF5F5F5),
-    surface = Color(0xFFFFFFFF),
-    surfaceContainer = Color(0xFFF5F5F5), // Color for dialogs/popups identical to background
+    background = BackgroundLight,
+    surface = SurfaceLight,
+    surfaceContainer = BackgroundLight, // Color for dialogs/popups identical to background
     onSurface = Color.Black,
 
-    surfaceVariant = Color(0xFF008000), // Dark green (Positive text)
-    error = Color(0xFFD32F2F)        // More luminous red (Negative text)
+    surfaceVariant = Color(0xFFE2E8F0),
+    onSurfaceVariant = Color(0xFF64748B),
+    outline = Color(0xFFCBD5E1),
+    outlineVariant = Color(0xFFCBD5E1),
+    error = dark_red        // More luminous red (Negative text)
 )
 
 @Composable
