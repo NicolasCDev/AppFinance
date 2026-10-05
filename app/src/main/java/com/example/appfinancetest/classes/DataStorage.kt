@@ -41,6 +41,12 @@ class DataStorage(private val context: Context) {
         val INVESTMENT_SECOND_TAB_INDEX_KEY = intPreferencesKey("investment_second_tab_index")
         val INVESTMENT_SECOND_CATEGORY_KEY = stringPreferencesKey("investment_second_category")
         val INVESTMENT_SECOND_VIEW_MODE_KEY = stringPreferencesKey("investment_second_view_mode")
+
+        // Budget Screen keys
+        val BUDGET_CATEGORY_KEY = stringPreferencesKey("budget_category")
+        val BUDGET_PERIOD_MODE_KEY = stringPreferencesKey("budget_period_mode")
+        val BUDGET_SELECTED_YEAR_KEY = intPreferencesKey("budget_selected_year")
+        val BUDGET_SELECTED_MONTH_KEY = intPreferencesKey("budget_selected_month")
     }
 
     // Dashboard Filter Flows
@@ -133,5 +139,24 @@ class DataStorage(private val context: Context) {
     }
     suspend fun saveInvestmentSecondViewMode(viewMode: String) {
         context.dataStore.edit { prefs -> prefs[INVESTMENT_SECOND_VIEW_MODE_KEY] = viewMode }
+    }
+
+    // Budget Screen Flows & Save methods
+    val budgetCategoryFlow: Flow<String?> = context.dataStore.data.map { it[BUDGET_CATEGORY_KEY] }
+    val budgetPeriodModeFlow: Flow<String?> = context.dataStore.data.map { it[BUDGET_PERIOD_MODE_KEY] }
+    val budgetSelectedYearFlow: Flow<Int?> = context.dataStore.data.map { it[BUDGET_SELECTED_YEAR_KEY] }
+    val budgetSelectedMonthFlow: Flow<Int?> = context.dataStore.data.map { it[BUDGET_SELECTED_MONTH_KEY] }
+
+    suspend fun saveBudgetCategory(category: String) {
+        context.dataStore.edit { prefs -> prefs[BUDGET_CATEGORY_KEY] = category }
+    }
+    suspend fun saveBudgetPeriodMode(periodMode: String) {
+        context.dataStore.edit { prefs -> prefs[BUDGET_PERIOD_MODE_KEY] = periodMode }
+    }
+    suspend fun saveBudgetSelectedYear(year: Int) {
+        context.dataStore.edit { prefs -> prefs[BUDGET_SELECTED_YEAR_KEY] = year }
+    }
+    suspend fun saveBudgetSelectedMonth(month: Int) {
+        context.dataStore.edit { prefs -> prefs[BUDGET_SELECTED_MONTH_KEY] = month }
     }
 }

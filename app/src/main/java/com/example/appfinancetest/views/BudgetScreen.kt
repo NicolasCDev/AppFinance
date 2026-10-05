@@ -41,7 +41,7 @@ import com.example.appfinancetest.classes.InvestmentDBViewModel
 import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.components.PatrimonialLineChart
 import com.example.appfinancetest.components.ClusteredColumnChartCard
-import com.example.appfinancetest.components.BalancePieChart
+import com.example.appfinancetest.components.AppPieChart
 import com.example.appfinancetest.components.TimeRangeSelectorPills
 import com.example.appfinancetest.classes.HomeTimeRange
 import kotlinx.coroutines.flow.first
@@ -208,9 +208,51 @@ fun BudgetScreen(
         }
     }
 
-    // Initialize period state to the date of the latest transaction if available
-    LaunchedEffect(allTransactions) {
-        if (allTransactions.isNotEmpty()) {
+    // Initialize period state to the date of the latest transaction if available and no saved period exists
+    var isBudgetPrefsLoaded by remember { mutableStateOf(false) }
+    var hasSavedPeriodPref by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val savedCategory = prefs.budgetCategoryFlow.first()
+            val savedPeriodMode = prefs.budgetPeriodModeFlow.first()
+            val savedYear = prefs.budgetSelectedYearFlow.first()
+            val savedMonth = prefs.budgetSelectedMonthFlow.first()
+
+            if (!savedCategory.isNullOrBlank()) {
+                selectedViewChip = savedCategory
+            }
+            if (!savedPeriodMode.isNullOrBlank()) {
+                try {
+                    periodMode = BudgetPeriodMode.valueOf(savedPeriodMode)
+                } catch (_: Exception) {
+                    periodMode = BudgetPeriodMode.MONTHLY
+                }
+            }
+            if (savedYear != null && savedMonth != null) {
+                selectedYear = savedYear
+                selectedMonth = savedMonth
+                hasSavedPeriodPref = true
+            }
+        } catch (_: Exception) {
+            // Use defaults
+        } finally {
+            isBudgetPrefsLoaded = true
+        }
+    }
+
+    // Save preferences when budget state changes
+    LaunchedEffect(selectedViewChip, periodMode, selectedYear, selectedMonth, isBudgetPrefsLoaded) {
+        if (isBudgetPrefsLoaded) {
+            prefs.saveBudgetCategory(selectedViewChip)
+            prefs.saveBudgetPeriodMode(periodMode.name)
+            prefs.saveBudgetSelectedYear(selectedYear)
+            prefs.saveBudgetSelectedMonth(selectedMonth)
+        }
+    }
+
+    LaunchedEffect(allTransactions, isBudgetPrefsLoaded) {
+        if (isBudgetPrefsLoaded && !hasSavedPeriodPref && allTransactions.isNotEmpty()) {
             val validDates = allTransactions.mapNotNull { it.date }
             if (validDates.isNotEmpty()) {
                 val maxDate = validDates.maxOrNull() ?: 0.0
@@ -419,11 +461,12 @@ fun BudgetScreen(
                             else todayExcel - selectedRange.days
                         }
 
-                        BalancePieChart(
+                        AppPieChart(
                             viewModel = databaseViewModel,
                             startDate = categoryChartStartExcel,
                             endDate = todayExcel,
-                            initialCategory = selectedViewChip
+                            initialCategory = selectedViewChip,
+                            isClickable = true
                         )
                     }
                 }

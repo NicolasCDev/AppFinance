@@ -80,7 +80,7 @@ fun MainScreen(dataStorage: DataStorage) {
     val investmentViewModel: InvestmentDBViewModel = viewModel()
     val creditViewModel: CreditDBViewModel = viewModel()
     var selectedItem by remember { mutableIntStateOf(0) }
-    
+
     // Use translated strings for the navigation bar
     val items = listOf(
         stringResource(id = R.string.dashboard_title),

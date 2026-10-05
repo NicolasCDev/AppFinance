@@ -14,7 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.toArgb
 import com.example.appfinancetest.calculations.CurrencyTextOnPrimary
+import com.example.appfinancetest.calculations.formatCurrency
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
 import com.example.appfinancetest.calculations.PercentageText
@@ -212,6 +214,41 @@ fun BalancePieChart(
                 }
             }
 
+            val activeCategory = selectedCategory ?: initialCategory
+            val totalDisplayAmount = remember(
+                filteredTransactions,
+                activeCategory,
+                selectedItem,
+                isViewingOthersCategories,
+                isViewingOthersItems,
+                isViewingOthersLabels,
+                chartEntries
+            ) {
+                when {
+                    isViewingOthersCategories || isViewingOthersItems || isViewingOthersLabels -> {
+                        chartEntries.sumOf { it.value.toDouble() }
+                    }
+                    activeCategory != null -> {
+                        if (selectedItem == null) {
+                            filteredTransactions.filter { it.category == activeCategory }.sumOf { it.amount ?: 0.0 }
+                        } else {
+                            filteredTransactions.filter { it.category == activeCategory && it.item == selectedItem }.sumOf { it.amount ?: 0.0 }
+                        }
+                    }
+                    else -> {
+                        filteredTransactions.sumOf { it.amount ?: 0.0 }
+                    }
+                }
+            }
+
+            val centerTextFormatted = if (isVisibilityOff) {
+                "**** €"
+            } else {
+                formatCurrency(totalDisplayAmount)
+            }
+
+            val centerTextColorArgb = MaterialTheme.colorScheme.onSurface.toArgb()
+
             AndroidView(
                 modifier = Modifier
                     .weight(1f)
@@ -225,11 +262,19 @@ fun BalancePieChart(
                         setEntryLabelTextSize(10f)
                         setEntryLabelTypeface(Typeface.DEFAULT_BOLD)
                         legend.isEnabled = false
+                        isDrawHoleEnabled = true
                         setHoleColor(Color.TRANSPARENT)
+                        setHoleRadius(52f)
+                        setTransparentCircleRadius(55f)
                         minOffset = 0f
                     }
                 },
                 update = { chart ->
+                    chart.centerText = centerTextFormatted
+                    chart.setCenterTextColor(centerTextColorArgb)
+                    chart.setCenterTextSize(13f)
+                    chart.setCenterTextTypeface(Typeface.DEFAULT_BOLD)
+
                     val dataSet = PieDataSet(chartEntries, "").apply {
                         colors = customColors.take(chartEntries.size)
                         valueTextColor = Color.WHITE
@@ -340,14 +385,14 @@ fun BalancePieChart(
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Start
                 )
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CurrencyTextOnPrimary(
                         amount = amount,
                         isVisibilityOff = isVisibilityOff,
                         style = MaterialTheme.typography.bodySmall
                     )
-                    
+
                     Text(
                         text = " (",
                         style = MaterialTheme.typography.bodySmall

@@ -63,7 +63,9 @@ import kotlin.math.abs
 
 import com.example.appfinancetest.classes.HomeTimeRange
 import com.example.appfinancetest.classes.CreditDBViewModel
-import com.example.appfinancetest.components.HomeDonutChart
+import com.example.appfinancetest.components.AppPieChart
+import com.example.appfinancetest.components.PieChartLegendStyle
+import com.example.appfinancetest.components.toPieChartSlice
 import com.example.appfinancetest.components.HomeMovementItem
 import com.example.appfinancetest.components.HomeSparklineChart
 
@@ -846,68 +848,15 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Donut Chart Container on Left
-                        Box(
-                            modifier = Modifier.size(130.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            HomeDonutChart(slices = portfolioSlices)
-
-                            // Net Worth Amount in Center
-                            Text(
-                                text = if (isVisibilityOff) "**** €" else formatCurrency(
-                                    netWorth ?: 0.0
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Legend List on Right
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            portfolioSlices.forEach { slice ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .clip(CircleShape)
-                                                .background(slice.color)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = slice.name,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-
-                                    Text(
-                                        text = "%.1f%%".format(slice.percentage).replace('.', ','),
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                        color = textPrimary
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    AppPieChart(
+                        slices = portfolioSlices.map { it.toPieChartSlice() },
+                        isClickable = false,
+                        centerText = if (isVisibilityOff) "**** €" else formatCurrency(netWorth ?: 0.0),
+                        holeRadiusRatio = 68f,
+                        chartHeight = 130.dp,
+                        legendStyle = PieChartLegendStyle.COMPACT_RIGHT,
+                        isVisibilityOff = isVisibilityOff
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
