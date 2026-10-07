@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,6 +42,7 @@ import com.example.appfinancetest.components.PatrimonialLineChart
 import com.example.appfinancetest.components.ClusteredColumnChartCard
 import com.example.appfinancetest.components.AppPieChart
 import com.example.appfinancetest.components.TimeRangeSelectorPills
+import com.example.appfinancetest.components.TopBar
 import com.example.appfinancetest.classes.HomeTimeRange
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -323,81 +323,20 @@ fun BudgetScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // HEADER
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(id = R.string.budget_title),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = textPrimary
-                    )
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Import / Export Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable { showImportExport = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_import_export),
-                            contentDescription = "Import / Export",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
+            TopBar(
+                title = stringResource(id = R.string.budget_title),
+                onImportExportClick = { showImportExport = true },
+                onVisibilityClick = {
+                    scope.launch {
+                        prefs.saveVisibilityState(!isVisibilityOff)
                     }
-
-                    // Visibility Toggle Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable {
-                                scope.launch {
-                                    prefs.saveVisibilityState(!isVisibilityOff)
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isVisibilityOff) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Toggle Visibility",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    // Settings Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable { showSettings = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
+                },
+                isVisibilityOff = isVisibilityOff,
+                onSettingsClick = { showSettings = true },
+                cardBg = cardBg,
+                cardBorder = cardBorder,
+                textPrimary = textPrimary
+            )
 
             // VIEW CHIPS ("Bulles" selector)
             LazyRow(

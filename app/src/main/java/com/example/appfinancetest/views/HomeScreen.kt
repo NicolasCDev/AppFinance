@@ -9,9 +9,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,35 +36,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.appfinancetest.classes.DataBaseViewModel
-import com.example.appfinancetest.classes.DataStorage
-import com.example.appfinancetest.classes.InvestmentDB
-import com.example.appfinancetest.classes.InvestmentDBViewModel
 import com.example.appfinancetest.R
-import com.example.appfinancetest.ui.theme.*
-import com.example.appfinancetest.components.SearchField
-import com.example.appfinancetest.components.TimeRangeSelectorPills
-import com.example.appfinancetest.classes.TransactionDB
-import com.example.appfinancetest.components.TransactionRowShimmer
-import com.example.appfinancetest.components.saveTransactionAndSyncInvestments
 import com.example.appfinancetest.calculations.dateFormattedText
-import com.example.appfinancetest.calculations.filterTransactions
 import com.example.appfinancetest.calculations.formatCurrency
 import com.example.appfinancetest.calculations.formatPercentage
+import com.example.appfinancetest.classes.CreditDBViewModel
+import com.example.appfinancetest.classes.DataBaseViewModel
+import com.example.appfinancetest.classes.DataStorage
+import com.example.appfinancetest.classes.HomeTimeRange
+import com.example.appfinancetest.classes.InvestmentDB
+import com.example.appfinancetest.classes.InvestmentDBViewModel
+import com.example.appfinancetest.components.AppPieChart
+import com.example.appfinancetest.components.HomeSparklineChart
+import com.example.appfinancetest.components.PieChartLegendStyle
+import com.example.appfinancetest.components.TimeRangeSelectorPills
+import com.example.appfinancetest.components.TransactionsBottomSheetScaffold
+import com.example.appfinancetest.components.TransactionsSheetContent
+import com.example.appfinancetest.components.toPieChartSlice
+import com.example.appfinancetest.components.TopBar
+import com.example.appfinancetest.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
-
-import com.example.appfinancetest.classes.HomeTimeRange
-import com.example.appfinancetest.classes.CreditDBViewModel
-import com.example.appfinancetest.components.AppPieChart
-import com.example.appfinancetest.components.PieChartLegendStyle
-import com.example.appfinancetest.components.toPieChartSlice
-import com.example.appfinancetest.components.HomeMovementItem
-import com.example.appfinancetest.components.HomeSparklineChart
 
 data class PortfolioSlice(
     val name: String,
@@ -147,89 +140,6 @@ fun HomeScreen(
         value = databaseViewModel.getFirstTransactionDate()
     }
 
-    // Filters states
-    var dateMinFilter by remember { mutableStateOf("") }
-    var dateMaxFilter by remember { mutableStateOf("") }
-    var categoryFilter by remember { mutableStateOf("") }
-    var itemFilter by remember { mutableStateOf("") }
-    var labelFilter by remember { mutableStateOf("") }
-    var amountMinFilter by remember { mutableStateOf("") }
-    var amountMaxFilter by remember { mutableStateOf("") }
-    var showFilter by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var isSearching by remember { mutableStateOf(false) }
-
-    LaunchedEffect(searchQuery) {
-        labelFilter = searchQuery
-    }
-
-    val categoriesList by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
-        value = databaseViewModel.getAllCategories()
-    }
-    val itemsList by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
-        value = databaseViewModel.getAllItems()
-    }
-    val labelsList by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
-        value = databaseViewModel.getAllLabels()
-    }
-
-    // Pagination for transactions list in bottom sheet
-    val pageSize = 50
-    val beforeRefresh = 15
-    var currentPage by remember { mutableIntStateOf(1) }
-    val transactionsPaged = remember { mutableStateListOf<TransactionDB>() }
-    val listState = rememberLazyListState()
-    var isFirstLoadPaged by remember { mutableStateOf(true) }
-
-    LaunchedEffect(listState, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter, searchQuery) {
-        val effectiveLabelFilter = if (searchQuery.isNotBlank()) searchQuery else labelFilter
-        val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || effectiveLabelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
-
-        if (isFilterActive) {
-            val allTransactions = databaseViewModel.getTransactionsSortedByDateDESC()
-            val filtered = filterTransactions(
-                allTransactions,
-                dateMinFilter,
-                dateMaxFilter,
-                categoryFilter,
-                itemFilter,
-                effectiveLabelFilter,
-                amountMinFilter,
-                amountMaxFilter
-            )
-            transactionsPaged.clear()
-            transactionsPaged.addAll(filtered)
-            isFirstLoadPaged = false
-        } else {
-            delay(200)
-            snapshotFlow {
-                listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-            }.collect { lastVisibleItemIndex ->
-                if (lastVisibleItemIndex != null &&
-                    lastVisibleItemIndex >= transactionsPaged.size - beforeRefresh &&
-                    transactionsPaged.size >= pageSize * (currentPage - 1)
-                ) {
-                    currentPage += 1
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(currentPage, refreshTrigger, dateMinFilter, dateMaxFilter, categoryFilter, itemFilter, labelFilter, amountMinFilter, amountMaxFilter, searchQuery) {
-        val effectiveLabelFilter = if (searchQuery.isNotBlank()) searchQuery else labelFilter
-        val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || effectiveLabelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank()
-
-        if (!isFilterActive) {
-            val offset = (currentPage - 1) * pageSize
-            val newTransactions = databaseViewModel.getPagedTransactions(pageSize, offset)
-            if (currentPage == 1) {
-                transactionsPaged.clear()
-            }
-            transactionsPaged.addAll(newTransactions)
-            isFirstLoadPaged = false
-        }
-    }
-
     val allInvestments by produceState<List<InvestmentDB>?>(initialValue = null, investmentViewModel, refreshTrigger) {
         value = investmentViewModel.getInvestment()
     }
@@ -245,7 +155,6 @@ fun HomeScreen(
     var rangeVariationPercent by remember { mutableStateOf<Double?>(null) }
     var hasValidDataForRange by remember { mutableStateOf(true) }
 
-    var transactionToEdit by remember { mutableStateOf<TransactionDB?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     val isDarkThemeCustom by prefs.isDarkThemeFlow.collectAsState(initial = null)
@@ -365,29 +274,7 @@ fun HomeScreen(
         }.sortedByDescending { it.amount }
     }
 
-    if (transactionToEdit != null) {
-        TransactionEditDialog(
-            transaction = transactionToEdit!!,
-            onDismiss = { transactionToEdit = null },
-            onSave = { updated ->
-                scope.launch {
-                    val prevInvest = transactionToEdit?.idInvest
-                    saveTransactionAndSyncInvestments(
-                        updated = updated,
-                        previousIdInvest = prevInvest,
-                        databaseViewModel = databaseViewModel,
-                        investmentViewModel = investmentViewModel
-                    )
-                    refreshTrigger++
-                    transactionToEdit = null
-                }
-            }
-        )
-    }
-
-    val scaffoldState = rememberBottomSheetScaffoldState()
-
-    BottomSheetScaffold(
+    TransactionsBottomSheetScaffold(
         modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { cords ->
@@ -396,136 +283,15 @@ fun HomeScreen(
                     windowHeightPx = h
                 }
             },
-        scaffoldState = scaffoldState,
-        sheetContainerColor = cardBg,
-        sheetContentColor = if (darkTheme) Color.White else MaterialTheme.colorScheme.onSurface,
-        sheetPeekHeight = dynamicPeekHeight,
-        sheetDragHandle = {
-            BottomSheetDefaults.DragHandle()
+        databaseViewModel = databaseViewModel,
+        investmentViewModel = investmentViewModel,
+        isVisibilityOff = isVisibilityOff,
+        refreshTrigger = refreshTrigger,
+        onRefreshNeeded = {
+            refreshTrigger++
+            databaseViewModel.refreshNetWorth()
         },
-        sheetContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .fillMaxHeight(0.85f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.recent_movements),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val isFilterActive = dateMinFilter.isNotBlank() || dateMaxFilter.isNotBlank() || categoryFilter.isNotBlank() || itemFilter.isNotBlank() || labelFilter.isNotBlank() || amountMinFilter.isNotBlank() || amountMaxFilter.isNotBlank() || searchQuery.isNotBlank()
-
-                        if (isFilterActive) {
-                            IconButton(onClick = {
-                                dateMinFilter = ""
-                                dateMaxFilter = ""
-                                categoryFilter = ""
-                                itemFilter = ""
-                                labelFilter = ""
-                                amountMinFilter = ""
-                                amountMaxFilter = ""
-                                searchQuery = ""
-                                currentPage = 1
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Delete filters",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-
-                        IconButton(
-                            onClick = { 
-                                isSearching = !isSearching
-                                if (!isSearching) {
-                                    searchQuery = ""
-                                    labelFilter = ""
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (isSearching) Icons.Default.Clear else Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = textMuted
-                            )
-                        }
-
-                        IconButton(onClick = { showFilter = true }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = "Filter",
-                                tint = if (isFilterActive) MaterialTheme.colorScheme.primary else textMuted
-                            )
-                        }
-                    }
-                }
-
-                if (isSearching) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    SearchField(
-                        query = searchQuery,
-                        onQueryChange = { searchQuery = it },
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                if (isFirstLoadPaged) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        items(5) {
-                            TransactionRowShimmer()
-                            HorizontalDivider(thickness = 0.5.dp, color = cardBorder)
-                        }
-                    }
-                } else if (transactionsPaged.isEmpty()) {
-                    Text(
-                        text = stringResource(id = R.string.no_transactions),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = textMuted,
-                        modifier = Modifier.padding(vertical = 24.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        items(transactionsPaged) { item ->
-                            HomeMovementItem(
-                                item = item,
-                                isVisibilityOff = isVisibilityOff,
-                                onClick = {
-                                    transactionToEdit = item
-                                }
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                thickness = 0.5.dp,
-                                color = cardBorder
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-        },
-        containerColor = bgDark
+        sheetPeekHeight = dynamicPeekHeight
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -538,102 +304,43 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // HEADER
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(id = R.string.hello) + " ",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                color = textPrimary
+            TopBar(
+                titleContent = {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(id = R.string.hello) + " ",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    color = textPrimary
+                                )
                             )
-                        )
-                        Text(
-                            text = "$userName 👋",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = textPrimary
+                            Text(
+                                text = "$userName 👋",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = textPrimary
+                                )
                             )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(id = R.string.wealth_sentence),
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(id = R.string.wealth_sentence),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                // Right Action Icons (Import/Export + Visibility Toggle + Settings Icon)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Import / Export Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable {
-                                showImportExport = true
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_import_export),
-                            contentDescription = "Import / Export",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                },
+                onImportExportClick = { showImportExport = true },
+                onVisibilityClick = {
+                    scope.launch {
+                        prefs.saveVisibilityState(!isVisibilityOff)
                     }
-
-                    // Visibility Toggle Icon (Eye / Crossed Eye)
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable {
-                                scope.launch {
-                                    prefs.saveVisibilityState(!isVisibilityOff)
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isVisibilityOff) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Toggle Visibility",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    // Settings Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable {
-                                showSettingsDialog = true
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
+                },
+                isVisibilityOff = isVisibilityOff,
+                onSettingsClick = { showSettingsDialog = true },
+                cardBg = cardBg,
+                cardBorder = cardBorder,
+                textPrimary = textPrimary
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -880,40 +587,6 @@ fun HomeScreen(
                 refreshTrigger++
                 databaseViewModel.refreshNetWorth()
             }
-        )
-    }
-
-    if (showFilter) {
-        TransactionFilterInterface(
-            dateMinFilter = dateMinFilter,
-            onDateMinFilterChange = { dateMinFilter = it; currentPage = 1 },
-            dateMaxFilter = dateMaxFilter,
-            onDateMaxFilterChange = { dateMaxFilter = it; currentPage = 1 },
-            categoryFilter = categoryFilter,
-            onCategoryFilterChange = { categoryFilter = it; currentPage = 1 },
-            categories = categoriesList,
-            itemFilter = itemFilter,
-            onItemFilterChange = { itemFilter = it; currentPage = 1 },
-            items = itemsList,
-            labelFilter = labelFilter,
-            onLabelFilterChange = { labelFilter = it; currentPage = 1 },
-            labels = labelsList,
-            amountMinFilter = amountMinFilter,
-            onAmountMinFilterChange = { amountMinFilter = it; currentPage = 1 },
-            amountMaxFilter = amountMaxFilter,
-            onAmountMaxFilterChange = { amountMaxFilter = it; currentPage = 1 },
-            onClearAll = {
-                dateMinFilter = ""
-                dateMaxFilter = ""
-                categoryFilter = ""
-                itemFilter = ""
-                labelFilter = ""
-                amountMinFilter = ""
-                amountMaxFilter = ""
-                searchQuery = ""
-                currentPage = 1
-            },
-            onDismiss = { showFilter = false }
         )
     }
 }

@@ -8,10 +8,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -32,14 +32,17 @@ import com.example.appfinancetest.ui.theme.*
 import com.example.appfinancetest.classes.CreditDBViewModel
 import com.example.appfinancetest.classes.DataBaseViewModel
 import com.example.appfinancetest.classes.DataStorage
+import com.example.appfinancetest.classes.InvestmentDB
 import com.example.appfinancetest.classes.InvestmentDBViewModel
 import com.example.appfinancetest.classes.TransactionDB
+import java.util.Locale
 import com.example.appfinancetest.components.ImportActionCard
 import com.example.appfinancetest.components.InvestmentCategoryCardShimmer
 import com.example.appfinancetest.components.InvestmentHeatmapView
 import com.example.appfinancetest.components.InvestmentListView
 import com.example.appfinancetest.components.InvestmentSummaryCard
 import com.example.appfinancetest.components.InvestmentViewMode
+import com.example.appfinancetest.components.TopBar
 import com.example.appfinancetest.components.saveTransactionAndSyncInvestments
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -166,10 +169,28 @@ fun InvestmentScreen(
         }
     }
 
+    var targetInvestmentForRealtime by remember { mutableStateOf<Pair<String, List<TransactionDB>>?>(null) }
+
+    val handleInvestmentClick: (InvestmentDB, List<TransactionDB>) -> Unit = { investment, transactions ->
+        val label = investment.label ?: "Investment"
+        val isBourseOrCrypto = transactions.any { tx ->
+            val itemText = (tx.item ?: "").lowercase(Locale.ROOT)
+            val labelText = (tx.label ?: "").lowercase(Locale.ROOT)
+            !itemText.contains("crowd") && !labelText.contains("crowd")
+        }
+        if (isBourseOrCrypto) {
+            targetInvestmentForRealtime = Pair(label, transactions)
+        } else {
+            selectedInvestmentLabel = label
+            selectedInvestmentTransactions = transactions
+        }
+    }
+
     TransactionsLabelDialog(
         selectedLabel = selectedInvestmentLabel,
         othersTransactions = selectedInvestmentTransactions,
         isVisibilityOff = isVisibilityOff,
+        databaseViewModel = databaseViewModel,
         onDismiss = {
             selectedInvestmentLabel = null
             selectedInvestmentTransactions = null
@@ -222,93 +243,48 @@ fun InvestmentScreen(
             .fillMaxSize()
             .background(bgDark)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // HEADER
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        if (targetInvestmentForRealtime != null) {
+            StockMarketRealtimeDialog(
+                databaseViewModel = databaseViewModel,
+                investmentViewModel = investmentViewModel,
+                isVisibilityOff = isVisibilityOff,
+                targetTransactions = targetInvestmentForRealtime!!.second,
+                targetLabel = targetInvestmentForRealtime!!.first,
+                onImportExportClick = { showImportExport = true },
+                onVisibilityClick = {
+                    scope.launch {
+                        prefs.saveVisibilityState(!isVisibilityOff)
+                    }
+                },
+                onSettingsClick = { showSettings = true },
+                modifier = Modifier.fillMaxSize(),
+                onDismiss = { targetInvestmentForRealtime = null }
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = stringResource(id = R.string.investments_title),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = textPrimary
-                    )
+                // HEADER
+                TopBar(
+                    title = stringResource(id = R.string.investments_title),
+                    onImportExportClick = { showImportExport = true },
+                    onVisibilityClick = {
+                        scope.launch {
+                            prefs.saveVisibilityState(!isVisibilityOff)
+                        }
+                    },
+                    isVisibilityOff = isVisibilityOff,
+                    onSettingsClick = { showSettings = true },
+                    cardBg = cardBg,
+                    cardBorder = cardBorder,
+                    textPrimary = textPrimary
                 )
-                // Right Action Icons (Import/Export + Visibility Toggle + Settings Icon)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Import / Export Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable { showImportExport = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_import_export),
-                            contentDescription = "Import / Export",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
 
-                    // Visibility Toggle Icon (Eye / Crossed Eye)
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable {
-                                scope.launch {
-                                    prefs.saveVisibilityState(!isVisibilityOff)
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isVisibilityOff) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Toggle Visibility",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    // Settings Icon
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(cardBg)
-                            .border(1.dp, cardBorder, CircleShape)
-                            .clickable {
-                                showSettings = true
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            if (isLoading) {
+                if (isLoading) {
                 repeat(2) {
                     InvestmentCategoryCardShimmer()
                 }
@@ -475,10 +451,7 @@ fun InvestmentScreen(
                                 isVisibilityOff = isVisibilityOff,
                                 cardBg = cardBg,
                                 cardBorder = cardBorder,
-                                onInvestmentClick = { investment, transactions ->
-                                    selectedInvestmentLabel = investment.label ?: "Investment"
-                                    selectedInvestmentTransactions = transactions
-                                }
+                                onInvestmentClick = handleInvestmentClick
                             )
                         } else {
                             InvestmentListView(
@@ -493,10 +466,7 @@ fun InvestmentScreen(
                                 investmentViewModel = investmentViewModel,
                                 selectedTabIndex = selectedTabIndex,
                                 onRefresh = { refreshTrigger++ },
-                                onInvestmentClick = { investment, transactions ->
-                                    selectedInvestmentLabel = investment.label ?: "Investment"
-                                    selectedInvestmentTransactions = transactions
-                                }
+                                onInvestmentClick = handleInvestmentClick
                             )
                         }
                     }
@@ -504,4 +474,5 @@ fun InvestmentScreen(
             }
         }
     }
+}
 }
