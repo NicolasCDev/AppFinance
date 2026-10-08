@@ -30,13 +30,14 @@ import com.example.appfinancetest.components.invalidateInvestments
 import com.example.appfinancetest.components.validateInvestments
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun InvestmentValidationInterface(
     databaseViewModel: DataBaseViewModel,
     investmentViewModel: InvestmentDBViewModel,
     onDismiss: () -> Unit,
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
 ) {
     val tabTitles = listOf(
         stringResource(id = R.string.investment_current),
@@ -61,7 +62,7 @@ fun InvestmentValidationInterface(
     }
 
     LaunchedEffect(listState, selectedTabIndex) {
-        delay(200)
+        delay(200.milliseconds)
         snapshotFlow {
             listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
         }.collect { lastVisibleItemIndex ->
@@ -128,7 +129,7 @@ fun InvestmentValidationInterface(
                     }
                 }
 
-                TabRow(
+                PrimaryTabRow(
                     selectedTabIndex = selectedTabIndex,
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.primary
@@ -339,7 +340,7 @@ fun DatePickerDialog(
                                 val excelDate = (date.time / (1000 * 86400.0)) + 25569
                                 onDateSelected(excelDate)
                             }
-                        } catch (e: Exception) { }
+                        } catch (_: Exception) { }
                     }) {
                         Text(stringResource(id = R.string.filter_apply))
                     }

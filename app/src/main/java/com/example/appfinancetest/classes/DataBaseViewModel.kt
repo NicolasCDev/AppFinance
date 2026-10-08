@@ -19,7 +19,7 @@ class DataBaseViewModel(application: Application) : AndroidViewModel(application
 
     private val dbDAO = database.transactionDao()
 
-    private val _netWorthDate = MutableLiveData<Double>(Double.MAX_VALUE)
+    private val _netWorthDate = MutableLiveData(Double.MAX_VALUE)
     val netWorth: LiveData<Double?> = _netWorthDate.switchMap { date ->
         dbDAO.getNetWorthAtDate(date)
     }

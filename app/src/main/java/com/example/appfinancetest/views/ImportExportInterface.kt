@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -41,8 +42,7 @@ import com.example.appfinancetest.classes.Transaction
 import com.example.appfinancetest.components.GenericActionCard
 import com.example.appfinancetest.components.ImportActionCard
 import com.example.appfinancetest.components.writeExcelFile
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -64,12 +64,12 @@ fun ImportExportInterface(
     val lifecycleOwner = LocalLifecycleOwner.current
     val driveService = remember { GoogleDriveService(context) }
 
-    fun executeBackup() {
+    fun executeBackup(accessToken: String) {
         isProcessing = true
         lifecycleOwner.lifecycleScope.launch {
             val dbFile = context.getDatabasePath("FinanceDB")
             if (dbFile.exists()) {
-                val result = driveService.uploadBackup(dbFile)
+                val result = driveService.uploadBackup(accessToken, dbFile)
                 if (result != null) {
                     Toast.makeText(context, "Backup successful !", Toast.LENGTH_SHORT).show()
                 } else {
@@ -84,11 +84,11 @@ fun ImportExportInterface(
         }
     }
 
-    fun executeRestore() {
+    fun executeRestore(accessToken: String) {
         isProcessing = true
         lifecycleOwner.lifecycleScope.launch {
             val tempFile = File(context.cacheDir, "temp_db")
-            if (driveService.downloadBackup(tempFile)) {
+            if (driveService.downloadBackup(accessToken, tempFile)) {
                 val dbFile = context.getDatabasePath("FinanceDB")
                 try {
                     tempFile.copyTo(dbFile, overwrite = true)
@@ -106,31 +106,63 @@ fun ImportExportInterface(
         }
     }
 
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
+    val googleAuthorizationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            Log.d("ImportExport", "Google Sign-In successful")
-            when (pendingAction) {
-                PendingCloudAction.BACKUP -> executeBackup()
-                PendingCloudAction.RESTORE -> executeRestore()
-                else -> {}
+            try {
+                val authResult = driveService.getAuthorizationResultFromIntent(result.data)
+                val token = authResult.accessToken
+                if (token != null) {
+                    when (pendingAction) {
+                        PendingCloudAction.BACKUP -> executeBackup(token)
+                        PendingCloudAction.RESTORE -> executeRestore(token)
+                        else -> {}
+                    }
+                } else {
+                    Toast.makeText(context, "Failed to retrieve access token", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("ImportExport", "Google authorization failed", e)
+                Toast.makeText(context, "Connection canceled or failed", Toast.LENGTH_SHORT).show()
             }
         } else {
-            // Analyze the actual error
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                task.getResult(ApiException::class.java)
-            } catch (e: ApiException) {
-                val errorMsg = "Google error (Code ${e.statusCode})"
-                Log.e("ImportExport", errorMsg, e)
-                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                Log.e("ImportExport", "Sign-in cancelled or failed", e)
-                Toast.makeText(context, "Canceled connexion", Toast.LENGTH_SHORT).show()
-            }
-            pendingAction = PendingCloudAction.NONE
+            Toast.makeText(context, "Canceled connection", Toast.LENGTH_SHORT).show()
         }
+        pendingAction = PendingCloudAction.NONE
+    }
+
+    fun requestDriveAuthAndExecute(action: PendingCloudAction) {
+        pendingAction = action
+        val authRequest = driveService.createAuthorizationRequest()
+        Identity.getAuthorizationClient(context)
+            .authorize(authRequest)
+            .addOnSuccessListener { authResult ->
+                if (authResult.hasResolution()) {
+                    val pendingIntent = authResult.pendingIntent
+                    if (pendingIntent != null) {
+                        googleAuthorizationLauncher.launch(
+                            IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                        )
+                    }
+                } else {
+                    val token = authResult.accessToken
+                    if (token != null) {
+                        when (action) {
+                            PendingCloudAction.BACKUP -> executeBackup(token)
+                            PendingCloudAction.RESTORE -> executeRestore(token)
+                            else -> {}
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to retrieve access token", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ImportExport", "Drive authorization failed", e)
+                Toast.makeText(context, "Authorization failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                pendingAction = PendingCloudAction.NONE
+            }
     }
 
     val exportFileLauncher = rememberLauncherForActivityResult(
@@ -250,13 +282,7 @@ fun ImportExportInterface(
                             icon = Icons.Default.CloudUpload,
                             color = ImportExportBlueBg,
                             onClick = {
-                                val account = GoogleSignIn.getLastSignedInAccount(context)
-                                if (account == null) {
-                                    pendingAction = PendingCloudAction.BACKUP
-                                    googleSignInLauncher.launch(driveService.getSignInIntent())
-                                } else {
-                                    executeBackup()
-                                }
+                                requestDriveAuthAndExecute(PendingCloudAction.BACKUP)
                             }
                         )
 
@@ -268,13 +294,7 @@ fun ImportExportInterface(
                             icon = Icons.Default.CloudDownload,
                             color = GreenAccent,
                             onClick = {
-                                val account = GoogleSignIn.getLastSignedInAccount(context)
-                                if (account == null) {
-                                    pendingAction = PendingCloudAction.RESTORE
-                                    googleSignInLauncher.launch(driveService.getSignInIntent())
-                                } else {
-                                    executeRestore()
-                                }
+                                requestDriveAuthAndExecute(PendingCloudAction.RESTORE)
                             }
                         )
 

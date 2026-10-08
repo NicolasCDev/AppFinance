@@ -147,8 +147,8 @@ fun AppPieChart(
                     legend.isEnabled = false
                     isDrawHoleEnabled = true
                     setHoleColor(AndroidColor.TRANSPARENT)
-                    setHoleRadius(holeRadiusRatio)
-                    setTransparentCircleRadius(holeRadiusRatio + 3f)
+                    holeRadius = holeRadiusRatio
+                    transparentCircleRadius = holeRadiusRatio + 3f
                     setTransparentCircleColor(AndroidColor.TRANSPARENT)
                     minOffset = 0f
                 }
@@ -156,8 +156,8 @@ fun AppPieChart(
             update = { chart ->
                 chart.setTouchEnabled(isClickable)
                 chart.isRotationEnabled = isClickable
-                chart.setHoleRadius(holeRadiusRatio)
-                chart.setTransparentCircleRadius(holeRadiusRatio + 3f)
+                chart.holeRadius = holeRadiusRatio
+                chart.transparentCircleRadius = holeRadiusRatio + 3f
 
                 if (!centerText.isNullOrEmpty()) {
                     chart.centerText = centerText
@@ -366,7 +366,7 @@ fun AppPieChart(
         value = viewModel.getTransactionsSortedByDateASC()
     }
 
-    var selectedCategory by remember(initialCategory) { mutableStateOf<String?>(initialCategory) }
+    var selectedCategory by remember(initialCategory) { mutableStateOf(initialCategory) }
     var selectedItem by remember { mutableStateOf<String?>(null) }
     var isViewingOthersCategories by remember { mutableStateOf(false) }
     var isViewingOthersItems by remember { mutableStateOf(false) }
@@ -389,14 +389,14 @@ fun AppPieChart(
                 it.date in startDate..endDate
     }
 
-    val chartEntries = when {
-        initialCategory == null && selectedCategory == null && !isViewingOthersCategories -> {
+    val chartEntries = when (initialCategory) {
+        null if selectedCategory == null && !isViewingOthersCategories -> {
             val catTotals = filteredTransactions
                 .groupBy { it.category ?: "Inconnu" }
                 .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
             createPieEntries(catTotals, topN = 8, othersLabel = "Others")
         }
-        initialCategory == null && selectedCategory == null && isViewingOthersCategories -> {
+        null if selectedCategory == null && isViewingOthersCategories -> {
             val catTotals = filteredTransactions
                 .groupBy { it.category ?: "Inconnu" }
                 .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
@@ -658,7 +658,7 @@ fun AppPieChart(
         }
 
         val total = chartEntries.sumOf { it.value.toDouble() }
-        val topLabels = chartEntries.map { val l = it.label; if (l != null) l else "" }.filter { it != "Others" }.toSet()
+        val topLabels = chartEntries.map { val l = it.label; l ?: "" }.filter { it != "Others" }.toSet()
 
         slices.forEachIndexed { index, slice ->
             val label = slice.name

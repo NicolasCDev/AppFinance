@@ -244,6 +244,7 @@ fun InvestmentListItemCard(
                 Text(
                     text = investment.label ?: stringResource(id = R.string.no_label),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = textPrimary,
                     textAlign = TextAlign.Start,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -276,7 +277,8 @@ fun InvestmentListItemCard(
                         )
                         Text(
                             text = " (${stringResource(id = R.string.annual)})",
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            color = textMuted
                         )
                     }
                 }
@@ -291,7 +293,8 @@ fun InvestmentListItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${stringResource(id = R.string.invested)}: ",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textMuted
                     )
                     CurrencyTextOnPrimary(
                         amount = investment.invested ?: 0.0,
@@ -302,7 +305,8 @@ fun InvestmentListItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${stringResource(id = R.string.earned)}: ",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textMuted
                     )
                     CurrencyTextOnPrimary(
                         amount = investment.earned ?: 0.0,
@@ -419,12 +423,7 @@ fun InvestmentListView(
         items(filteredInvestments, key = { "${it.id}_$selectedTabIndex" }) { investment ->
             val transactions = allTransactions.filter { it.idInvest == investment.idInvest }
 
-            val dismissState = rememberSwipeToDismissBoxState(
-                confirmValueChange = { value ->
-                    if (value == SwipeToDismissBoxValue.StartToEnd && selectedTabIndex == 0) true
-                    else value == SwipeToDismissBoxValue.EndToStart && selectedTabIndex == 1
-                }
-            )
+            val dismissState = rememberSwipeToDismissBoxState()
 
             // Effect to handle the actual database update after the swipe is confirmed
             LaunchedEffect(dismissState.currentValue) {

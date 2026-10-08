@@ -3,53 +3,45 @@ package com.example.appfinancetest
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.identity.AuthorizationRequest
+import com.google.android.gms.auth.api.identity.AuthorizationResult
+import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.Scope
-import com.google.api.client.extensions.android.http.AndroidHttp
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.http.FileContent
+import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
-import com.google.api.client.http.FileContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.FileOutputStream
-import java.util.Collections
 
 class GoogleDriveService(private val context: Context) {
 
-    private fun getDriveService(): Drive? {
-        val account = GoogleSignIn.getLastSignedInAccount(context)
-        return if (account != null) {
-            Log.d("GoogleDriveService", "Creating Drive service for account: ${account.email}")
-            val credential = GoogleAccountCredential.usingOAuth2(
-                context, Collections.singleton(DriveScopes.DRIVE_FILE)
-            )
-            credential.selectedAccount = account.account
-            Drive.Builder(
-                AndroidHttp.newCompatibleTransport(),
-                GsonFactory.getDefaultInstance(),
-                credential
-            ).setApplicationName("AppFinanceTest").build()
-        } else {
-            Log.w("GoogleDriveService", "No signed in account found when creating service")
-            null
-        }
+    private fun getDriveService(accessToken: String): Drive {
+        return Drive.Builder(
+            NetHttpTransport(),
+            GsonFactory.getDefaultInstance()
+        ) { request ->
+            request.headers.authorization = "Bearer $accessToken"
+        }.setApplicationName("AppFinanceTest").build()
     }
 
-    fun getSignInIntent(): Intent {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .requestScopes(Scope(DriveScopes.DRIVE_FILE))
+    fun createAuthorizationRequest(): AuthorizationRequest {
+        val requestedScopes = listOf(Scope(DriveScopes.DRIVE_FILE))
+        return AuthorizationRequest.builder()
+            .setRequestedScopes(requestedScopes)
             .build()
-        return GoogleSignIn.getClient(context, gso).signInIntent
     }
 
-    suspend fun uploadBackup(backupFile: java.io.File): String? = withContext(Dispatchers.IO) {
+    fun getAuthorizationResultFromIntent(data: Intent?): AuthorizationResult {
+        return Identity.getAuthorizationClient(context).getAuthorizationResultFromIntent(data)
+    }
+
+    suspend fun uploadBackup(accessToken: String, backupFile: java.io.File): String? = withContext(Dispatchers.IO) {
         try {
-            val service = getDriveService() ?: return@withContext null
+            val service = getDriveService(accessToken)
             
             Log.d("GoogleDriveService", "Searching for existing backup 'finance_backup.db'...")
             val query = "name = 'finance_backup.db' and trashed = false"
@@ -67,7 +59,7 @@ class GoogleDriveService(private val context: Context) {
             }
             val mediaContent = FileContent("application/x-sqlite3", backupFile)
 
-            val resultId = if (existingFiles != null && existingFiles.isNotEmpty()) {
+            val resultId = if (!existingFiles.isNullOrEmpty()) {
                 val fileId = existingFiles[0].id
                 Log.d("GoogleDriveService", "Updating existing backup file ID: $fileId")
                 service.files().update(fileId, null, mediaContent).execute().id
@@ -83,9 +75,9 @@ class GoogleDriveService(private val context: Context) {
         }
     }
 
-    suspend fun downloadBackup(targetFile: java.io.File): Boolean = withContext(Dispatchers.IO) {
+    suspend fun downloadBackup(accessToken: String, targetFile: java.io.File): Boolean = withContext(Dispatchers.IO) {
         try {
-            val service = getDriveService() ?: return@withContext false
+            val service = getDriveService(accessToken)
             Log.d("GoogleDriveService", "Searching for backup to download...")
             val query = "name = 'finance_backup.db' and trashed = false"
             val fileList = service.files().list()
@@ -96,7 +88,7 @@ class GoogleDriveService(private val context: Context) {
             
             val files = fileList.files
             
-            if (files == null || files.isEmpty()) {
+            if (files.isNullOrEmpty()) {
                 Log.w("GoogleDriveService", "No backup file 'finance_backup.db' found on Drive")
                 return@withContext false
             }

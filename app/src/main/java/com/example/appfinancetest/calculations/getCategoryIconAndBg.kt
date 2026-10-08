@@ -42,7 +42,7 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
     val catLower = " " + cat.lowercase() + " "
 
     return when {
-        // Frais Bancaires, Cotisations & Agio (placé en HAUT pour priorité absolue sur les mots "total", "bp", "auto")
+        // Bank Fees, Charges & Agios
         catLower.contains("frais") || catLower.contains("cotisation") || catLower.contains("agio") ||
                 catLower.contains("commission") || catLower.contains("tenue de compte") ->
             Pair(Icons.Default.CreditCard, Color(0xFFDC2626))
@@ -57,7 +57,7 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
                 catLower.contains("action") || catLower.contains("cto") || catLower.contains("trade") ->
             Pair(Icons.AutoMirrored.Filled.ShowChart, BourseBlue)
 
-        // Épargne & Livret
+        // Savings & Savings Accounts
         catLower.contains("épargne") || catLower.contains("epargne") || catLower.contains("livret") ||
                 catLower.contains("ldds") || catLower.contains("lep") || catLower.contains("placement") ->
             Pair(Icons.Default.Savings, LiquidityPurple)
@@ -67,25 +67,25 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
                 catLower.contains("homunity") || catLower.contains("anaxago") ->
             Pair(Icons.Default.GroupWork, CrowdfundingViolet)
 
-        // Immobilier, Loyer, Syndic
+        // Real Estate, Rent & Property Management Fees
         catLower.contains("immobilier") || catLower.contains("loyer") || catLower.contains("syndic") ||
                 catLower.contains("bail") || catLower.contains("copropriet") ->
             Pair(Icons.Default.HomeWork, EmeraldGreen)
 
-        // Péage & Autoroute
+        // Tolls & Highways
         catLower.contains("péage") || catLower.contains("peage") || catLower.contains("autoroute") ||
                 catLower.contains("vinci") || catLower.contains("aprr") || catLower.contains("sanef") ||
                 catLower.contains("area") ->
             Pair(Icons.Default.Toll, Color(0xFFF97316))
 
-        // Dons, Cadeaux, Aide familiale & Parents (placé AVANT eau pour éviter conflit "cadeau/eau")
+        // Donations, Gifts, Family Support & Parents
         catLower.contains("don") || catLower.contains("dons") || catLower.contains("donation") ||
                 catLower.contains("cadeau") || catLower.contains("cadeaux") || catLower.contains("parent") ||
                 catLower.contains("famille") || catLower.contains("argent de poche") || catLower.contains("association") ||
                 catLower.contains("téléthon") || catLower.contains("croix rouge") ->
             Pair(Icons.Default.VolunteerActivism, Color(0xFFF43F5E))
 
-        // Supermarché, Alimentation, Courses
+        // Supermarket, Food & Groceries
         catLower.contains("supermarché") || catLower.contains("supermarche") || catLower.contains("courses") ||
                 catLower.contains("alimentation") || catLower.contains("carrefour") || catLower.contains("auchan") ||
                 catLower.contains("leclerc") || catLower.contains("lidl") || catLower.contains("monoprix") ||
@@ -100,35 +100,35 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
                 catLower.contains("subway") || catLower.contains("domino") ->
             Pair(Icons.Default.Fastfood, Color(0xFFF97316))
 
-        // Restaurants, Café, Bars, Deliveroo, Uber Eats
+        // Restaurants, Cafés, Bars, Deliveroo & Uber Eats
         catLower.contains("restaurant") || catLower.contains("resto") || catLower.contains("pizza") ||
                 catLower.contains("deliveroo") || catLower.contains("uber eats") || catLower.contains("eats") ||
                 catLower.contains("sushi") || catLower.contains("starbucks") || catLower.contains("café") ||
                 catLower.contains("cafe") || catLower.contains("bar") || catLower.contains("brasserie") ->
             Pair(Icons.Default.Restaurant, Color(0xFFEA580C))
 
-        // Carburant, Essence, Station service (Mots clés "totalenergies", "station bp", "auto" sécurisés)
+        // Fuel, Gas & Gas Stations
         catLower.contains("essence") || catLower.contains("carburant") || catLower.contains("totalenergies") ||
                 catLower.contains("station total") || catLower.contains("station bp") || catLower.contains("shell") ||
                 catLower.contains("parking") || catLower.contains("garage") || catLower.contains("automobile") ->
             Pair(Icons.Default.LocalGasStation, Color(0xFFEF4444))
 
-        // Avion, Vol, Air France
+        // Airplane, Flights & Air France
         catLower.contains("avion") || catLower.contains("flight") || catLower.contains("air france") ||
                 catLower.contains("easyjet") || catLower.contains("ryanair") ->
             Pair(Icons.Default.Flight, Color(0xFF0284C7))
 
-        // Internet, Fibre, Box, Wifi
+        // Internet, Fiber, Broadband & Wi-Fi
         catLower.contains("internet") || catLower.contains("fibre") || catLower.contains("box") ||
                 catLower.contains("wifi") || catLower.contains("freebox") || catLower.contains("bbox") ->
             Pair(Icons.Default.Wifi, Color(0xFF06B6D4))
 
-        // Téléphone / Mobile / Forfait (séparé d'internet)
+        // Phone / Mobile / Plan
         catLower.contains("téléphone") || catLower.contains("telephone") || catLower.contains("mobile") ||
                 catLower.contains("forfait") || catLower.contains("sosh") || catLower.contains("prixtel") ->
             Pair(Icons.Default.PhoneAndroid, Color(0xFF0284C7))
 
-        // Train, Métro, Bus, Transports
+        // Train, Metro, Bus & Public Transport
         catLower.contains("train") || catLower.contains("sncf") || catLower.contains("ratp") ||
                 catLower.contains(" tgv") || catLower.contains("tgv ") || catLower.contains(" ter ") ||
                 catLower.contains("bus") || catLower.contains("metro") || catLower.contains("métro") ||
@@ -136,14 +136,14 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
                 catLower.contains("taxi") || catLower.contains("uber") || catLower.contains("bolt") ->
             Pair(Icons.Default.Train, Color(0xFF2563EB))
 
-        // Électricité, Eau, Gaz, Énergie
+        // Electricity, Water, Gas & Energy**
         catLower.contains("edf") || catLower.contains("engie") || catLower.contains("totalenergies") ||
                 catLower.contains("électricité") || catLower.contains("electricite") || catLower.contains(" eau ") ||
                 catLower.contains("veolia") || catLower.contains("suez") || catLower.contains("gaz") ||
                 catLower.contains("energie") || catLower.contains("énergie") ->
             Pair(Icons.Default.Bolt, Color(0xFFEAB308))
 
-        // Internet & Télécom général (fallback opérateur)
+        // Internet & General Telecommunications
         catLower.contains("orange") || catLower.contains("sfr") || catLower.contains("bouygues") ||
                 catLower.contains("free") || catLower.contains("telecom") || catLower.contains("télécom") ->
             Pair(Icons.Default.Wifi, Color(0xFF06B6D4))
@@ -156,7 +156,7 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
                 catLower.contains("abonnement") || catLower.contains("subscription") ->
             Pair(Icons.Default.Subscriptions, Color(0xFFA855F7))
 
-        // Shopping, Mode, High-Tech, Amazon
+        // Shopping, Fashion, Electronics & Amazon
         catLower.contains("amazon") || catLower.contains("fnac") || catLower.contains("darty") ||
                 catLower.contains("boulanger") || catLower.contains("zara") || catLower.contains("h&m") ||
                 catLower.contains("decathlon") || catLower.contains("vetement") || catLower.contains("vêtement") ||
@@ -164,7 +164,7 @@ fun getCategoryIconAndBg(item: TransactionDB): Pair<ImageVector, Color> {
                 catLower.contains("vinted") || catLower.contains("high-tech") || catLower.contains("tech") ->
             Pair(Icons.Default.ShoppingBag, Color(0xFFEC4899))
 
-        // Santé, Pharmacie, Médecin, Doctolib
+        // Healthcare, Pharmacy, Doctors & Doctolib
         catLower.contains("sante") || catLower.contains("santé") || catLower.contains("pharmacie") ||
                 catLower.contains("medecin") || catLower.contains("médecin") || catLower.contains("docteur") ||
                 catLower.contains("doctolib") || catLower.contains("hopital") || catLower.contains("hôpital") ||

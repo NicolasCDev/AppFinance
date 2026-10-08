@@ -19,18 +19,16 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.appfinancetest.classes.DataBaseViewModel
-import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.ui.theme.*
 import java.util.*
 import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CashFlowChart(
     databaseViewModel: DataBaseViewModel,
     refreshTrigger: Int = 0
 ) {
-    val transactions by produceState(initialValue = emptyList<TransactionDB>(), databaseViewModel, refreshTrigger) {
+    val transactions by produceState(initialValue = emptyList(), databaseViewModel, refreshTrigger) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 

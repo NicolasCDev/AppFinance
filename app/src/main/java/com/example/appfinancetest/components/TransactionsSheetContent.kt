@@ -34,6 +34,7 @@ import com.example.appfinancetest.views.TransactionEditDialog
 import com.example.appfinancetest.views.TransactionFilterInterface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Scaffold complet avec volet coulissant pour les transactions.
@@ -161,7 +162,7 @@ fun TransactionsSheetContent(
     val listState = rememberLazyListState()
     var isFirstLoadPaged by remember { mutableStateOf(true) }
 
-    val effectiveLabelFilter = if (searchQuery.isNotBlank()) searchQuery else labelFilter
+    val effectiveLabelFilter = searchQuery.ifBlank { labelFilter }
     val isFilterActive = dateMinFilter.isNotBlank() ||
             dateMaxFilter.isNotBlank() ||
             categoryFilter.isNotBlank() ||
@@ -203,7 +204,7 @@ fun TransactionsSheetContent(
             transactionsPaged.addAll(transactionsList.sortedByDescending { it.date })
             isFirstLoadPaged = false
         } else {
-            delay(200)
+            delay(200.milliseconds)
             snapshotFlow {
                 listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
             }.collect { lastVisibleItemIndex ->

@@ -1,7 +1,6 @@
 package com.example.appfinancetest.components
 
 import android.content.Context
-import android.graphics.Color
 import android.icu.text.SimpleDateFormat
 import android.widget.TextView
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,11 +9,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.appfinancetest.R
 import com.example.appfinancetest.classes.TransactionDB
 import com.example.appfinancetest.services.StockTickerData
+import com.example.appfinancetest.ui.theme.ChartInvestedBlue
+import com.example.appfinancetest.ui.theme.GreenAccent
+import com.example.appfinancetest.ui.theme.RedAccent
+import com.example.appfinancetest.ui.theme.white
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.MarkerView
 import com.github.mikephil.charting.components.XAxis
@@ -67,11 +71,13 @@ fun StockMarketEvolutionChart(
 
         // Collect all timestamps from price histories on or after firstTxMillis
         val allTimestamps = tickerDataMap.values
+            .asSequence()
             .flatMap { it.history }
             .map { it.timestampMilli }
             .filter { it >= firstTxMillis - (86400 * 1000L) }
             .distinct()
             .sorted()
+            .toList()
 
         if (allTimestamps.isEmpty()) return@remember null
 
@@ -122,7 +128,7 @@ fun StockMarketEvolutionChart(
         // Filter entries based on startTimeMillis
         val filteredInvested = if (startTimeMillis > 0L) {
             val res = investedEntries.filter { it.x >= startTimeMillis }
-            if (res.isEmpty()) investedEntries else res
+            res.ifEmpty { investedEntries }
         } else {
             investedEntries
         }
@@ -148,9 +154,9 @@ fun StockMarketEvolutionChart(
                 axisRight.isEnabled = false
                 xAxis.position = XAxis.XAxisPosition.BOTTOM
                 xAxis.granularity = 86400000f // 1 day
-                xAxis.textColor = Color.WHITE
-                axisLeft.textColor = Color.WHITE
-                legend.textColor = Color.WHITE
+                xAxis.textColor = white.toArgb()
+                axisLeft.textColor = white.toArgb()
+                legend.textColor = white.toArgb()
                 setTouchEnabled(true)
                 isDragEnabled = true
                 setScaleEnabled(true)
@@ -169,10 +175,10 @@ fun StockMarketEvolutionChart(
             val lastValue = valueEntries.lastOrNull()?.y ?: 0f
             val lastInvested = investedEntries.lastOrNull()?.y ?: 0f
             val isPositive = lastValue >= lastInvested
-            val valueLineColor = if (isPositive) Color.parseColor("#00E676") else Color.parseColor("#FF5252")
+            val valueLineColor = if (isPositive) GreenAccent.toArgb() else RedAccent.toArgb()
 
             val investedDataSet = LineDataSet(investedEntries, "Cumul Investi").apply {
-                color = Color.parseColor("#90CAF9")
+                color = ChartInvestedBlue.toArgb()
                 lineWidth = 2f
                 setDrawCircles(false)
                 setDrawValues(false)

@@ -1,22 +1,9 @@
 <resources>
     <string name="app_name">AppFinanceTest</string>
-    <string name="home_title">Accueil</string>
     <string name="dashboard_title">Menu principal</string>
-    <string name="quick_actions">Actions rapides</string>
-    <string name="financial_summary">Aperçu financier</string>
-    <string name="see_all">Voir tout</string>
-    <string name="welcome_back">Bienvenue</string>
-    <string name="net_worth">Patrimoine net</string>
-    <string name="recent_transactions">Dernières transactions</string>
     <string name="no_transactions">Aucune transaction à afficher</string>
     <string name="balance_as_of">Solde au %s</string>
     <string name="no_label">Sans libellé</string>
-    <string name="settings_title">Paramètres</string>
-    <string name="app_language">Langue de l\'application</string>
-    <string name="database_title">Base de données</string>
-    <string name="choose_file">Choisir un fichier</string>
-    <string name="no_file_selected">Aucun fichier sélectionné</string>
-    <string name="file_selected">Fichier : \n %s</string>
     <string name="close">Fermer</string>
 
     <!-- Dashboard Screen -->
@@ -27,7 +14,6 @@
 
     <!-- Investment Screen -->
     <string name="investments_title">Investissements</string>
-    <string name="investment_portfolio_title">Positions</string>
     <string name="heatmap_title">Heatmap de mes investissements</string>
     <string name="investment_list_title">Liste des investissements</string>
     <string name="heatmap_mode">Heatmap</string>
@@ -35,7 +21,6 @@
     <string name="no_investments_found">Aucun investissement à afficher</string>
     <string name="investment_current">En cours</string>
     <string name="investment_closed">Clôturés</string>
-    <string name="capital_gain_realized">Plus-value réalisée</string>
     <string name="invested">Montant investi</string>
     <string name="earned">Gagné</string>
     <string name="capital_gain">Plus-value</string>
@@ -53,7 +38,6 @@
     <string name="inflows_vs_outflows">Entrées vs Sorties</string>
     <string name="test_title">Laboratoire</string>
     <string name="estate_evolution">Évolution du patrimoine</string>
-    <string name="breakdown_by_category">Répartition par catégorie</string>
     <string name="category">Catégories</string>
     <string name="millionaire_goal_label">Objectif Millionnaire</string>
 
@@ -128,7 +112,6 @@
     <!-- Settings -->
     <string name="parameters_title">Paramètres</string>
     <string name="language">Langue de l\'application</string>
-    <string name="database">Base de données</string>
     <string name="goals_title">Objectifs</string>
     <string name="target_millionaire_age">Âge cible pour être millionnaire</string>
     <string name="birth_date">Date de naissance</string>
@@ -151,7 +134,6 @@
     <string name="transaction_item_label">Objet</string>
 
     <!-- Errors -->
-    <string name="error_loading_filters">Erreur lors du chargement des filtres</string>
 
     <!-- Home Time Ranges & Portfolio -->
     <string name="range_1m">1M</string>

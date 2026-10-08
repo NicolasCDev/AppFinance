@@ -41,7 +41,7 @@ fun TransactionFilterInterface(
     amountMaxFilter: String,
     onAmountMaxFilterChange: (String) -> Unit,
     onClearAll: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     // Use of TextFieldValue in order to manage the cursor position when formatting
     var dateMinState by remember { mutableStateOf(TextFieldValue(dateMinFilter, TextRange(dateMinFilter.length))) }
@@ -297,7 +297,7 @@ private fun formatDateInput(input: String, previousValue: String): String {
     for (i in clean.indices) {
         sb.append(clean[i])
         // Adding "/" after 2nd and 4th character
-        if (i == 1 || i == 3) {
+        if ((i == 1) || (i == 3)) {
             sb.append("/")
         }
     }
@@ -333,7 +333,7 @@ fun FilterDropdown(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(),
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
                 trailingIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (selectedOption.isNotEmpty()) {

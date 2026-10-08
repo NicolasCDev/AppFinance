@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.ksp)
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.example.appfinancetest"
     compileSdk = 37
 
@@ -24,7 +26,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -69,7 +71,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
@@ -87,12 +88,13 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     // Google Drive API
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
-    implementation("com.google.api-client:google-api-client-android:2.0.0")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0")
-    implementation("com.google.guava:guava:31.1-android")
+    //noinspection LoginCredentials
+    implementation(libs.play.services.auth)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.api.services.drive)
+    implementation(libs.guava)
     
     // HTTP & JSON components for Drive
-    implementation("com.google.http-client:google-http-client-android:2.0.3")
-    implementation("com.google.http-client:google-http-client-jackson2:2.0.3")
+    implementation(libs.google.http.client.android)
+    implementation(libs.google.http.client.jackson2)
 }

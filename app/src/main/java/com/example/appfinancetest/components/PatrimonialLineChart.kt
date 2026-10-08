@@ -46,7 +46,6 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.pow
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PatrimonialLineChart(
     viewModel: DataBaseViewModel,

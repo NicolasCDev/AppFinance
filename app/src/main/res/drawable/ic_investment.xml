@@ -5,7 +5,7 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
 
-    <!-- Cercle/flèche -->
+    <!-- Circle/flèche -->
     <path
         android:strokeColor="#000000"
         android:strokeWidth="2"
@@ -13,7 +13,7 @@
         android:strokeLineJoin="round"
         android:pathData="M12 2a10 10 0 1 1 -7.07 2.93M12 2L14.5 4M12 2L14.5 1" />
 
-    <!-- Symbole $ stylisé -->
+    <!-- Symbol $ stylisé -->
     <path
         android:strokeColor="#000000"
         android:strokeWidth="2"

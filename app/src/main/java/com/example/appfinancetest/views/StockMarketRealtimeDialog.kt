@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +66,7 @@ import com.example.appfinancetest.ui.theme.CardBg
 import com.example.appfinancetest.ui.theme.CardBorder
 import com.example.appfinancetest.ui.theme.GreenAccent
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 data class DetectedStockPosition(
     val isin: String?,
@@ -76,7 +76,6 @@ data class DetectedStockPosition(
     val transactions: List<TransactionDB>
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockMarketRealtimeDialog(
     databaseViewModel: DataBaseViewModel,
@@ -114,7 +113,7 @@ fun StockMarketRealtimeDialog(
     val transactionTickerMap = remember { mutableStateMapOf<TransactionDB, String>() }
 
     // Fetch all transactions from database
-    val allTransactions by produceState<List<TransactionDB>>(initialValue = emptyList(), databaseViewModel) {
+    val allTransactions by produceState(initialValue = emptyList(), databaseViewModel) {
         value = databaseViewModel.getTransactionsSortedByDateASC()
     }
 
@@ -212,17 +211,16 @@ fun StockMarketRealtimeDialog(
         }
     }
 
-    val activeTransactions = stockTransactions
-    val totalInvestedAmount = activeTransactions.sumOf { it.amount ?: 0.0 }
+    val totalInvestedAmount = stockTransactions.sumOf { it.amount ?: 0.0 }
 
     // First detected ticker data for header price display
-    val primaryTicker = transactionTickerMap[activeTransactions.firstOrNull()] ?: "CW8.PA"
+    val primaryTicker = transactionTickerMap[stockTransactions.firstOrNull()] ?: "CW8.PA"
 
     // Compute shares and estimated value
     var estimatedCurrentPortfolioValue = 0.0
     var totalSharesCount = 0.0
 
-    for (tx in activeTransactions) {
+    for (tx in stockTransactions) {
         val ticker = transactionTickerMap[tx] ?: primaryTicker
         val tData = tickerDataMap[ticker]
         val priceHist = tData?.history?.sortedBy { it.timestampMilli } ?: emptyList()
@@ -274,7 +272,7 @@ fun StockMarketRealtimeDialog(
             refreshTrigger++
         },
         title = stringResource(id = R.string.recent_movements),
-        transactionsList = activeTransactions,
+        transactionsList = stockTransactions,
         sheetPeekHeight = 180.dp
     ) { paddingValues ->
             Column(
@@ -391,7 +389,7 @@ fun StockMarketRealtimeDialog(
 
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = if (isVisibilityOff) "**** €" else String.format(Locale.getDefault(), "%,.2f €", estimatedCurrentPortfolioValue),
+                            text = if (isVisibilityOff) "**** €" else String.format(LocalLocale.current.platformLocale, "%,.2f €", estimatedCurrentPortfolioValue),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = textPrimary
@@ -404,7 +402,7 @@ fun StockMarketRealtimeDialog(
                             val sign = if (isPositive) "+" else ""
                             val changeColor = if (isPositive) GreenAccent else MaterialTheme.colorScheme.error
                             Text(
-                                text = if (isVisibilityOff) "+0.0%" else String.format(Locale.getDefault(), "%s%.1f%% (%s%,.2f €)", sign, latentGainPct, sign, latentGainEuro),
+                                text = if (isVisibilityOff) "+0.0%" else String.format(LocalLocale.current.platformLocale, "%s%.1f%% (%s%,.2f €)", sign, latentGainPct, sign, latentGainEuro),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = changeColor
@@ -461,11 +459,11 @@ fun StockMarketRealtimeDialog(
                         }
                     } else if (errorMessage != null) {
                         Text(errorMessage ?: "Erreur", color = MaterialTheme.colorScheme.error)
-                    } else if (activeTransactions.isEmpty()) {
+                    } else if (stockTransactions.isEmpty()) {
                         Text("Aucune transaction.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         StockMarketEvolutionChart(
-                            stockTransactions = activeTransactions,
+                            stockTransactions = stockTransactions,
                             tickerDataMap = tickerDataMap,
                             transactionTickerMap = transactionTickerMap,
                             startTimeMillis = startTimeMillis,
@@ -489,21 +487,21 @@ fun StockMarketRealtimeDialog(
                 ) {
                     InfoKeyCard(
                         title = "PRU",
-                        value = if (isVisibilityOff) "**** €" else String.format(Locale.getDefault(), "%,.2f €", weightedAverageBuyPrice),
+                        value = if (isVisibilityOff) "**** €" else String.format(LocalLocale.current.platformLocale, "%,.2f €", weightedAverageBuyPrice),
                         cardBg = cardBg,
                         cardBorder = cardBorder,
                         modifier = Modifier.weight(1f)
                     )
                     InfoKeyCard(
                         title = "Nb d'unité",
-                        value = if (isVisibilityOff) "****" else String.format(Locale.getDefault(), "%.3f", totalSharesCount),
+                        value = if (isVisibilityOff) "****" else String.format(LocalLocale.current.platformLocale, "%.3f", totalSharesCount),
                         cardBg = cardBg,
                         cardBorder = cardBorder,
                         modifier = Modifier.weight(1f)
                     )
                     InfoKeyCard(
                         title = "Plus-value",
-                        value = if (isVisibilityOff) "**** €" else String.format(Locale.getDefault(), "%,.2f €", latentGainEuro),
+                        value = if (isVisibilityOff) "**** €" else String.format(LocalLocale.current.platformLocale, "%,.2f €", latentGainEuro),
                         cardBg = cardBg,
                         cardBorder = cardBorder,
                         isPositive = latentGainEuro >= 0,

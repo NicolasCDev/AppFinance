@@ -25,9 +25,8 @@ fun calculateWeightedAnnualProfitability(
 ): Double {
     val totalInvested = filteredInvestments.sumOf { it.invested ?: 0.0 }
     val sumFinishedEarned = filteredInvestments.sumOf { it.earned ?: 0.0 }
-    val finishedInvested = totalInvested
 
-    return if (finishedInvested > 0.0 && sumFinishedEarned > 0.0) {
+    return if (totalInvested > 0.0 && sumFinishedEarned > 0.0) {
         val finishedIdInvests = filteredInvestments.mapNotNull { it.idInvest }.toSet()
         val catTransactions = allTransactions.filter { it.idInvest in finishedIdInvests }
         val investedTransactions = catTransactions.filter { it.category == "Investissement" }
@@ -43,8 +42,8 @@ fun calculateWeightedAnnualProfitability(
 
         val weightedDays = (avgEarnDate - avgInvestDate).coerceAtLeast(1.0)
         
-        ((sumFinishedEarned / finishedInvested).pow(365.0 / weightedDays) - 1.0) * 100.0
-    } else if (finishedInvested > 0.0 && sumFinishedEarned <= 0.0) {
+        ((sumFinishedEarned / totalInvested).pow(365.0 / weightedDays) - 1.0) * 100.0
+    } else if (totalInvested > 0.0 && sumFinishedEarned <= 0.0) {
         -100.0
     } else {
         0.0

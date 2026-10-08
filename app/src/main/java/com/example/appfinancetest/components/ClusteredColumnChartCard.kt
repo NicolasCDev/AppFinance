@@ -34,12 +34,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.appfinancetest.ui.theme.*
-import androidx.compose.ui.unit.sp
 import com.example.appfinancetest.views.FlowBarData
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Locale
 import kotlin.math.max
+import androidx.compose.ui.platform.LocalLocale
 
 @Composable
 fun ClusteredColumnChartCard(
@@ -112,8 +111,8 @@ fun ClusteredColumnChartCard(
                         val ySteps = listOf(maxVal, maxVal * 0.6, maxVal * 0.3, 0.0)
                         ySteps.forEach { valStep ->
                             val label = if (isVisibilityOff) "***"
-                            else if (valStep >= 1000) String.format(Locale.getDefault(), "%.0fk", valStep / 1000)
-                            else String.format(Locale.getDefault(), "%.0f", valStep)
+                            else if (valStep >= 1000) String.format(LocalLocale.current.platformLocale, "%.0fk", valStep / 1000)
+                            else String.format(LocalLocale.current.platformLocale, "%.0f", valStep)
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.bodySmall

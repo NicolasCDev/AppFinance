@@ -49,7 +49,7 @@ fun BalancePieChart(
         value = viewModel.getTransactionsSortedByDateASC()
     }
 
-    var selectedCategory by remember(initialCategory) { mutableStateOf<String?>(initialCategory) }
+    var selectedCategory by remember(initialCategory) { mutableStateOf(initialCategory) }
     var selectedItem by remember { mutableStateOf<String?>(null) }
     var isViewingOthersCategories by remember { mutableStateOf(false) }
     var isViewingOthersItems by remember { mutableStateOf(false) }
@@ -64,14 +64,14 @@ fun BalancePieChart(
                 it.date in startDate..endDate
     }
 
-    val chartEntries = when {
-        initialCategory == null && selectedCategory == null && !isViewingOthersCategories -> {
+    val chartEntries = when (initialCategory) {
+        null if selectedCategory == null && !isViewingOthersCategories -> {
             val catTotals = filteredTransactions
                 .groupBy { it.category ?: "Inconnu" }
                 .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
             createPieEntries(catTotals, topN = 8, othersLabel = "Others")
         }
-        initialCategory == null && selectedCategory == null && isViewingOthersCategories -> {
+        null if selectedCategory == null -> {
             val catTotals = filteredTransactions
                 .groupBy { it.category ?: "Inconnu" }
                 .mapValues { entry -> entry.value.sumOf { it.amount ?: 0.0 } }
@@ -264,8 +264,8 @@ fun BalancePieChart(
                         legend.isEnabled = false
                         isDrawHoleEnabled = true
                         setHoleColor(Color.TRANSPARENT)
-                        setHoleRadius(52f)
-                        setTransparentCircleRadius(55f)
+                        holeRadius = 52f
+                        transparentCircleRadius = 55f
                         minOffset = 0f
                     }
                 },
@@ -355,7 +355,7 @@ fun BalancePieChart(
         }
 
         val total = chartEntries.sumOf { it.value.toDouble() }
-        val topLabels = chartEntries.map { val l = it.label; if (l != null) l else "" }.filter { it != "Others" }.toSet()
+        val topLabels = chartEntries.map { val l = it.label; l ?: "" }.filter { it != "Others" }.toSet()
 
         chartEntries.forEachIndexed { index, entry ->
             val label = entry.label ?: ""

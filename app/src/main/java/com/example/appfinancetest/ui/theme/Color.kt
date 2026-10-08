@@ -64,6 +64,7 @@ val ChartCyan = Color(0xFF00BCD4)
 val ChartDeepOrange = Color(0xFFFF5722)
 val ChartBlueGrey = Color(0xFF607D8B)
 val ChartLightGreen = Color(0xFF8BC34A)
+val ChartInvestedBlue = Color(0xFF90CAF9)
 
 val BourseBlue = Color(0xFF3B82F6)
 val LiquidityPurple = Color(0xFF8B5CF6)

@@ -22,25 +22,6 @@ data class StockTickerData(
     val previousClose: Double,
     val currency: String,
     val history: List<StockPricePoint>
-) {
-    val dailyChange: Double get() = currentPrice - previousClose
-    val dailyChangePercent: Double get() = if (previousClose > 0.0) ((currentPrice - previousClose) / previousClose) * 100.0 else 0.0
-}
-
-data class StockPositionData(
-    val isin: String,
-    val ticker: String,
-    val name: String,
-    val category: String,
-    val transactions: List<TransactionDB>,
-    val totalInvested: Double,
-    val totalShares: Double,
-    val averageBuyPrice: Double,
-    val currentPrice: Double,
-    val currentMarketValue: Double,
-    val latentGainEuro: Double,
-    val latentGainPercent: Double,
-    val tickerData: StockTickerData?
 )
 
 object StockMarketService {
@@ -73,22 +54,6 @@ object StockMarketService {
         "IE00B5B83C77" to "SXXP.PA",
         "FR0013412020" to "WPEA.PA",
         "FR0013412285" to "PE500.PA"
-    )
-
-    val POPULAR_TICKERS = listOf(
-        "CW8.PA" to "Amundi MSCI World",
-        "^FCHI" to "CAC 40",
-        "^GSPC" to "S&P 500",
-        "ESE.PA" to "BNP S&P 500",
-        "MC.PA" to "LVMH",
-        "TTE.PA" to "TotalEnergies",
-        "AIR.PA" to "Airbus",
-        "AAPL" to "Apple Inc.",
-        "NVDA" to "NVIDIA",
-        "MSFT" to "Microsoft",
-        "BTC-EUR" to "Bitcoin (€)",
-        "ETH-EUR" to "Ethereum (€)",
-        "SOL-EUR" to "Solana (€)"
     )
 
     fun extractIsin(text: String?): String? {
@@ -203,7 +168,7 @@ object StockMarketService {
 
                 val historyList = mutableListOf<StockPricePoint>()
                 if (timestamps != null && closeArray != null) {
-                    val length = Math.min(timestamps.length(), closeArray.length())
+                    val length = timestamps.length().coerceAtMost(closeArray.length())
                     for (i in 0 until length) {
                         if (!timestamps.isNull(i) && !closeArray.isNull(i)) {
                             val tsSec = timestamps.getLong(i)
